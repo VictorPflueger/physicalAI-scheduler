@@ -1,7 +1,13 @@
 // Repository hygiene for a public prototype: no file the repository would publish names the
-// prospective client, the contact or the meeting the prototype was drafted for, points to the
-// client's own data services, or carries a personal e-mail address. The terms are stored encoded,
-// so this check does not publish them itself.
+// prospective client, the contact or the meeting the prototype was drafted for, or points to the
+// client's own data services (a private term list), and no file carries an e-mail address.
+// The private term list never enters the repository, in any form. It is read from, in order:
+//   HYGIENE_TERMS        environment variable (a CI secret), one entry per line
+//   HYGIENE_TERMS_FILE   environment variable naming a file
+//   ../.hygiene-terms    a file next to the repository folder
+// One entry per line: "term<TAB>what it is" (matched case-insensitively as a whole word or phrase)
+// or "/regex/flags<TAB>what it is"; lines starting with # are comments. Without a list only the
+// generic checks run, and the result says so ("HYGIENE GENERIC OK" instead of "HYGIENE OK").
 // Checks every file git would publish: tracked files and untracked files that are not ignored.
 // Usage: node tests/hygiene.mjs
 import { execFileSync } from "node:child_process";
@@ -9,20 +15,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { APP_ROOT } from "./lib/harness.mjs";
 
-const decode = (b) => Buffer.from(b, "base64").toString("utf8");
-// [encoded term, what it is]; matched case-insensitively as a whole word or phrase.
-const TERMS = [
-  ["RGV1dHNjaGUgQmFobg==", "the client's name"],
-  ["REIgSW5mcmFHTw==", "a client company"], ["REIgTmV0eg==", "a client company"], ["REIgU3RhdGlvbg==", "a client company"],
-  ["REIgRmVybnZlcmtlaHI=", "a client company"], ["REIgUmVnaW8=", "a client company"],
-  ["Um9sYW5k", "the contact's name"],
-  ["UmVpc2VuZGVuaW5mb3JtYXRpb24=", "the client's department"],
-  ["VGVjaC1TaG93Y2FzZQ==", "the meeting"],
-  ["YmFobmhvZi5kZQ==", "a client data service"], ["YmFobi5kZQ==", "a client data service"],
-  ["ZGJpbmZyYWdv", "a client data service"], ["ZGItc3RhdGlvbnM=", "a client data package"]
-].map(([b, what]) => ({ term: decode(b), what }));
-// The client's short name on its own (two capitals), as a word.
-const SHORT = new RegExp(`\\b${decode("REI=")}\\b`);
+function privateList() {
+  if (process.env.HYGIENE_TERMS) return { text: process.env.HYGIENE_TERMS, from: "HYGIENE_TERMS" };
+  const file = process.env.HYGIENE_TERMS_FILE || path.join(APP_ROOT, "..", ".hygiene-terms");
+  if (fs.existsSync(file)) return { text: fs.readFileSync(file, "utf8"), from: file };
+  return null;
+}
+const escape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const list = privateList();
+const TERMS = (list ? list.text.split(/\r?\n/) : [])
+  .map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
+  .map((l) => {
+    const [term, what = "a private term"] = l.split("\t");
+    const m = term.match(/^\/(.+)\/([a-z]*)$/);
+    return { re: m ? new RegExp(m[1], m[2].replace("g", "")) : new RegExp(`(^|[^\\p{L}])${escape(term)}(?![\\p{L}])`, "iu"), what };
+  });
 const EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b/g; // not "playwright@1.56.0"
 const ALLOWED_EMAIL = new Set([]);
 const BINARY = /\.(woff2|png|jpe?g|gif|ico|pdf)$/i;
@@ -34,13 +41,10 @@ const problems = [];
 for (const f of files) {
   const text = fs.readFileSync(path.join(APP_ROOT, f), "utf8");
   const lines = text.split("\n");
-  for (const { term, what } of TERMS) {
-    const re = new RegExp(`(^|[^\\p{L}])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}])`, "iu");
+  for (const { re, what } of TERMS) {
     const i = lines.findIndex((l) => re.test(l));
     if (i >= 0) problems.push(`${f}:${i + 1} names ${what}`);
   }
-  const s = lines.findIndex((l) => SHORT.test(l));
-  if (s >= 0) problems.push(`${f}:${s + 1} names the client by its short name`);
   for (const m of text.matchAll(EMAIL)) {
     if (ALLOWED_EMAIL.has(m[0].toLowerCase())) continue;
     const line = text.slice(0, m.index).split("\n").length;
@@ -49,6 +53,6 @@ for (const f of files) {
 }
 
 for (const p of problems) console.log(`FAIL  ${p}`);
-console.log(`${files.length} files checked, ${problems.length} problem${problems.length === 1 ? "" : "s"}.`);
-if (!problems.length) console.log("HYGIENE OK");
+console.log(`${files.length} files checked against ${list ? `${TERMS.length} private terms (${list.from === "HYGIENE_TERMS" ? "from HYGIENE_TERMS" : "from a file outside the repository"}) and` : "no private term list, only"} the generic checks: ${problems.length} problem${problems.length === 1 ? "" : "s"}.`);
+if (!problems.length) console.log(list && TERMS.length ? "HYGIENE OK" : "HYGIENE GENERIC OK");
 process.exit(problems.length ? 1 : 0);

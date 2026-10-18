@@ -25,7 +25,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # The hygiene check reads its private term list from the HYGIENE_TERMS secret if the repository
+      # has one; without it only the generic checks run (tests/hygiene.mjs).
       - run: node tests/run-all.mjs tokens world unit engine hygiene docs
+        env:
+          HYGIENE_TERMS: ${{ secrets.HYGIENE_TERMS }}
       # The shared shell is compared with the sister app's (public) repository.
       - run: git clone --depth 1 https://github.com/VictorPflueger/PROC-Rebate-Hunter "$RUNNER_TEMP/PROC-Rebate-Hunter"
       - run: node tests/parity.mjs "$RUNNER_TEMP/PROC-Rebate-Hunter"

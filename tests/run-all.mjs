@@ -28,9 +28,15 @@ const summary = [];
 // run's summary and through the API without the full log.
 const CI = process.env.GITHUB_ACTIONS === "true";
 const annotate = (s, out) => {
-  const lines = out.split("\n").map((l) => l.trim()).filter(Boolean);
-  const fails = lines.filter((l) => /^(FAIL|Error|AssertionError|TypeError|Timeout)|failed|exceeded/i.test(l));
-  const text = (fails.length ? fails : lines.slice(-12)).slice(0, 15).join(" ⏎ ").slice(0, 4000);
+  // Each FAIL line with the indented detail lines under it; otherwise the last lines of the output.
+  const lines = out.split("\n").filter((l) => l.trim());
+  const picked = [];
+  lines.forEach((l, i) => {
+    if (!/^(FAIL|Error|AssertionError|TypeError)|failed|exceeded/i.test(l.trim())) return;
+    picked.push(l.trim());
+    for (let j = i + 1; j < lines.length && /^\s+(-|at |\S)/.test(lines[j]) && j <= i + 8; j++) picked.push(lines[j].trim());
+  });
+  const text = (picked.length ? picked : lines.slice(-12).map((l) => l.trim())).join(" ⏎ ").slice(0, 6000);
   console.log(`::error title=${s.id} suite failed::${text}`);
 };
 for (const s of chosen) {
