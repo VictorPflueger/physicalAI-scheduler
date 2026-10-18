@@ -24,23 +24,26 @@ export const DRAFT_LABEL = {
 
 /**
  * The body as it goes into the Outbox: trimmed, with the source reference, the type's mock line
- * and the AI footer. `source` is a short text such as "ICE 618: source version 2 (OPS-05), 07:28".
+ * and the AI footer. `source` is a short text such as "ICE 618: source v2 (OPS-05); figures from
+ * the sync engine at 07:28". The lines are always the code's: lines in the body that imitate them
+ * (a model-written "Source reference:", mock line or footer) are removed first.
  */
 export function finalizeDraft(type, body, source = "") {
-  let out = String(body || "").trim().slice(0, MAX_BODY);
-  if (source && !/Source reference:/i.test(out)) out = `${out}\n\nSource reference: ${source}`;
+  const imitations = [/^\s*Source reference:/i, /Requires human approval before publishing/i, /^\s*Prepared with the Timetable Translator/i,
+    ...Object.values(MOCK_LINES).map((m) => new RegExp(`^\\s*${m.split(";")[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i"))];
+  let out = String(body || "").split("\n").filter((l) => !imitations.some((re) => re.test(l))).join("\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, MAX_BODY);
+  if (source) out = `${out}\n\nSource reference: ${source}`;
   const mock = MOCK_LINES[type];
-  if (mock && !out.includes(mock.split(";")[0])) out = `${out}\n\n${mock}`;
-  if (!out.includes("Requires human approval before publishing")) out = `${out}\n\n${DRAFT_FOOTER}`;
-  return out;
+  if (mock) out = `${out}\n\n${mock}`;
+  return `${out}\n\n${DRAFT_FOOTER}`;
 }
 
-/** "ICE 618: source v2 (OPS-05); ICE 1022: source v2 (OPS-03); checked against the source at 07:28". */
+/** "ICE 618: source v2 (OPS-05); ICE 1022: source v2 (OPS-03); figures from the sync engine at 07:28". */
 export function sourceReference(res) {
   if (!res?.trains?.length) return "";
   const parts = res.trains.map((t) => {
     const changes = (res.contradictions || []).find((c) => c.train_id === t.train_id)?.source_changes || [];
     return `${t.number}: source v${t.source_version}${changes.length ? ` (${changes.join(", ")})` : ""}`;
   });
-  return `${parts.join("; ")}; every fact checked against the source at ${res.now_label || res.snapshot_time || ""}`.trim();
+  return `${parts.join("; ")}; figures from the sync engine at ${res.now_label || res.snapshot_time || ""}`.trim();
 }

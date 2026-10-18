@@ -160,7 +160,7 @@ if (wanted("sim")) {
     [checks.finding?.kk === "affected" && checks.finding?.flag === "affected" && /^Platform/.test(checks.finding?.pill || "") && checks.finding?.chip === "Verified against the source" && checks.finding?.pax === "312",
       `the mirror shows the verified finding (${JSON.stringify(checks.finding)})`],
     [RING.test(checks.flagRing || ""), `a flagged source row shows the focus ring (${checks.flagRing})`],
-    [checks.payoff?.pax === "90" && /was 312/.test(checks.payoff?.paxSub || "") && /in sync after 8 min with option A/.test(checks.payoff?.firstSub || "") && checks.payoff?.pill === "resolved",
+    [checks.payoff?.pax === "7" && /was 312/.test(checks.payoff?.paxSub || "") && /^info \+2 min, in sync after 8 min$/.test(checks.payoff?.firstSub || "") && checks.payoff?.pill === "resolved",
       `the approval's payoff on the tiles and the mirror (${JSON.stringify(checks.payoff)})`],
     [checks.drafts > 0, "approval must produce drafts"],
     [checks.statusEnd === "Done" && checks.startLabel === "New run", "run ends Done"],

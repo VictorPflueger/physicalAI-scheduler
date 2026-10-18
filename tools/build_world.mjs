@@ -45,7 +45,7 @@ const track = (n, o = {}) => [String(n), { length_m: 405, a_end: "S", stop_offse
 const tracks = (...list) => Object.fromEntries(list.map((t) => (Array.isArray(t) ? t : track(t))));
 
 const POINTS = [
-  P("KK", "Köln Hbf", 4, 30, tracks(2, 3, 4, 5, 6, track(7, { stop_offset: 1, note: "Train stops one sector further north than on track 5." }), 9, 10, 11), { hub: true }),
+  P("KK", "Köln Hbf", 4, 30, tracks(2, 3, 4, 5, 6, track(7, { stop_offset: 1, note: "Trains stop one sector further south (towards sector A) than on track 5." }), 9, 10, 11), { hub: true }),
   P("KKDZ", "Köln Messe/Deutz", 12, 30, tracks(1, 2, 4, 5, 7, 8, 9, 10)),
   P("KKM", "Köln-Mülheim", 20, 30, tracks(1, 2, track(3, { length_m: 215, note: "Platform 215 m: shorter than an ICE double unit." }), 4)),
   P("KLMI", "Leverkusen Mitte", 29, 30, tracks(1, 2, 3, 4)),
@@ -117,7 +117,7 @@ const TRIPS = [
   { id: "T-516", number: "ICE 516", category: "ICE", direction: "N", from: "Köln Hbf", to: "Berlin Hbf", route: ICE_MAIN_N, start: "08:12",
     stops: { KK: { track: "4" }, KD: { dwell: 1.8, track: "16" }, EDG: { dwell: 1.6, track: "5" }, EE: { dwell: 1.8, track: "2" }, EBO: { dwell: 1.4, track: "3" }, EDO: { track: "16" } } },
   { id: "T-612", number: "ICE 612", category: "ICE", direction: "N", from: "Köln Hbf", to: "Hamburg-Altona", route: ICE_MAIN_N, start: "08:42",
-    stops: { KK: { track: "5" }, KD: { dwell: 1.8, track: "16" }, EDG: { dwell: 1.6, track: "5" }, EE: { dwell: 1.8, track: "2" }, EBO: { dwell: 1.4, track: "3" }, EDO: { track: "16" } } },
+    stops: { KK: { track: "4" }, KD: { dwell: 1.8, track: "16" }, EDG: { dwell: 1.6, track: "5" }, EE: { dwell: 1.8, track: "2" }, EBO: { dwell: 1.4, track: "3" }, EDO: { track: "16" } } },
   // -- southbound ICE on the main line
   { id: "T-1027", number: "ICE 1027", category: "ICE", direction: "S", from: "Berlin Hbf", to: "Köln Hbf", route: ICE_MAIN_S, start: "07:36",
     stops: { EDO: { track: "11" }, EBO: { dwell: 1.4, track: "4" }, EE: { dwell: 1.8, track: "4" }, EDG: { dwell: 1.6, track: "4" }, KD: { dwell: 1.8, track: "17" }, KKM: { dwell: 1.8, track: "3", kind: "ops", reason: "Betriebshalt: Abwarten der Einfahrt Köln Hbf (Hohenzollernbrücke)" }, KK: { track: "3" } } },
@@ -144,13 +144,13 @@ const TRIPS = [
     stops: { EDO: { track: "6" }, EWIT: { dwell: 0.8, track: "2" }, EHG: { dwell: 1.0, track: "5" }, KWO: { dwell: 0.8, track: "2" }, KW: { dwell: 1.0, track: "4" }, KD: { track: "5" } } },
   { id: "T-10428", number: "RE 10428", line: "RE 4", category: "RE", direction: "N", from: "Aachen Hbf", to: "Dortmund Hbf", route: ["KD", "KW", "KWO", "EHG", "EWIT", "EDO"], start: "09:45",
     stops: { KD: { track: "5" }, KW: { dwell: 1.0, track: "1" }, KWO: { dwell: 0.8, track: "1" }, EHG: { dwell: 1.0, track: "4" }, EWIT: { dwell: 0.8, track: "1" }, EDO: { track: "6" } } },
-  // -- RB 48 westbound from Wuppertal (Wuppertal-Oberbarmen is cut off this morning)
+  // -- RB 48 westbound from Wuppertal Hbf (this morning's trips start there; Wuppertal-Oberbarmen has no service)
   ...["07:51", "08:51", "09:51", "10:51"].map((start, i) => ({
-    id: `T-RB48-${i + 1}`, number: `RB ${30471 + 2 * i}`, line: "RB 48", category: "RE", direction: "S", from: "Wuppertal-Oberbarmen", to: "Bonn-Mehlem", route: ["KW", "KSO", "KKM", "KKDZ", "KK"], start, external_after: true,
+    id: `T-RB48-${i + 1}`, number: `RB ${30471 + 2 * i}`, line: "RB 48", category: "RE", direction: "S", from: "Wuppertal Hbf", to: "Bonn-Mehlem", route: ["KW", "KSO", "KKM", "KKDZ", "KK"], start, external_after: true,
     stops: { KW: { track: "2" }, KSO: { dwell: 0.8, track: "1" }, KKM: { dwell: 0.8, track: "2" }, KKDZ: { dwell: 0.8, track: "2" }, KK: { track: "10" } }
   })),
-  // -- RE 7 westbound (Wuppertal – Köln), runs west of the cut
-  { id: "T-10721", number: "RE 10721", line: "RE 7", category: "RE", direction: "S", from: "Hamm (Westf) Hbf", to: "Krefeld Hbf", route: ["KW", "KSO", "KKM", "KKDZ", "KK"], start: "08:21", origin_cut_by: "OPS-03",
+  // -- RE 7 westbound (Wuppertal – Köln): this morning's trips start in Wuppertal Hbf, west of the cut
+  { id: "T-10721", number: "RE 10721", line: "RE 7", category: "RE", direction: "S", from: "Wuppertal Hbf", to: "Krefeld Hbf", route: ["KW", "KSO", "KKM", "KKDZ", "KK"], start: "08:21",
     stops: { KW: { track: "1" }, KSO: { dwell: 0.8, track: "2" }, KKM: { dwell: 0.8, track: "2" }, KKDZ: { dwell: 0.8, track: "2" }, KK: { track: "9" } } },
   { id: "T-10723", number: "RE 10723", line: "RE 7", category: "RE", direction: "S", from: "Hamm (Westf) Hbf", to: "Krefeld Hbf", route: ["KW", "KSO", "KKM", "KKDZ", "KK"], start: "09:21",
     stops: { KW: { track: "1" }, KSO: { dwell: 0.8, track: "2" }, KKM: { dwell: 0.8, track: "2" }, KKDZ: { dwell: 0.8, track: "2" }, KK: { track: "9" } } },
@@ -316,7 +316,7 @@ const CHANGES = [
   },
   {
     id: "OPS-02", at: T("06:50"), source: "Baubetriebsplanung (Fplo-Stelle)", kind: "fplo", trains: ["T-612", "T-10109"],
-    text: "Fplo Nr. 1187: Langsamfahrstelle Bochum Hbf – Dortmund Hbf, 70 km/h (Oberbauarbeiten). Mehrfahrzeit +4,0 Min ab Bochum Hbf für die Züge 612 und 10109. Gültig heute 08:00 – 14:00.",
+    text: "Fplo Nr. 1187: Langsamfahrstelle Bochum Hbf – Dortmund Hbf, 70 km/h (Oberbauarbeiten), eingerichtet 06:30. Fahrplananpassung gültig heute 08:00 – 14:00: Mehrfahrzeit +4,0 Min ab Bochum Hbf für die Züge 612 und 10109.",
     ops: [{ train: "T-612", op: "shift_after", point: "EBO", minutes: 4 }, { train: "T-10109", op: "shift_after", point: "EBO", minutes: 4 }]
   },
   {
@@ -370,10 +370,10 @@ const PUBLISHED = {
 };
 
 const CAUSES = {
-  short_notice: { title: "Short-notice change", text: "Changes released less than 30 minutes before departure are not published automatically; they wait for a manual publication.", auto_fix_at: null },
-  added_stop: { title: "Rejected by the plausibility check", text: "The customer-timetable generation rejected the update at 07:10 because the extra stops at Essen Hbf and Düsseldorf Hbf are not in the train's list of commercial stops.", auto_fix_at: null, needs_manual_release: true },
+  short_notice: { title: "Short-notice change", text: "Changes entered less than 30 minutes before departure are not published by the cycle: someone has to re-publish the train.", auto_fix_at: null },
+  added_stop: { title: "Rejected by the plausibility check", text: "The customer-timetable generation rejected the update at 07:10 because the extra stops at Essen Hbf and Düsseldorf Hbf are not in the train's list of commercial stops. A rejected update must be checked and released by hand before it can be published.", auto_fix_at: null, needs_manual_release: true },
   ops_stop_mapping: { title: "Conversion rule fault", text: "Since the timetable change the conversion loses the operational-stop flag on stops of 1.5 minutes or more, so a Betriebshalt is published as a passenger stop.", auto_fix_at: null },
-  planner_queue: { title: "Journey-planner import queued", text: "Station displays take the dispatch feed directly; the journey planner imports in the half-hourly cycle, and this change missed the 07:30 import.", auto_fix_at: CYCLE_NEXT },
+  planner_queue: { title: "Journey-planner import queued", text: "Station displays take the dispatch feed directly; the journey planner imports in the half-hourly cycle at :00 and :30, which closes 15 minutes before. This change came at 07:17, after the 07:30 cycle had closed, so it goes with the 08:00 import.", auto_fix_at: CYCLE_NEXT },
   announcement_feed: { title: "On-board announcements on the old run", text: "The train's automatic announcements were loaded at departure from Hamburg with the planned run to Köln Hbf.", auto_fix_at: null },
   coach_feed: { title: "Coach order is a separate feed", text: "The coach order shown in the app and on the platform coach-position displays comes from the vehicle plan of 05:30 and is not refreshed when a set is turned.", auto_fix_at: null },
   fplo_daily: { title: "Construction order after the daily run", text: "Fplo orders are processed in the daily generation at 05:30; this one was released at 06:50, and the half-hourly cycle processes dispatch changes only.", auto_fix_at: null }
@@ -382,7 +382,7 @@ const CAUSES = {
 // ---- the physical layer ----------------------------------------------------------------------------------
 const OBS = [
   { id: "PHY-01", at: T("07:12"), kind: "point_failure", source: "Weichendiagnose, ESTW Köln Hbf", point: "KK", trains: [], supports: ["OPS-04", "OPS-05"],
-    text: "Weiche 32: Endlage nicht erreicht, Antrieb gestört. Fahrstraßen über W 32 (Gleise 5 und 6, Ausfahrt Richtung Köln Messe/Deutz) gesperrt.",
+    text: "Weiche 32: nach der Ausfahrt von Zug 614 Endlage nicht erreicht, Antrieb gestört, Entstörung offen. Fahrstraßen über W 32 (Gleise 5 und 6, Ein- und Ausfahrt Richtung Köln Messe/Deutz) gesperrt.",
     values: { switch: "W 32", tracks_blocked: ["5", "6"] } },
   { id: "PHY-02", at: T("07:24"), kind: "route_set", source: "Stellwerk Köln Hbf (ESTW), Fahrstraßenspeicher", point: "KK", trains: ["T-618"], supports: ["OPS-05"],
     text: "Fahrstraße für Zug 618 vorgemerkt: Ausfahrt aus Gleis 7 Richtung Köln Messe/Deutz.",
@@ -391,16 +391,16 @@ const OBS = [
     text: "Totalausfall der Stellwerksrechner, keine Fahrstraßen einstellbar. Abschnitt Hagen Hbf – Wuppertal Hbf ohne Zugfahrten.",
     values: { section: ["EHG", "KW"] } },
   { id: "PHY-04", at: T("07:26"), kind: "train_position", source: "Zugortung (GNSS und Gleisfreimeldung)", point: "EDO", trains: ["T-1022"], supports: ["OPS-03"],
-    text: "Zug 1022 bereitgestellt in Dortmund Hbf Gl. 11; Ausfahrstraße Richtung Bochum Hbf eingestellt.",
+    text: "Zug 1022 im Zulauf auf Dortmund Hbf Gl. 11 (aus Richtung Hamm); Ausfahrstraße Richtung Bochum Hbf vorgemerkt.",
     values: { track: "11", direction: "EBO" } },
   { id: "PHY-05", at: T("06:00"), kind: "door_log", source: "TCMS-Türprotokoll, Zug 1027 (letzte 5 Fahrten)", point: "KKM", trains: ["T-1027"], supports: ["T-1027:KKM:ops_stop"],
     text: "Halt in Köln-Mülheim an allen fünf Tagen ohne Türfreigabe, Haltezeit 1,6 bis 2,1 Minuten.",
     values: { door_release: false, runs: 5 } },
   { id: "PHY-06", at: T("00:00"), kind: "platform_length", source: "Infrastrukturregister (Bahnsteigdaten)", point: "KKM", trains: ["T-1027"], supports: ["T-1027:KKM:ops_stop"],
-    text: "Köln-Mülheim Gl. 3: nutzbare Bahnsteiglänge 215 m. Zug 1027 fährt als Doppeltraktion mit 346 m.",
-    values: { platform_m: 215, train_m: 346 } },
-  { id: "PHY-07", at: T("07:23"), kind: "train_position", source: "Zugortung (GNSS)", point: "EDO", trains: ["T-1025"], supports: ["OPS-04"],
-    text: "Zug 1025 läuft planmäßig von Hamburg zu; Disposition hat für Köln Messe/Deutz Gl. 1 die Kehre eingeplant.",
+    text: "Köln-Mülheim Gl. 3: nutzbare Bahnsteiglänge 215 m. Zug 1027 fährt in Doppeltraktion, 402 m.",
+    values: { platform_m: 215, train_m: 402 } },
+  { id: "PHY-07", at: T("07:23"), kind: "route_set", source: "Stellwerk Köln Messe/Deutz, Fahrstraßenspeicher", point: "KKDZ", trains: ["T-1025"], supports: ["OPS-04"],
+    text: "Zug 1025: Einfahrstraße nach Gl. 1 vorgemerkt, Zugende mit Fahrtrichtungswechsel eingetragen; keine Fahrstraße Richtung Köln Hbf.",
     values: { turn_at: "KKDZ", track: "1" } },
   { id: "PHY-08", at: T("06:58"), kind: "consist_reading", source: "RFID-Wagenerfassung, Ausfahrt Bw Köln-Deutzerfeld", point: "KKDZ", trains: ["T-516"], supports: ["OPS-01"],
     text: "Zug 516 erfasst mit Wagen 27 an der Spitze und Wagen 21 am Schluss (Reihenfolge 27 – 21).",
@@ -439,9 +439,16 @@ const CHANNELS = {
 
 const PUBLICATION = {
   cycle_min: 30,
+  // The half-hourly cycle runs at :00 and :30 and closes 15 minutes before: at 07:28 the next cycle
+  // that can still take a change is 08:00.
+  cycle_closes_min: 15,
   next_cycle: CYCLE_NEXT,
   daily_run: T("05:30"),
-  timings_min: { republish: 6, display_lag: 2, manual_release: 12, message: { app_push: 2, displays: 3, announcements: 3, planner: 4 }, override: 2, staff: 5, hold_decision: 3 },
+  // The journey planner is read when passengers plan; every other channel reaches them in real time
+  // (app push, displays, announcements, staff, coach-position displays): a correction informs its
+  // full share if it is in place at least this many minutes before the last moment to act.
+  realtime_min: 5,
+  timings_min: { republish: 6, display_lag: 2, manual_release: 12, message: { app_push: 2, displays: 3, announcements: 3, planner: 4 }, override: 2, staff: 5 },
   effort_min: { republish: 3, manual_release: 6, message_per_channel: 2, override_per_value: 2, override_cleanup_per_value: 2, staff: 4, hold_request: 3 },
   windows_min: { platform: [20, 2], coach_order: [15, 1], stop_not_served: [40, 5], stop_missing: [30, 3], terminus: [40, 3], time: [30, 3], connection: [30, 3] },
   note: "Timings, reach and effort are assumptions for the demonstration (DATA_SOURCES.md §4), not measured values of any railway."

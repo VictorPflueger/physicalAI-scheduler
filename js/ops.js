@@ -8,7 +8,7 @@
 
 import {
   DATA_CHANNELS, sourceState, publishedInfo, currentVersion, changesOf, findTrain, findPoint, pointName,
-  tenthLabel, minuteLabel, nowLabel, minutesFromNow
+  tenthLabel, minuteLabel, nowLabel, minutesFromNow, runLabel
 } from "./world.js";
 import { customerView, findJourneys } from "./sync.js";
 import { appToday } from "./clock.js";
@@ -45,7 +45,7 @@ export function opsOverview(model) {
     .map(({ t, st, firstT, lastT }) => ({
       id: t.id, number: t.number, line: t.line, category: t.category,
       from: t.from, to: t.to,
-      corridor_run: `${pointName(model, st.rows[0].point)} ${minuteLabel(firstT)} → ${pointName(model, st.rows[st.rows.length - 1].point)} ${minuteLabel(lastT)}`,
+      corridor_run: runLabel(model, t, st.rows),
       source_version: currentVersion(model, t.id),
       changes: changesOf(model, t.id).map((c) => c.id),
       ...(t.created_by ? { created_by: t.created_by } : {})

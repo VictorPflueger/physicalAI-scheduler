@@ -9,8 +9,8 @@
 //   - drafts: only the kinds of action the approved option contains;
 //   - the management summary's outcome follows the human decision.
 
-import { FactSet, collectFacts, unknownFacts, baseFacts } from "./facts.js";
-import { changesOf, findTrain } from "./world.js";
+import { FactSet, collectFacts, collectFactsBy, unknownFacts, baseFacts, extractFacts } from "./facts.js";
+import { changesOf, findTrain, minuteLabel } from "./world.js";
 
 // ---- evidence --------------------------------------------------------------------------------------
 
@@ -124,19 +124,43 @@ export function verifiedAlertError(model, alert, log) {
 
 /**
  * The facts a run's tools returned, kept apart by origin, so each kind of text can quote only what
- * it may: world-model facts (source, published view, physical layer, passengers, alternatives) and
- * engine results (from the source, partial or what-if).
+ * it may: world-model facts by the train they are about (source, published view, physical layer,
+ * passengers, alternatives), facts about no train, and engine results (from the source, partial or
+ * what-if). A text may quote a world-model fact only for a train it is about: the trains its tool
+ * call names (the alert's trains, the trains the options were costed on) and the trains it names
+ * itself (a line name such as "RE 57" counts for every train of that line).
  */
 export class FactLedger {
   constructor(model) {
-    this.facts = model ? baseFacts(model) : new FactSet();
+    this.model = model || null;
+    this.facts = model ? baseFacts(model) : new FactSet(); // the base facts and facts about no train
+    this.byTrain = new Map();  // train id → FactSet
     this.engine = [];          // { res, basis, set }
-    this.optionsSource = null; // the engine result the options were costed on
+    this.optionsSource = null; // the engine entry the options were costed on
   }
-  addFacts(result) { collectFacts(result, this.facts); }
+  /** The trains a result object is about: train_id, train_ids, or a train number. */
+  trainsOf(o) {
+    const m = this.model;
+    if (!m || !o) return null;
+    const ids = [];
+    if (typeof o.train_id === "string" && m.trains.has(o.train_id)) ids.push(o.train_id);
+    if (Array.isArray(o.train_ids)) for (const x of o.train_ids) if (m.trains.has(x)) ids.push(x);
+    if (!ids.length && typeof o.number === "string") { const t = findTrain(m, o.number); if (t) ids.push(t.id); }
+    if (!ids.length && typeof o.train === "string") { const t = findTrain(m, o.train); if (t) ids.push(t.id); }
+    return ids.length ? ids : null;
+  }
+  setOf(id) {
+    if (!this.byTrain.has(id)) this.byTrain.set(id, new FactSet());
+    return this.byTrain.get(id);
+  }
+  addFacts(result) {
+    collectFactsBy(result, (o) => this.trainsOf(o), (ctx) => (ctx ? ctx.map((id) => this.setOf(id)) : [this.facts]));
+  }
   clone() {
     const c = new FactLedger();
+    c.model = this.model;
     c.facts = new FactSet().merge(this.facts);
+    for (const [id, set] of this.byTrain) c.byTrain.set(id, new FactSet().merge(set));
     c.engine = this.engine.slice();
     c.optionsSource = this.optionsSource;
     return c;
@@ -150,23 +174,123 @@ export class FactLedger {
     this.optionsSource = this.engine.find((e) => e.res === res) || this.addEngine(res);
   }
   /**
-   * narration and alert_what_if: anything a tool returned; alert_verified and report: facts and
-   * every engine result that is not a what-if; options and draft: facts and the result the options
-   * were costed on.
+   * The engine results a text may quote. narration and alert_what_if: every result; alert_verified
+   * and report: every result that is not a what-if; options and draft: the result the options were
+   * costed on.
    */
-  scope(kind) {
-    const all = this.engine.map((e) => e.set);
-    const notWhatIf = this.engine.filter((e) => e.basis !== "what_if").map((e) => e.set);
+  engineEntries(kind) {
+    const notWhatIf = this.engine.filter((e) => e.basis !== "what_if");
     switch (kind) {
-      case "narration": case "alert_what_if": return [this.facts, ...all];
-      case "alert_verified": case "report": return [this.facts, ...notWhatIf];
-      case "options": case "draft": return [this.facts, ...(this.optionsSource ? [this.optionsSource.set] : notWhatIf.slice(-1))];
-      default: return [this.facts];
+      case "narration": case "alert_what_if": return this.engine;
+      case "alert_verified": case "report": return notWhatIf;
+      case "options": case "draft": return this.optionsSource ? [this.optionsSource] : notWhatIf.slice(-1);
+      default: return [];
     }
   }
-  unknown(text, kind) {
-    return [...new Map(unknownFacts(text, this.scope(kind)).map((f) => [`${f.kind}:${f.raw}`, f])).values()];
+  /** The trains a text is about: the trains of its scope and the trains (or lines) it names. */
+  trainsFor(text, scopeTrains = []) {
+    const ids = new Set((scopeTrains || []).map((r) => (this.model ? findTrain(this.model, r)?.id : null) || r));
+    if (!this.model) return ids;
+    for (const f of extractFacts(text)) {
+      if (f.kind !== "train") continue;
+      const t = findTrain(this.model, f.value);
+      if (t) ids.add(t.id);
+      for (const x of this.model.trains.values()) if (x.line && x.line.replace(/\s+/, " ") === f.value) ids.add(x.id);
+    }
+    return ids;
   }
+  /** The known-fact sets for a text (trains: a Set of train ids, or null for every train). */
+  scope(kind, trains = null) {
+    const own = trains === null ? [...this.byTrain.values()] : [...trains].map((id) => this.byTrain.get(id)).filter(Boolean);
+    return [this.facts, ...own, ...this.engineEntries(kind).map((e) => e.set)];
+  }
+  /**
+   * Facts written in `text` that it may not quote. scopeTrains: the trains of the tool call (an
+   * array), or null for no train restriction; narration and what-if alerts are never restricted.
+   */
+  unknown(text, kind, scopeTrains = null) {
+    const free = kind === "narration" || kind === "alert_what_if" || scopeTrains === null;
+    const trains = free ? null : this.trainsFor(text, scopeTrains);
+    return [...new Map(unknownFacts(text, this.scope(kind, trains)).map((f) => [`${f.kind}:${f.raw}`, f])).values()];
+  }
+  /**
+   * Outdated values named without the source's value: a platform, a time or coach sectors that the
+   * channels publish and the source no longer has, for a train the text is about, written without
+   * the value the source has instead ("Gleis 5" alone, where "Gleis 7, not Gleis 5" is right).
+   * Returns [{ raw, train, station, what, old, source }].
+   */
+  outdated(text, kind, scopeTrains = []) {
+    if (!["alert_verified", "options", "draft", "report"].includes(kind)) return [];
+    const trains = this.trainsFor(text, scopeTrains || []);
+    const facts = extractFacts(text);
+    const find = (k, v) => facts.find((f) => f.kind === k && String(f.value) === String(v));
+    // The same value can belong to another train the text names: "08:51" is ICE 1022's old arrival
+    // and also the departure of the RB that replaces it. Such a value is that train's fact.
+    const entries = this.engineEntries(kind);
+    const legs = entries.flatMap((e) => (e.res.alternatives || []).flatMap((a) => a.legs || []));
+    const otherTrainHas = (k, v, exceptId) => {
+      for (const id of trains) if (id !== exceptId && this.byTrain.get(id)?.has(k, v)) return true;
+      if (k === "time") return legs.some((l) => l.train_id !== exceptId && (l.dep_label === v || l.arr_label === v));
+      if (k === "platform") return legs.some((l) => l.train_id !== exceptId && (String(l.platform) === v || String(l.arr_platform) === v));
+      return false;
+    };
+    const out = [];
+    const seen = new Set();
+    for (const e of entries) {
+      for (const c of e.res.contradictions || []) {
+        if (!trains.has(c.train_id)) continue;
+        for (const p of outdatedPairs(c)) {
+          const key = `${c.id}:${p.kind}:${p.old}`;
+          const hit = find(p.kind, p.old);
+          if (seen.has(key) || !hit || p.source.some((v) => find(p.kind, v)) || otherTrainHas(p.kind, p.old, c.train_id)) continue;
+          seen.add(key);
+          out.push({ raw: hit.raw, train: c.number, station: c.station, what: p.what, old: p.old, source: p.source[0] });
+        }
+      }
+    }
+    return out;
+  }
+}
+
+/** The published (old) and source values of one contradiction, by fact kind. */
+export function outdatedPairs(c) {
+  const out = [];
+  if (c.type === "platform") out.push({ kind: "platform", old: String(c.published_value), source: [String(c.expected_value)], what: "platform" });
+  if (c.type === "time") {
+    const pv = c.published_value || {};
+    const ev = c.expected_value || {};
+    for (const [k, what] of [["arr", "arrival"], ["dep", "departure"]]) {
+      if (pv[k] === null || pv[k] === undefined || ev[k] === null || ev[k] === undefined || pv[k] === ev[k]) continue;
+      out.push({ kind: "time", old: minuteLabel(pv[k]), source: [minuteLabel(ev[k])], what });
+    }
+  }
+  if (c.type === "coach_order") {
+    const pv = c.published_value || {};
+    const ev = c.expected_value || {};
+    if (pv.first && pv.first !== ev.first) out.push({ kind: "sector", old: pv.first, source: [ev.first], what: "first-class sectors" });
+    if (pv.restaurant && pv.restaurant !== ev.restaurant) out.push({ kind: "sector", old: pv.restaurant, source: [ev.restaurant], what: "restaurant sector" });
+  }
+  return out;
+}
+
+// ---- the mirror and the options --------------------------------------------------------------------
+
+/**
+ * What the agent may mark on the mirror. Green ("re-publication approved") and amber on a
+ * contradiction ("informed, data behind") follow a human decision, and the mirror sets them by
+ * itself when an option is approved; the agent marks contradictions affected or neutral, and
+ * trains or points it is checking at_risk. Returns an error message, or null.
+ */
+export function markError({ state, contradictionIds = [] }) {
+  if (state === "resolved") return "Only a human decision marks a contradiction resolved: when an option with a re-publication is approved, the mirror shows it by itself. Mark affected, neutral, or at_risk for a train or point you are checking.";
+  if (state === "at_risk" && contradictionIds.length) return "On a contradiction, at_risk means passengers are informed while the data is still behind, which only an approved option makes true. Mark contradictions affected or neutral; use at_risk for a train or point you are checking.";
+  return null;
+}
+
+/** Options follow a verified finding: a verified alert for at least one of the trains they are costed on. */
+export function optionsEvidenceError({ verifiedTrains, trainIds }) {
+  if ((trainIds || []).some((id) => verifiedTrains.has(id))) return null;
+  return "Options follow a verified finding. Raise a verified alert (ui_report_alert) for these trains first: the source record, the published view and a physical observation behind it. If the physical layer cannot confirm it, say so and stop at a what-if alert.";
 }
 
 // ---- drafts and the summary ------------------------------------------------------------------------

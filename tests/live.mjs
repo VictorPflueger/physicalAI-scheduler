@@ -113,14 +113,14 @@ const mirrorRow = (page, side, point) => page.evaluate(([s, p]) => document.quer
 const PLATFORM = REF["SC-PLATFORM"];
 const SEED = SCEN.find((s) => s.id === "SC-PLATFORM").seed;
 const OPTIONS_618 = [
-  { variant_id: "V1", title: "Re-publish ICE 618 from the source", description: "Release source version 2 to every channel and push the platform change to app, displays and announcements.", residual_risk: "Passengers already heading for platform 5 rely on the announcement." },
-  { variant_id: "V2", title: "Messages and platform staff, data later", description: "Push the change to app, displays and announcements and send staff to platform 5; the data stays as it is.", residual_risk: "Planner and coach order keep the old platform and sectors." },
+  { variant_id: "V1", title: "Re-publish ICE 618 from the source", description: "Release source version 2 to every channel and push the platform change to app, displays and announcements.", residual_risk: "Passengers already at platform 5 rely on the announcement to reach platform 7." },
+  { variant_id: "V2", title: "Messages and platform staff, data later", description: "Push the change to app, displays and announcements, staff at platform 5 sending people to platform 7; data stays.", residual_risk: "Planner and coach order keep the old platform and sectors." },
   { variant_id: "V3", title: "Override displays and announcements by hand", description: "Set Gleis 7 by hand on the station displays and the announcements, and push an app message.", residual_risk: "Hand-kept values become a second truth; the planner stays wrong." }
 ];
 const SOURCES = [{ title: "Operations log OPS-05 (Fahrdienstleiter Köln Hbf)" }, { title: "Weichendiagnose, ESTW Köln Hbf" }];
 const MESSAGE_618 = "App push (DE): ICE 618 nach Hamburg-Altona, Abfahrt 07:42, fährt heute von Gleis 7 statt Gleis 5.\nApp push (EN): ICE 618 to Hamburg-Altona, departing 07:42, leaves from platform 7 today instead of platform 5.\n\nDisplay (DE): ICE 618 heute Gleis 7\nDisplay (EN): ICE 618 today platform 7\n\nAnnouncement (DE): Gleisänderung: ICE 618 nach Hamburg-Altona, Abfahrt 07:42, fährt heute von Gleis 7.\nAnnouncement (EN): Platform change: ICE 618 to Hamburg-Altona, departing 07:42, leaves from platform 7 today.";
 const ORDER_618 = "Please re-publish ICE 618 from source version 2 (OPS-05) to the journey planner, the station displays, the announcements and the coach order. The channels were generated at 05:30; the short-notice rule held the change back.";
-const REPORT_618 = "## ICE 618: passenger-information decision\n\n**What we found.** The source moved ICE 618 (07:42 to Hamburg-Altona) from platform 5 to platform 7 at 07:21 (OPS-05); every channel still shows platform 5, generated at 05:30. The point diagnostics confirm the failure.\n\n**If we do nothing.** 312 passengers act on wrong information, the first in 14 minutes.\n\n**Decision.** Option A approved: re-publish ICE 618 from the source, with a message on the app, the displays and the announcements.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | 312 | 90 |\n| Back in sync with the source | never | after 8 min |\n\n**Actions.** One draft approved, one rejected; nothing was published.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.";
+const REPORT_618 = "## ICE 618: passenger-information decision\n\n**What we found.** The source moved ICE 618 (07:42 to Hamburg-Altona) from platform 5 to platform 7 at 07:21 (OPS-05); every channel still shows platform 5, generated at 05:30. The point diagnostics confirm the failure.\n\n**If we do nothing.** 312 passengers act on wrong information, the first in 14 minutes.\n\n**Decision.** Option A approved: re-publish ICE 618 from the source, with a message on the app, the displays and the announcements.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | 312 | 7 |\n| Back in sync with the source | never | after 8 min |\n\n**Actions.** One draft approved, one rejected; nothing was published.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.";
 
 // ---- case: full ICE 618 run ----------------------------------------------------------------------------
 if (run("full")) {
@@ -181,8 +181,8 @@ if (run("full")) {
       check(r[2]?.json?.ok === true && r[2]?.json?.basis === "partial" && r[2]?.json?.baseline?.misinformed_pax === 8, `first estimate: partial, 8 passengers (got ${String(r[2]?.raw).slice(0, 160)})`);
     } },
     { usage: usage({ output_tokens: 900 }), stop: "tool_use", blocks: [
-      { type: "text", text: "Recommendation: option A. It leaves 90 passengers misinformed instead of 312 and brings every channel back in sync after 8 minutes, with no hand-kept value." },
-      { type: "tool_use", id: "toolu_09", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5 until someone publishes by hand; 312 passengers would act on it.", options: OPTIONS_618 } }
+      { type: "text", text: "Recommendation: option A. It leaves 7 passengers misinformed instead of 312 and brings every channel back in sync after 8 minutes, with no hand-kept value." },
+      { type: "tool_use", id: "toolu_09", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5, not platform 7, until someone publishes by hand; 312 passengers would act on it.", options: OPTIONS_618 } }
     ], expect: (req, { check }) => {
       const r = lastResults(req)[0]?.json;
       check(r?.ok === true && r?.basis === "source" && r?.variants?.length === 3, "sim_sync with three variants on the full scope from the source");
@@ -195,7 +195,7 @@ if (run("full")) {
     { usage: usage({ output_tokens: 16000 }), stop: "max_tokens", cut: 1, discard: true, blocks: [
       { type: "text", text: "Option A approved. Drafting the passenger message." },
       { type: "tool_use", id: "toolu_11x", name: "ui_draft_action", input: { type: "passenger_message", recipient: "Passenger information desk", subject: "ICE 618: platform 7", body: "App push (DE): …" } }
-    ], expect: (req, { check }) => { const r = lastResults(req)[0]?.json; check(r?.decision === "approved" && r?.option_id === "V1" && r?.figures?.still_misinformed === 90 && r?.figures?.back_in_sync_min === 8, `approval returned as tool result (got ${JSON.stringify(r).slice(0, 200)})`); } },
+    ], expect: (req, { check }) => { const r = lastResults(req)[0]?.json; check(r?.decision === "approved" && r?.option_id === "V1" && r?.figures?.still_misinformed === 7 && r?.figures?.back_in_sync_min === 8, `approval returned as tool result (got ${JSON.stringify(r).slice(0, 200)})`); } },
     { usage: usage(), stop: "tool_use", blocks: [
       { type: "text", text: "Option A approved. I draft the passenger message and the re-publication order; each waits for your approval in the Outbox." },
       { type: "tool_use", id: "toolu_11", name: "ui_draft_action", input: { type: "passenger_message", recipient: "Passenger information desk", subject: "ICE 618 today from platform 7", body: MESSAGE_618.replace(/07:42/g, "07:44") } },
@@ -374,7 +374,7 @@ if (run("guards")) {
       { type: "text", text: "Not confirmed: the physical layer has not been read, so I raise it as a what-if and cost it on the journey planner." },
       { type: "tool_use", id: "toolu_q5", name: "ui_report_alert", input: { title: "ICE 618 may leave from platform 7 (what-if)", severity: "medium", basis: "what_if", summary: "If the operations log is right, every channel shows the wrong platform.", train_ids: ["ICE 618"] } },
       { type: "tool_use", id: "toolu_q6", name: "sim_sync", input: { ...PLATFORM.finding, channels: ["planner"] } },
-      { type: "tool_use", id: "toolu_q7", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5.", options: OPTIONS_618 } }
+      { type: "tool_use", id: "toolu_q7", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5, not platform 7.", options: OPTIONS_618 } }
     ], expect: (req, { check }) => {
       const r = lastResults(req);
       check(r[0]?.isError && /two distinct sources/.test(r[0]?.json?.error || ""), `a verified alert with one source is refused (got ${String(r[0]?.raw).slice(0, 200)})`);
@@ -382,7 +382,7 @@ if (run("guards")) {
     } },
     { usage: usage(), stop: "tool_use", blocks: [
       { type: "tool_use", id: "toolu_q8", name: "sim_sync", input: { ...PLATFORM.finding, what_if: { changes: [{ train: "ICE 618", op: "set_track", point: "KK", track: "9" }] } } },
-      { type: "tool_use", id: "toolu_q9", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5.", options: OPTIONS_618 } }
+      { type: "tool_use", id: "toolu_q9", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5, not platform 7.", options: OPTIONS_618 } }
     ], expect: (req, { check }) => {
       const r = lastResults(req);
       check(!r[0]?.isError && r[0]?.json?.ok === true, "the what-if alert is accepted");
@@ -391,8 +391,9 @@ if (run("guards")) {
     } },
     { usage: usage(), stop: "tool_use", blocks: [
       { type: "tool_use", id: "toolu_q10", name: "phys_observe", input: { point: "KK" } },
+      { type: "tool_use", id: "toolu_q10b", name: "ui_report_alert", input: { title: "ICE 618 leaves from platform 7; every channel says platform 5", severity: "high", basis: "verified", summary: "The source moved ICE 618 (07:42 to Hamburg-Altona) to Gleis 7 at 07:21.", sources: SOURCES, train_ids: ["ICE 618"] } },
       { type: "tool_use", id: "toolu_q11", name: "sim_sync", input: PLATFORM.finding },
-      { type: "tool_use", id: "toolu_q12", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5.", options: OPTIONS_618 } }
+      { type: "tool_use", id: "toolu_q12", name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5, not platform 7.", options: OPTIONS_618 } }
     ], expect: (req, { check }) => {
       const r = lastResults(req);
       check(r[0]?.json?.basis === "what_if", "the what-if result is labelled");
@@ -401,8 +402,12 @@ if (run("guards")) {
     { usage: usage(), stop: "tool_use", blocks: [
       { type: "text", text: "Option C rejected. I recalculate before you decide." },
       { type: "tool_use", id: "toolu_q13", name: "sim_sync", input: PLATFORM.finding },
-      { type: "tool_use", id: "toolu_q14", name: "ui_propose_options", input: { recommended_variant_id: "V2", baseline_description: "Every channel keeps showing platform 5.", options: OPTIONS_618 } }
-    ], expect: (req, { check }) => { const r = lastResults(req); check(r[2]?.json?.decision === "rejected" && r[2]?.json?.option_id === "V3", "first decision: option C rejected"); } },
+      { type: "tool_use", id: "toolu_q14", name: "ui_propose_options", input: { recommended_variant_id: "V2", baseline_description: "Every channel keeps showing platform 5, not platform 7.", options: OPTIONS_618 } }
+    ], expect: (req, { check }) => {
+      const r = lastResults(req);
+      check(r[1]?.json?.ok === true, `the verified alert with the physical layer is accepted (got ${String(r[1]?.raw).slice(0, 160)})`);
+      check(r[3]?.json?.decision === "rejected" && r[3]?.json?.option_id === "V3", "first decision: option C rejected");
+    } },
     { usage: usage(), stop: "tool_use", blocks: [
       { type: "tool_use", id: "toolu_q15", name: "ui_draft_action", input: { type: "override_request", recipient: "Station management Köln Hbf", subject: "Override: ICE 618 platform 7", body: "Set Gleis 7 by hand on the displays." } }
     ], expect: (req, { check }) => {
@@ -457,12 +462,19 @@ if (run("guards")) {
 if (run("race")) {
   const script = [
     { usage: usage(), stop: "tool_use", blocks: [
+      { type: "text", text: "Check: the operations log, what the channels publish and the physical layer at Köln Hbf." },
+      { type: "tool_use", id: "toolu_r0a", name: "ops_list_changes", input: { train: "ICE 618" } },
+      { type: "tool_use", id: "toolu_r0b", name: "kfp_get_published", input: { train: "ICE 618" } },
+      { type: "tool_use", id: "toolu_r0c", name: "phys_observe", input: { point: "KK" } }
+    ] },
+    { usage: usage(), stop: "tool_use", blocks: [
       { type: "text", text: "Finding: ICE 618 leaves from Gleis 7 according to the source; I quantify every channel." },
+      { type: "tool_use", id: "toolu_r0d", name: "ui_report_alert", input: { title: "ICE 618 leaves from platform 7; every channel says platform 5", severity: "high", basis: "verified", summary: "The source moved ICE 618 to Gleis 7 at 07:21 (OPS-05).", sources: SOURCES, train_ids: ["ICE 618"] } },
       { type: "tool_use", id: "toolu_r1", name: "sim_sync", input: PLATFORM.finding }
     ] },
     { usage: usage(), stop: "tool_use", blocks: [
       { type: "text", text: "Recommendation: option B." },
-      { type: "tool_use", id: "toolu_r2", name: "ui_propose_options", input: { recommended_variant_id: "V2", baseline_description: "Every channel keeps showing platform 5.", options: OPTIONS_618 } }
+      { type: "tool_use", id: "toolu_r2", name: "ui_propose_options", input: { recommended_variant_id: "V2", baseline_description: "Every channel keeps showing platform 5, not platform 7.", options: OPTIONS_618 } }
     ] },
     { usage: usage(), stop: "tool_use", delayMs: 1500, blocks: [
       { type: "text", text: "Option A rejected. Options B and C remain open." },
@@ -475,7 +487,7 @@ if (run("race")) {
       { type: "tool_use", id: "toolu_r6", name: "ui_await_approvals", input: {} }
     ], expect: (req, { check }) => { const r = lastResults(req)[0]?.json; check(r?.decision === "approved" && r?.option_id === "V2", "queued approval consumed by ui_await_decision"); } },
     { usage: usage(), stop: "tool_use", blocks: [
-      { type: "tool_use", id: "toolu_r7", name: "ui_final_report", input: { markdown: "## ICE 618: passenger-information decision\n\n**Decision.** Option B approved: messages on the app, the displays and the announcements, and staff at platform 5.\n\n_Live agent run. Figures from the engine._" } }
+      { type: "tool_use", id: "toolu_r7", name: "ui_final_report", input: { markdown: "## ICE 618: passenger-information decision\n\n**Decision.** Option B approved: messages on the app, the displays and the announcements, and staff at platform 5 sending passengers to platform 7.\n\n_Live agent run. Figures from the engine._" } }
     ] },
     { usage: usage({ output_tokens: 20 }), stop: "end_turn", blocks: [{ type: "text", text: "Done." }] }
   ];
@@ -600,8 +612,8 @@ const EXPECT = {
     [c.optionTotals?.length === 4, "three options plus do nothing"],
     [c.kpiBefore === "affected|312", `passengers-at-risk tile shows the verified figure (got ${c.kpiBefore})`],
     [c.mirrorBefore === "ICE 618 · Köln Hbf → Hamburg-Altona|Verified against the source|affected|affected", `the mirror shows the verified finding on ICE 618 (got ${c.mirrorBefore})`],
-    [/^at-risk\|90\|left with option A \(was 312\)$/.test(c.payoffPax || ""), `the first tile shows the payoff of the approved option (got ${c.payoffPax})`],
-    [/^resolved\|14 min\|right information from \+2 min, in sync after 8 min with option A$/.test(c.payoffFirst || ""), `the second tile shows the payoff (got ${c.payoffFirst})`],
+    [/^at-risk\|7\|left with option A \(was 312\)$/.test(c.payoffPax || ""), `the first tile shows the payoff of the approved option (got ${c.payoffPax})`],
+    [/^resolved\|14 min\|info \+2 min, in sync after 8 min$/.test(c.payoffFirst || ""), `the second tile shows the payoff (got ${c.payoffFirst})`],
     [c.mirrorAfter === "resolved", `the approved re-publication turns the row green (got ${c.mirrorAfter})`],
     [/Guardrail: The draft was refused\. These timetable facts match nothing this text may quote: 07:44/.test(c.factRefusal || "") && c.draftTypedTime === false, `the typed time was refused in view and never reached the Outbox (got ${c.factRefusal})`],
     [/1 guardrail refusal/.test(c.runFacts || ""), `run facts count the refusal (got ${c.runFacts})`],

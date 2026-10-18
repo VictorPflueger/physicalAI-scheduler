@@ -23,7 +23,7 @@ import { syncVars, unresolvedKeys, fillTemplate } from "./sim_vars.js";
 import { OPS_TOOLS } from "./ops.js";
 import { findTrain, findPoint } from "./world.js";
 import { DRAFT_TYPES } from "./drafts.js";
-import { EvidenceLog, FactLedger, verifiedAlertError, draftError, reportOutcome } from "./guards.js";
+import { EvidenceLog, FactLedger, verifiedAlertError, draftError, reportOutcome, markError, optionsEvidenceError } from "./guards.js";
 
 const KINDS = ["state", "say", "think", "tool", "recordedTool", "sync", "alert", "mirror", "options", "awaitOption", "draft", "awaitActions", "report", "notice", "end"];
 const STATES = new Set(["scanning", "diagnosing", "verifying", "simulating", "options", "awaiting_approval", "executing"]);
@@ -66,7 +66,7 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
 
   walk(def.steps, {
     vars: {}, results: {}, lastWithVariants: null, options: null, optionsSource: null,
-    ledger: new FactLedger(model), evidence: new EvidenceLog(), approved: null, variant: null
+    ledger: new FactLedger(model), evidence: new EvidenceLog(), approved: null, variant: null, verifiedTrains: new Set()
   }, "main", true);
 
   if (!recorded) {
@@ -90,7 +90,7 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
       const kind = kinds[0];
       // Placeholders must resolve, and the filled text may only quote facts its scope allows.
       // audited: false for a recorded run's own narration (the live guardrails do not audit it).
-      const text = (t, label, scope, { audited = true } = {}) => {
+      const text = (t, label, scope, { audited = true, trains = null, outdated = true } = {}) => {
         if (t === undefined || t === null) return;
         const u = unresolvedKeys(st.vars, t);
         if (u.length) { errors.push(`${where} ${label}: {{${u[0]}}} does not resolve here`); return; }
@@ -99,12 +99,14 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
         // A recorded run's own narration is the model's and is not audited; authored narration is:
         // a script must not type a fact no tool returned.
         if (recorded && !audited) return;
-        const bad = st.ledger.unknown(filled, scope);
+        const bad = st.ledger.unknown(filled, scope, trains);
         if (bad.length) {
           errors.push(recorded
-            ? `${where} ${label}: ${bad[0].raw} matches no fact today's tools return (the recording is stale: record the run again)`
-            : `${where} ${label}: ${bad[0].raw} is typed, not taken from a tool result it may quote (use a placeholder)`);
+            ? `${where} ${label}: ${bad[0].raw} matches no fact today's tools return for these trains (the recording is stale: record the run again)`
+            : `${where} ${label}: ${bad[0].raw} is typed, not taken from a tool result it may quote for these trains (use a placeholder)`);
         }
+        const old = outdated ? st.ledger.outdated(filled, scope, trains || []) : [];
+        if (old.length) errors.push(`${where} ${label}: names ${old[0].raw}, the outdated ${old[0].what} of ${old[0].train} at ${old[0].station}, without the source's ${old[0].source}`);
       };
       switch (kind) {
         case "state":
@@ -156,8 +158,11 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
             const e = verifiedAlertError(model, a, st.evidence);
             if (e) errors.push(`${where}: the verified alert would be refused in live mode: ${e}`);
           }
-          text(a.title, "alert title", whatIf ? "alert_what_if" : "alert_verified");
-          text(a.summary, "alert summary", whatIf ? "alert_what_if" : "alert_verified");
+          const alertTrains = (a.train_ids || []).map((id) => findTrain(model, id)?.id).filter(Boolean);
+          text(a.title, "alert title", whatIf ? "alert_what_if" : "alert_verified", { trains: alertTrains });
+          text(a.summary, "alert summary", whatIf ? "alert_what_if" : "alert_verified", { trains: alertTrains });
+          for (const [k, src] of (a.sources || []).entries()) text(src.title, `alert source ${k + 1}`, whatIf ? "alert_what_if" : "alert_verified", { trains: alertTrains });
+          if (!whatIf) for (const id of alertTrains) st.verifiedTrains.add(id);
           if (main && !stats.alerts) stats.evidenceAtAlert = st.evidence.kinds();
           if (main) stats.alerts += 1;
           break;
@@ -169,6 +174,8 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
           for (const id of m.point_ids || []) if (!findPoint(model, id)) errors.push(`${where}: unknown point ${id}`);
           if (m.focus !== undefined && !findTrain(model, m.focus)) errors.push(`${where}: the mirror can only focus a train, not "${m.focus}"`);
           if (m.view !== undefined && !["train", "monitor"].includes(m.view)) errors.push(`${where}: unknown mirror view "${m.view}"`);
+          const markRefused = markError({ state: m.state, contradictionIds: m.contradiction_ids || [] });
+          if (markRefused) errors.push(`${where}: the mirror mark would be refused in live mode: ${markRefused}`);
           break;
         }
         case "options": {
@@ -184,15 +191,19 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
           for (const id of ids) if (!res.variants.some((v) => v.variant_id === id)) errors.push(`${where}: option ${id} is not a costed variant`);
           st.ledger.setOptionsSource(res);
           st.optionsSource = res;
+          const unverified = optionsEvidenceError({ verifiedTrains: st.verifiedTrains, trainIds: res.train_ids });
+          if (unverified) errors.push(`${where}: the options would be refused in live mode: ${unverified}`);
           for (const id of ids) {
             const t = o.texts?.[id];
             if (!t?.title || !t?.description) errors.push(`${where}: option ${id} needs a title and a description`);
-            text(t?.title, `option ${id} title`, "options");
-            text(t?.description, `option ${id} description`, "options");
-            text(t?.residual_risk, `option ${id} residual risk`, "options");
+            // Fields one by one for unknown facts; the card as a whole for outdated values (as in live mode).
+            text(t?.title, `option ${id} title`, "options", { trains: res.train_ids, outdated: false });
+            text(t?.description, `option ${id} description`, "options", { trains: res.train_ids, outdated: false });
+            text(t?.residual_risk, `option ${id} residual risk`, "options", { trains: res.train_ids, outdated: false });
+            text([t?.title, t?.description, t?.residual_risk].filter(Boolean).join("\n"), `option ${id} card`, "options", { trains: res.train_ids });
           }
           if (!ids.includes(o.recommended)) errors.push(`${where}: recommended "${o.recommended}" is not one of ${ids.join(", ")}`);
-          text(o.baseline_description, "baseline description", "options");
+          text(o.baseline_description, "baseline description", "options", { trains: res.train_ids });
           st.options = ids;
           break;
         }
@@ -213,7 +224,7 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
             const res = st.optionsSource;
             const sub = {
               vars, results: { ...st.results }, lastWithVariants: st.lastWithVariants, options: st.options, optionsSource: res,
-              ledger: st.ledger.clone(), evidence: st.evidence.clone(),
+              ledger: st.ledger.clone(), evidence: st.evidence.clone(), verifiedTrains: new Set(st.verifiedTrains),
               approved: id === "default" ? null : { id, letter: id === "baseline" ? null : letter },
               variant: res?.variants?.find((v) => v.variant_id === id) || null
             };
@@ -230,8 +241,10 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
           if (!d.recipient || !d.subject) errors.push(`${where}: draft needs a recipient and a subject`);
           const e = draftError({ type: d.type, approved: st.approved, variant: st.variant });
           if (e) errors.push(`${where}: the draft would be refused in live mode: ${e}`);
-          text(d.subject, "draft subject", "draft");
-          text(d.body, "draft body", "draft");
+          const draftTrains = st.optionsSource?.train_ids || [];
+          text(d.subject, "draft subject", "draft", { trains: draftTrains });
+          text(d.recipient, "draft recipient", "draft", { trains: draftTrains });
+          text(d.body, "draft body", "draft", { trains: draftTrains });
           stats.drafts += 1;
           break;
         }
@@ -239,7 +252,7 @@ export function checkSimRun(model, scenarioId, def, rc = {}) {
           Object.assign(st.vars, { "actions.total": "n", "actions.approved": "n", "actions.rejected": "n" });
           break;
         case "report": {
-          text(step.report, "report", "report");
+          text(step.report, "report", "report", { trains: st.optionsSource?.train_ids || [...st.verifiedTrains] });
           if (/Live agent run/i.test(step.report)) errors.push(`${where}: a simulated report must not call itself a live run`);
           if (!/Simulated run|Recorded live run/i.test(step.report)) errors.push(`${where}: report lacks the simulation marker`);
           const r = reportOutcome({ requested: step.outcome, optionsShown: !!st.options, approved: st.approved });

@@ -57,12 +57,12 @@ const GOLDEN = {
   "SC-PLATFORM": {
     hypothesis: { basis: "partial", contradictions: 1, misinformed: 8, affected: 312, first: 14 },
     finding: { contradictions: 2, misinformed: 312, affected: 312, first: 14, ids: ["T-618/KK/coach_order", "T-618/KK/platform"] },
-    variants: { V1: [90, 222, 2, 8, 0, 0, 9, 0], V2: [98, 214, 2, null, 2, 0, 10, 0], V3: [131, 181, 2, null, 2, 2, 10, 0] }
+    variants: { V1: [7, 305, 2, 8, 0, 0, 9, 0], V2: [15, 297, 2, null, 2, 0, 10, 0], V3: [72, 240, 2, null, 2, 2, 10, 0] }
   },
   "SC-DIVERSION": {
-    hypothesis: { basis: "partial", contradictions: 5, misinformed: 595, affected: 595, first: 19 },
-    finding: { contradictions: 10, misinformed: 1122, affected: 1122, first: 19, ids: ["T-1022/EHG/stop_not_served", "T-1022/KK/time", "T-1022/KW/stop_not_served", "T-1022/EE/stop_missing", "T-1022/KD/stop_missing", "T-1026/EHG/stop_not_served", "T-1026/KK/time", "T-1026/KW/stop_not_served", "T-1026/EE/stop_missing", "T-1026/KD/stop_missing"] },
-    variants: { V1: [124, 998, 2, 20, 0, 0, 21, 0], V2: [124, 998, 2, null, 10, 0, 12, 0], V3: [211, 911, 2, null, 10, 20, 82, 0] }
+    hypothesis: { basis: "partial", contradictions: 5, misinformed: 454, affected: 454, first: 19 },
+    finding: { contradictions: 10, misinformed: 856, affected: 856, first: 19, ids: ["T-1022/EHG/stop_not_served", "T-1022/KK/time", "T-1022/KW/stop_not_served", "T-1022/EE/stop_missing", "T-1022/KD/stop_missing", "T-1026/EHG/stop_not_served", "T-1026/KK/time", "T-1026/KW/stop_not_served", "T-1026/EE/stop_missing", "T-1026/KD/stop_missing"] },
+    variants: { V1: [7, 849, 2, 20, 0, 0, 21, 0], V2: [7, 849, 2, null, 10, 0, 12, 0], V3: [40, 816, 2, null, 10, 20, 82, 0] }
   },
   "SC-OPSSTOP": {
     hypothesis: { basis: "partial", contradictions: 1, misinformed: 6, affected: 58, first: 57 },
@@ -118,6 +118,12 @@ const GOLDEN = {
   assert.deepEqual(fk, { "T-612/EDO/time": 118, "T-612/EDO/connection": 46, "T-10109/EDO/time": 116 });
   assert.deepEqual(f.trains.map((t) => [t.train_id, t.pax]), [["T-612", 118], ["T-10109", 116]]);
   assert.equal(f.baseline.affected_pax, 118 + 116);
+  // Passengers who planned to board at a stop the diverted train no longer serves are not on board
+  // for Köln: of the 247 travelling to Köln Hbf on ICE 1022, the share boarding at Dortmund (186 of
+  // the 356 boarding before Köln on the published run) is on board; Hagen and Wuppertal count there.
+  const dv = simulateSync(model, structuredClone(REF["SC-DIVERSION"].finding));
+  assert.equal(dv.contradictions.find((c) => c.id === "T-1022/KK/time").pax, Math.round(247 * 186 / 356));
+  assert.equal(dv.trains.find((t) => t.train_id === "T-1022").pax, 74 + 52 + 96 + Math.round(81 * 186 / 260) + Math.round(247 * 186 / 356) + 18 + 27);
   // Nobody is misinformed twice: neither the baseline nor any variant leaves more passengers
   // misinformed than rely on a wrong fact.
   for (const sc of SCENARIOS) {
@@ -132,7 +138,7 @@ const GOLDEN = {
   // The connection hold: RE 57 waits for ICE 612 if dispatch agrees; who keeps it and who is delayed.
   const f = simulateSync(model, structuredClone(REF["SC-FPLO"].finding));
   const v1 = f.variants.find((v) => v.variant_id === "V1");
-  assert.deepEqual({ wait: v1.hold.wait_min, delayed: v1.hold.delayed_pax, held: v1.held_pax, train: v1.hold.train }, { wait: 3, delayed: 144, held: 46, train: "RE 57" });
+  assert.deepEqual({ wait: v1.hold.wait_min, delayed: v1.hold.delayed_pax, held: v1.held_pax, train: v1.hold.train }, { wait: 3, delayed: 98, held: 46, train: "RE 57" });
   assert.match(v1.hold.note, /Dispatch decides/);
   const cx = f.contradictions.find((c) => c.type === "connection");
   assert.equal(cx.expected, "arrival 10:00 leaves 1 min for a 4-minute transfer: connection lost");
@@ -142,7 +148,7 @@ const GOLDEN = {
   assert.equal(journeyText(alt("T-1022/KW/stop_not_served", "boarding"), "en"), "RB 30473 from Wuppertal Hbf 08:51, platform 2, arriving Köln Hbf 09:27");
   assert.equal(journeyText(alt("T-1022/EHG/stop_not_served", "boarding"), "de"), "Bus SEV 3 ab Hagen Hbf 08:15 (Ersatzbus), an Wuppertal Hbf 08:54; weiter mit RE 10723 ab Wuppertal Hbf 09:21, Gleis 1, an Köln Hbf 09:57");
   assert.ok(d.alternatives.every((a) => !a.none), "no stranded group without an alternative");
-  ok("connection hold (RE 57 waits 3 min: 46 keep it, 144 delayed) and alternatives for every stranded group");
+  ok("connection hold (RE 57 waits 3 min: 46 keep it, the 98 others boarding it are delayed) and alternatives for every stranded group");
 }
 
 // ---- projection ------------------------------------------------------------------------------------------
@@ -233,9 +239,13 @@ const GOLDEN = {
   assert.deepEqual(kinds("a 4-minute transfer, 1,122 passengers, RE 57"), ["minutes:4", "pax:1122", "train:RE 57"]);
   assert.deepEqual(kinds("leaves at 07:44, not 07:42. Rejected at 07:10: extra stops"), ["time:07:44", "time:07:42", "time:07:10"], "a time before punctuation is a time");
   assert.deepEqual(kinds("passes 08:37.6, costs 12.345 and 3.5 %"), [], "tenths of a minute, thousands and percentages are not times");
-  // Tool results teach the ledger: a tenth-minute time stands for the minutes on either side of it.
-  const known = collectFacts({ rows: [{ arr: "09:02.8", track: "2" }], passengers: 247, minutes_to_first_event: 19 });
-  assert.ok(known.has("time", "09:02") && known.has("time", "09:03") && known.has("platform", "2") && known.has("pax", 247) && known.has("minutes", 19));
+  // Tool results teach the ledger: a tenth-minute time stands for the minute passengers are shown
+  // (an arrival rounded up, a departure down); in a record or remark, for the minutes on either side.
+  const known = collectFacts({ rows: [{ arr: "09:02.8", dep: "09:04.6", track: "2" }], remark: "since 07:12.4", passengers: 247, minutes_to_first_event: 19 });
+  assert.ok(known.has("time", "09:03") && !known.has("time", "09:02"), "an arrival is shown rounded up");
+  assert.ok(known.has("time", "09:04") && !known.has("time", "09:05"), "a departure is shown rounded down");
+  assert.ok(known.has("time", "07:12") && known.has("time", "07:13"), "a time in a record stands for both minutes");
+  assert.ok(known.has("platform", "2") && known.has("pax", 247) && known.has("minutes", 19));
   assert.deepEqual(unknownFacts("arrives 09:03 on platform 2, 247 passengers, in 19 minutes", known), []);
   assert.deepEqual(unknownFacts("arrives 09:05 on platform 4", known).map((f) => f.raw), ["09:05", "platform 4"]);
   ok("fact audit: English and German forms, tenth-minute times, unknown facts named");
@@ -310,7 +320,7 @@ const GOLDEN = {
   assert.match((await call("ui_report_alert", badAlert)).error, /07:44/);
   assert.equal((await call("ui_report_alert", badAlert)).ok, true);
   assert.equal(events.filter((e) => e.type === "alert").at(-1).payload.title, "ICE 618 leaves at 07:44 (unchecked)");
-  assert.ok(events.some((e) => e.type === "notice" && /alert quotes facts no tool returned \(07:44\)/.test(e.payload.text)));
+  assert.ok(events.some((e) => e.type === "notice" && /alert quotes facts no tool returned for these trains, or an outdated value without the source's \(07:44\)/.test(e.payload.text)));
   const good = await call("ui_report_alert", { title: "ICE 618 leaves from platform 7", severity: "high", summary: "The app shows platform 5 for the departure at 07:42.", train_ids: ["T-618"], sources: [{ title: "OPS-05" }, { title: "ESTW Köln Hbf" }] });
   assert.equal(good.ok, true);
   assert.ok(events.some((e) => e.type === "alert" && e.payload.evidence.length >= 3));
@@ -349,6 +359,62 @@ const GOLDEN = {
   assert.equal(rep.outcome, "response_decided");
   assert.match(events.find((e) => e.type === "report").payload.markdown, /Live agent run/);
   ok("tools: options only from a full-scope source result, stale decisions ignored, drafts per option and fact-checked, summary after the Outbox");
+}
+
+// ---- audit: facts by train, outdated values, sectors, marks, retries ------------------------------------------------
+{
+  const events = [];
+  const decisions = [];
+  const ctx = {
+    model, drafts: new Map(),
+    emit: (type, payload) => {
+      events.push({ type, payload });
+      if (type === "options") decisions.push({ payload: { option_id: "V1", decision: "approved", options_seq: payload.options_seq } });
+    },
+    waitUntil: async (test) => { const v = test(); if (!v) throw new Error("the test would wait for a human decision"); return v; },
+    takeOptionDecision: (pred) => { const i = decisions.findIndex(pred); return i >= 0 ? decisions.splice(i, 1)[0] : null; },
+    onPhase: () => {}
+  };
+  const box = createToolbox(ctx);
+  const call = async (name, input) => JSON.parse((await box.execute(name, input)).content);
+  for (const [n, i] of [["ops_list_changes", { train: "ICE 618" }], ["kfp_get_published", { train: "ICE 618" }], ["ops_get_timetable", { train: "ICE 618" }],
+    ["phys_observe", { point: "KK" }], ["ops_get_passengers", { train: "ICE 618" }], ["kfp_get_published", { train: "ICE 1022" }]]) await call(n, i);
+  await call("sim_sync", structuredClone(REF["SC-PLATFORM"].finding));
+  const alert = (title, summary = "OPS-05 at 07:21.") => call("ui_report_alert", { title, severity: "high", summary, train_ids: ["T-618"], sources: [{ title: "OPS-05" }, { title: "ESTW Köln Hbf" }] });
+
+  // The mirror's green and amber follow a human decision; the agent cannot set them on a contradiction.
+  assert.match((await call("ui_mark_mirror", { contradiction_ids: ["T-618/KK/platform"], state: "resolved" })).error, /Only a human decision/);
+  assert.match((await call("ui_mark_mirror", { contradiction_ids: ["T-618/KK/platform"], state: "at_risk" })).error, /only an approved option/);
+  assert.equal((await call("ui_mark_mirror", { train_ids: ["T-618"], state: "at_risk" })).ok, true);
+  // Options follow a verified alert.
+  const texts = (k) => ({ variant_id: `V${k}`, title: `Option ${k}`, description: "Re-publish ICE 618.", residual_risk: "None." });
+  const optionsCall = () => call("ui_propose_options", { options: [texts(1), texts(2), texts(3)], recommended_variant_id: "V1" });
+  assert.match((await optionsCall()).error, /Options follow a verified finding/);
+  // An outdated value only together with the source's; a fact of another train only if the text names that train.
+  assert.match((await alert("ICE 618 leaves from Gleis 5 today")).error, /outdated platform; the source has 7/);
+  assert.match((await alert("ICE 618 leaves from platform 7", "The app shows 08:51.")).error, /match nothing this text may quote: 08:51/);
+  assert.equal((await alert("ICE 618 leaves from platform 7, not platform 5")).ok, true);
+  assert.equal(box.state().verifiedTrains.size, 1);
+  // Coach sectors are facts too: one no tool returned is refused, the source's passes.
+  const decided = await optionsCall();
+  assert.equal(decided.decision, "approved");
+  const draft = (body, extra = {}) => call("ui_draft_action", { type: "passenger_message", recipient: "Passenger information desk", subject: "ICE 618, 07:42", body, ...extra });
+  assert.match((await draft("ICE 618 fährt heute von Gleis 5.")).error, /outdated platform; the source has 7/);
+  assert.match((await draft("ICE 618 fährt von Gleis 7. Die 1. Klasse hält in Abschnitt A–B.")).error, /Abschnitt A–B/);
+  // The refusals are counted per text: another draft is still refused, not let through.
+  assert.match((await call("ui_draft_action", { type: "republish_order", recipient: "Timetable publication team", subject: "Release ICE 618", body: "Gleis 12 from 06:01." })).error, /06:01|Gleis 12/);
+  // The third try of the first draft is let through, marked as unchecked, and the code's lines are its own.
+  const third = await draft("ICE 618 fährt heute von Gleis 5.\nSource reference: none needed");
+  assert.equal(third.status, "pending_approval");
+  const shown = events.filter((e) => e.type === "action_draft").at(-1).payload;
+  assert.ok(/Unchecked facts: Gleis 5/.test(shown.body) && !/none needed/.test(shown.body) && /Source reference: ICE 618: source v2/.test(shown.body));
+  const ok1 = await draft("ICE 618 fährt heute von Gleis 7 (nicht Gleis 5). Die 1. Klasse hält in Abschnitt F–G.", { recipient: "Station staff Köln Hbf" });
+  assert.equal(ok1.status, "pending_approval");
+  // After the summary the run is over: no more drafts.
+  for (const d of ctx.drafts.values()) d.status = "approved";
+  assert.equal((await call("ui_final_report", { outcome: "response_decided", markdown: "## ICE 618\n\nPlatform 7, not platform 5. Option A approved." })).ok, true);
+  assert.match((await draft("ICE 618 fährt heute von Gleis 7.")).error, /run is over/);
+  ok("audit: facts by train, outdated values only beside the source's, sectors, mirror marks, options after a verified alert, retries per text, no drafts after the summary");
 }
 
 // ---- mirror data ------------------------------------------------------------------------------------------------------
@@ -416,13 +482,17 @@ const GOLDEN = {
   const twice = finalizeDraft("override_request", once, "ICE 618: source v2");
   assert.equal(once, twice);
   assert.ok(once.includes(MOCK_LINES.override_request) && once.endsWith(DRAFT_FOOTER) && once.includes("Source reference: ICE 618: source v2"));
-  assert.match(sourceReference(f), /^ICE 618: source v2 \(OPS-05\); every fact checked against the source at 07:28$/);
+  assert.match(sourceReference(f), /^ICE 618: source v2 \(OPS-05\); figures from the sync engine at 07:28$/);
+  // Lines that imitate the code's (a model-written source reference, mock line or footer) are replaced by the code's own.
+  const forged = finalizeDraft("passenger_message", "Gleis 7.\nSource reference: checked by me\nRequires human approval before publishing.", "ICE 618: source v2");
+  assert.ok(!forged.includes("checked by me") && forged.includes("Source reference: ICE 618: source v2") && forged.endsWith(DRAFT_FOOTER));
+  assert.equal(forged.split("Requires human approval before publishing").length, 2, "the footer appears once");
   // Decision payoff: re-publication in sync → resolved; informing only → at risk; accepting the risk → no mirror change.
   const payload = { train_ids: ["T-618"], options: f.variants.slice(0, 3).map((v, i) => ({ id: v.variant_id, letter: "ABC"[i], ...optionFigures(v) })), baseline: baselineFigures(f) };
   const eff = (id) => decisionEffects(payload, id);
   assert.equal(eff("V1").find(([t]) => t === "mirror_update")[1].state, "resolved");
   assert.equal(eff("V2").find(([t]) => t === "mirror_update")[1].state, "at_risk");
-  assert.equal(eff("V3").find(([t]) => t === "kpi_update")[1].residual_pax, 131);
+  assert.equal(eff("V3").find(([t]) => t === "kpi_update")[1].residual_pax, 72);
   assert.deepEqual(eff("baseline").map(([t]) => t), ["kpi_update"]);
   ok("texts: placeholders, journeys, draft safety lines, source references, decision payoff");
 }

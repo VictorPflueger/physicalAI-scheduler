@@ -24,7 +24,7 @@ import { OPS_TOOLS } from "./ops.js";
 import { summarizeToolResult } from "./summaries.js";
 import { optionFigures, baselineFigures, decisionEffects, kpiFromResult } from "./payoff.js";
 import { finalizeDraft, sourceReference, DRAFT_TYPES } from "./drafts.js";
-import { EVIDENCE_KIND, isEvidence, EvidenceLog, FactLedger, verifiedAlertError, draftError, reportOutcome, draftsForVariant, distinctSources, OUTCOMES } from "./guards.js";
+import { EVIDENCE_KIND, isEvidence, EvidenceLog, FactLedger, verifiedAlertError, draftError, reportOutcome, draftsForVariant, distinctSources, OUTCOMES, markError, optionsEvidenceError } from "./guards.js";
 import { isKnownId, findTrain, findPoint, DATA_CHANNELS } from "./world.js";
 
 export { EVIDENCE_KIND, isEvidence, OUTCOMES };
@@ -270,7 +270,8 @@ export function createToolbox(ctx) {
     alertBasis: null,
     evidence: new EvidenceLog(),
     ledger: new FactLedger(ctx.model),
-    factRejections: { draft: 0, report: 0, options: 0, alert: 0 },
+    factRejections: new Map(), // per text (tool, draft type, recipient): refusals so far
+    verifiedTrains: new Set(),  // trains a verified alert was raised for
     reported: false,
     outcome: null
   };
@@ -339,19 +340,21 @@ export function createToolbox(ctx) {
     const scope = basis === "verified" ? "alert_verified" : "alert_what_if";
     let title = String(i.title || "Customer information contradicts the source").slice(0, 160);
     let summary = String(i.summary || "").slice(0, 600);
-    const audit = factCheck(`${title}\n${summary}`, "alert", scope, "ui_report_alert");
+    const sources = distinctSources(i.sources);
+    const trainIds = knownTrains(i.train_ids);
+    const sourceTitles = sources.slice(0, 6).map((s) => String(s.title || s.url).slice(0, 200));
+    const audit = factCheck([title, summary, ...sourceTitles].join("\n"), "alert", scope, "ui_report_alert", { trains: trainIds, key: `alert:${basis}` });
     if (audit.reject) return audit.reject;
     if (audit.flag) { title = mark(title, audit.bad); summary = mark(summary, audit.bad); }
     run.alertBasis = basis;
-    const sources = distinctSources(i.sources);
-    const trainIds = knownTrains(i.train_ids);
+    if (basis === "verified") for (const id of trainIds) run.verifiedTrains.add(id);
     const pointIds = (Array.isArray(i.point_ids) ? i.point_ids : []).map((p) => findPoint(ctx.model, p)?.id).filter(Boolean).slice(0, 20);
     const unknown = (Array.isArray(i.train_ids) ? i.train_ids : []).filter((r) => !findTrain(ctx.model, r));
     ctx.emit("alert", {
       title, basis,
       severity: ["critical", "high", "medium", "low"].includes(i.severity) ? i.severity : "high",
       summary,
-      sources: sources.slice(0, 6).map((s) => ({ title: String(s.title || s.url).slice(0, 200), url: safeHttpUrl(s.url) })),
+      sources: sources.slice(0, 6).map((s, k) => ({ title: audit.flag ? mark(sourceTitles[k], audit.bad) : sourceTitles[k], url: safeHttpUrl(s.url) })),
       evidence: run.evidence.describe(ctx.model),
       train_ids: trainIds, point_ids: pointIds
     });
@@ -361,6 +364,8 @@ export function createToolbox(ctx) {
   function markMirror(i) {
     const state = ["affected", "at_risk", "resolved", "neutral"].includes(i.state) ? i.state : "affected";
     const m = ctx.model;
+    const refused = markError({ state, contradictionIds: Array.isArray(i.contradiction_ids) ? i.contradiction_ids : [] });
+    if (refused) return { error: refused };
     const p = {
       train_ids: knownTrains(i.train_ids),
       point_ids: (Array.isArray(i.point_ids) ? i.point_ids : []).map((x) => findPoint(m, x)?.id).filter(Boolean).slice(0, 40),
@@ -399,6 +404,8 @@ export function createToolbox(ctx) {
       return { error: `Your latest sim_sync result is partial: it leaves out ${(src.left_out || ["part of the scope"]).join("; ")}. Options must rest on the full scope: call sim_sync again with every affected train and no channel or stop limit, then propose the options.` };
     }
     if (!src.contradictions.length) return { error: "The latest sim_sync result finds no contradiction: customer information matches the source. Report that with ui_final_report (outcome no_material_finding) instead of proposing options." };
+    const unverified = optionsEvidenceError({ verifiedTrains: run.verifiedTrains, trainIds: src.train_ids });
+    if (unverified) return { error: unverified };
     const seen = new Set();
     const options = [];
     for (const [k, o] of list.entries()) {
@@ -421,7 +428,8 @@ export function createToolbox(ctx) {
     // The texts on the cards may quote only the facts and the figures of this result.
     run.ledger.setOptionsSource(src);
     let baselineText = String(i.baseline_description || "");
-    const audit = factCheck([baselineText, ...options.flatMap((o) => [o.title, o.description, o.residual_risk])].join("\n"), "options", "options", "ui_propose_options");
+    // Each card is checked on its own: an outdated value on a card needs the source's value on that card.
+    const audit = factCheck([baselineText, ...options.map((o) => [o.title, o.description, o.residual_risk].join("\n"))], "options", "options", "ui_propose_options", { trains: src.train_ids, key: "options" });
     if (audit.reject) return audit.reject;
     if (audit.flag) {
       for (const o of options) { o.title = mark(o.title, audit.bad); o.description = mark(o.description, audit.bad); o.residual_risk = mark(o.residual_risk, audit.bad); }
@@ -492,6 +500,7 @@ export function createToolbox(ctx) {
 
   // -- drafts and approvals ----------------------------------------------------------------------------
   function draftAction(i) {
+    if (run.reported) return { error: "The management summary is published and the run is over: no more drafts." };
     const type = DRAFT_TYPES.includes(i.type) ? i.type : null;
     if (!type) return { error: `type must be ${DRAFT_TYPES.join(", ")}.` };
     const subject = String(i.subject || "").trim();
@@ -501,15 +510,16 @@ export function createToolbox(ctx) {
     const variant = approved && approved.id !== "baseline" ? run.optionsSource?.variants.find((v) => v.variant_id === approved.id) : null;
     const rule = draftError({ type, approved, variant });
     if (rule) return { error: rule };
+    const recipient = String(i.recipient || "").trim().slice(0, 160);
     const ref = sourceReference(run.optionsSource);
     let body = finalizeDraft(type, raw, ref);
-    const audit = factCheck(`${subject}\n${raw}`, "draft", "draft", "ui_draft_action");
+    const audit = factCheck(`${subject}\n${recipient}\n${raw}`, "draft", "draft", "ui_draft_action", { trains: run.optionsSource?.train_ids || [], key: `draft:${type}:${recipient.toLowerCase().slice(0, 60)}` });
     if (audit.reject) return audit.reject;
     if (audit.flag) body = finalizeDraft(type, `${raw}\n\nUnchecked facts: ${audit.flag}. Verify them against the source before approving.`, ref);
     const action_id = `act-${ctx.drafts.size + 1}`;
-    ctx.drafts.set(action_id, { status: "pending", subject, recipient: String(i.recipient || "").slice(0, 160), type });
+    ctx.drafts.set(action_id, { status: "pending", subject, recipient, type });
     ctx.onPhase("executing");
-    ctx.emit("action_draft", { action_id, type, recipient: String(i.recipient || "").slice(0, 160), subject: subject.slice(0, 200), body, status: "pending", ...(audit.flag ? { unchecked: audit.bad } : {}) });
+    ctx.emit("action_draft", { action_id, type, recipient: audit.flag ? mark(recipient, audit.bad) : recipient, subject: (audit.flag ? mark(subject, audit.bad) : subject).slice(0, 220), body, status: "pending", ...(audit.flag ? { unchecked: audit.bad } : {}) });
     return { action_id, status: "pending_approval", note: "Queued in the Outbox as a draft. Nothing is published or sent." };
   }
 
@@ -539,7 +549,7 @@ export function createToolbox(ctx) {
     if (outcome.error) return { error: outcome.error };
     let markdown = String(i.markdown || "").trim().slice(0, 19000);
     if (markdown.length < 40) return { error: "The report is empty. Write a short Markdown management summary." };
-    const audit = factCheck(markdown, "report", "report", "ui_final_report");
+    const audit = factCheck(markdown, "report", "report", "ui_final_report", { trains: run.optionsSource?.train_ids || [...run.verifiedTrains], key: "report" });
     if (audit.reject) return audit.reject;
     if (audit.flag) markdown = `${markdown}\n\n*Unchecked facts (no tool returned them): ${audit.flag}.*`;
     // Every live report states what it is, whatever the model wrote.
@@ -551,24 +561,36 @@ export function createToolbox(ctx) {
   }
 
   /**
-   * Fact audit for free text, by scope (js/guards.js): rejects up to FACT_RETRIES times with the facts
-   * to fix, then lets the text through with the unchecked facts named (drafts, report) or marked
-   * (alert, option cards), and says so in the console.
+   * Fact audit for free text, by scope (js/guards.js): a fact must be one a tool returned for a train
+   * the text is about, and an outdated value may only be named next to the source's value. Refuses
+   * a text up to FACT_RETRIES times (counted per text: the tool, and for a draft its type and
+   * recipient) with what to fix, then lets it through with the unchecked facts named (drafts,
+   * report) or marked (alert, option cards), and says so in the console.
    */
-  function factCheck(text, kind, scope, tool) {
-    const bad = run.ledger.unknown(text, scope);
-    if (!bad.length) return {};
-    const list = bad.slice(0, 6).map((f) => f.raw).join(", ");
-    if (run.factRejections[kind] < FACT_RETRIES) {
-      run.factRejections[kind] += 1;
+  function factCheck(text, kind, scope, tool, { trains = null, key = kind } = {}) {
+    // text: one text, or a list of texts checked one by one (the option cards).
+    const parts = (Array.isArray(text) ? text : [text]).filter((t) => t && String(t).trim());
+    const unknown = [...new Map(parts.flatMap((t) => run.ledger.unknown(t, scope, trains)).map((f) => [`${f.kind}:${f.raw}`, f])).values()];
+    const old = parts.flatMap((t) => run.ledger.outdated(t, scope, trains || []));
+    if (!unknown.length && !old.length) return {};
+    const listUnknown = unknown.slice(0, 6).map((f) => f.raw).join(", ");
+    const listOld = old.slice(0, 4).map((o) => `${o.raw} (${o.train}, ${o.station}: the channels' outdated ${o.what}; the source has ${o.source})`).join("; ");
+    const tries = run.factRejections.get(key) || 0;
+    if (tries < FACT_RETRIES) {
+      run.factRejections.set(key, tries + 1);
       const allowed = scope === "draft" || scope === "options"
-        ? "the source timetable, the published view, the physical layer, the passenger figures, the alternatives, and the sim_sync result the options rest on (never a what-if)"
-        : "what the world-model tools and sim_sync (not a what-if) returned";
-      return { reject: { error: `These timetable facts match nothing this text may quote: ${list}. The AI keeps no timetable of its own: use ${allowed}, written as they are (or leave the fact out), then call ${tool} again.` } };
+        ? "the source timetable, the published view, the physical layer, the passenger figures and the alternatives of the trains this text is about, and the sim_sync result the options rest on (never a what-if)"
+        : "what the world-model tools returned for the trains this text is about and what sim_sync returned (not a what-if)";
+      const parts = [];
+      if (unknown.length) parts.push(`These timetable facts match nothing this text may quote: ${listUnknown}. The AI keeps no timetable of its own: use ${allowed}, written as they are (or leave the fact out).`);
+      if (old.length) parts.push(`This text names an outdated value without the source's value: ${listOld}. Name the source value too (for example "platform 7, not platform 5") or leave the old one out.`);
+      return { reject: { error: `${parts.join(" ")} Then call ${tool} again.` } };
     }
+    const bad = [...unknown.map((f) => f.raw), ...old.map((o) => o.raw)];
+    const list = [...new Set(bad)].slice(0, 8).join(", ");
     const where = { draft: "draft", report: "summary", options: "option cards", alert: "alert" }[kind];
-    ctx.emit("notice", { level: "warn", text: `The ${where} quote${kind === "options" ? "" : "s"} facts no tool returned (${list}); they are marked as unchecked.` });
-    return { flag: list, bad: bad.map((f) => f.raw) };
+    ctx.emit("notice", { level: "warn", text: `The ${where} quote${kind === "options" ? "" : "s"} facts no tool returned for these trains, or an outdated value without the source's (${list}); they are marked as unchecked.` });
+    return { flag: list, bad: [...new Set(bad)] };
   }
 
   return {

@@ -4,7 +4,7 @@
 // tests can check them in Node.
 
 import {
-  DATA_CHANNELS, sourceState, publishedInfo, currentVersion, changesOf, pointName, tenthLabel, minuteLabel, minutesFromNow
+  DATA_CHANNELS, sourceState, publishedInfo, currentVersion, changesOf, pointName, tenthLabel, minuteLabel, minutesFromNow, runLabel
 } from "./world.js";
 import { customerView } from "./sync.js";
 
@@ -194,7 +194,7 @@ export function monitorTrains(model) {
     .sort((a, b) => a.firstT - b.firstT)
     .map(({ t, st, firstT, lastT }) => ({
       id: t.id, number: t.number, line: t.line, category: t.category,
-      run: `${pointName(model, st.rows[0].point)} ${minuteLabel(firstT)} → ${pointName(model, st.rows[st.rows.length - 1].point)} ${minuteLabel(lastT)}`,
+      run: runLabel(model, t, st.rows),
       first_min: minutesFromNow(model, firstT),
       source_version: st.version,
       changes: changesOf(model, t.id).map((c) => c.id),

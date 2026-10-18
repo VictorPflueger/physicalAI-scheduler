@@ -165,7 +165,7 @@ export function trainContradictions(model, trainId, { extra = [] } = {}) {
           published_value: "stop", expected_value: why,
           groups: [
             { kind: "boarding", pax: boardPax(t, r.point), event: r.dep ?? r.arr, at: r.point, what: `passengers boarding at ${r.station}` },
-            { kind: "onboard", pax: alightPax(t, r.point), ...onboardDecision(model, pub.rows, src.rows, r.point), what: `passengers for ${r.station}` }
+            { kind: "onboard", ...onboardGroup(model, t, pub.rows, src.rows, r.point), what: `passengers for ${r.station}` }
           ]
         }, channel, info);
         continue;
@@ -188,7 +188,7 @@ export function trainContradictions(model, trainId, { extra = [] } = {}) {
         if (dArr) partsE.push(`arr ${minuteLabel(e.arr)}`);
         if (dDep) partsE.push(`dep ${minuteLabel(e.dep)}`);
         const groups = [];
-        if (dArr) groups.push({ kind: "onboard", pax: alightPax(t, r.point), ...onboardDecision(model, pub.rows, src.rows, r.point), what: `passengers for ${r.station}` });
+        if (dArr) groups.push({ kind: "onboard", ...onboardGroup(model, t, pub.rows, src.rows, r.point), what: `passengers for ${r.station}` });
         if (dDep) groups.push({ kind: "boarding", pax: boardPax(t, r.point), event: Math.min(r.dep, e.dep), at: r.point, what: `passengers boarding at ${r.station}` });
         add(`${trainId}/${r.point}/time`, {
           train_id: trainId, point: r.point, type: "time",
@@ -299,6 +299,24 @@ function onboardDecision(model, pubRows, srcRows, point) {
   const last = common[common.length - 1] || before[0] || null;
   if (!last) return { event: model.now, at: point };
   return { event: last.dep, at: last.point };
+}
+
+/**
+ * The passengers travelling to `point` who are on board when they act: those who boarded at a stop
+ * the train still serves, up to the decision point. Passengers who planned to board at a stop the
+ * train no longer serves are not on board; they count where they wanted to board. The snapshot has
+ * counts per stop, not journeys, so the share is taken in proportion to the boardings.
+ */
+function onboardGroup(model, t, pubRows, srcRows, point) {
+  const d = onboardDecision(model, pubRows, srcRows, point);
+  const idx = pubRows.findIndex((r) => r.point === point);
+  const before = idx >= 0 ? pubRows.slice(0, idx) : pubRows;
+  const k = before.findIndex((r) => r.point === d.at);
+  const served = new Set(srcRows.filter((r) => VISIBLE.has(r.activity)).map((r) => r.point));
+  const all = before.reduce((sum, r) => sum + boardPax(t, r.point), 0);
+  const onBoard = k < 0 ? all : before.slice(0, k + 1).filter((r) => served.has(r.point)).reduce((sum, r) => sum + boardPax(t, r.point), 0);
+  const share = all ? onBoard / all : 1;
+  return { pax: Math.round(alightPax(t, point) * share), event: d.event, at: d.at };
 }
 
 function severity(minutes, pax) {
@@ -425,25 +443,34 @@ function groupAlternative(model, c, g) {
 
 const CH_FOR_TIMETABLE = ["planner", "displays", "announcements", "app_push", "staff"];
 const CH_FOR_COACH = ["coach", "announcements", "app_push", "staff"];
+// The journey planner is read when passengers plan. Every other channel reaches them in real time,
+// up to the last moment they can still act: the app push on the phone, the displays and
+// announcements at the station and on board, staff and crew, the coach-position displays.
+const PLANNED = new Set(["planner"]);
 
 /**
  * Expected number of passengers in a group who act on wrong information, given when each channel
- * shows them the right one (minutes from now; null: not within the horizon; negative: already). A
- * group decides evenly over its window before the event; a channel informs the share `reach` of the
- * group during the part of the window in which it is right.
+ * shows them the right one (minutes from now; null: not within the horizon; negative: already).
+ * Passengers plan evenly over the group's window [a, b] and can act on new information until b, the
+ * last moment before the event. The journey planner informs the share `reach` of those who plan
+ * after it is corrected; a real-time channel informs the share `reach` of everyone still to act if
+ * the correction is in place `realtime_min` minutes before b (proportionally less if later).
  */
 function groupMisinformed(model, group, times, windowMin) {
   const eventMin = (group.event - model.now) / 60;
   const [W, lead] = windowMin;
   const a = eventMin - W;
   const b = Math.max(a + 1, eventMin - lead);
+  const R = model.publication.realtime_min || 5;
   const channels = group.coach ? CH_FOR_COACH : CH_FOR_TIMETABLE;
   let notReached = 1;
   for (const ch of channels) {
     const t = times[ch];
     if (t === null || t === undefined) continue;
-    const from = Math.max(a, t);
-    const f = Math.max(0, b - from) / (b - a);
+    const since = Math.max(a, t);
+    const f = PLANNED.has(ch)
+      ? Math.max(0, b - since) / (b - a)
+      : Math.min(1, Math.max(0, b - since) / R);
     const r = model.channels[ch]?.reach?.[group.kind] ?? 0;
     notReached *= 1 - r * f;
   }
@@ -622,7 +649,10 @@ function costVariant(model, v, contradictions, baseline) {
     const toRow = sourceState(model, cx.to_train).rows.find((r) => r.point === cx.at);
     const needed = er ? Math.max(0, Math.round((er.arr + cx.min_transfer_min * 60 - customerDep(toRow.dep)) / 60)) : 0;
     const to = model.trains.get(cx.to_train);
-    hold = { connection_id: cx.id, train: to.number, wait_min: needed, delayed_pax: to.passengers?.[cx.at]?.board || 0, note: "If dispatch grants the wait. Dispatch decides; the request changes nothing by itself." };
+    // Those boarding the connecting train at the connection point include the passengers who change
+    // to it: the hold delays the others.
+    const boarding = to.passengers?.[cx.at]?.board || 0;
+    hold = { connection_id: cx.id, train: to.number, wait_min: needed, delayed_pax: Math.max(0, boarding - (cx.passengers || 0)), note: "If dispatch grants the wait. Dispatch decides; the request changes nothing by itself." };
   }
   return {
     variant_id: v.variant_id,
@@ -778,7 +808,8 @@ export function simulateSync(model, spec = {}) {
     first_event_label: first ? `${first.number}, ${first.first_event_where || pointName(model, first.first_event_point)} ${minuteLabel(first.first_event)}` : null,
     first_event_short: first ? `${first.number}, ${first.first_event_where || pointName(model, first.first_event_point)}` : null,
     time_to_sync_min: neverSync || !all.length ? (all.length ? null : 0) : round1(syncAt),
-    next_cycle_label: minuteLabel(model.publication.next_cycle)
+    next_cycle_label: minuteLabel(model.publication.next_cycle),
+    next_cycle_note: `The half-hourly cycle runs at :00 and :30 and closes ${model.publication.cycle_closes_min ?? 15} minutes before: a change entered now goes with the ${minuteLabel(model.publication.next_cycle)} cycle. Changes the cycle does not take (short notice, rejected updates, the coach order, construction orders) stay wrong until someone re-publishes.`
   };
 
   const costed = variants.map((v) => costVariant(model, v, all, baselinePer));

@@ -145,11 +145,18 @@ export function createKpis(container) {
         `left with ${p.option_label}${typeof before === "number" ? ` (was ${int(before)})` : ""}`);
     }
     if ("correct_from_min" in p) {
+      // Short enough for the tile at 1280 px; the tooltip has the full sentence.
       const parts = [];
-      if (p.correct_from_min !== null && p.correct_from_min !== undefined) parts.push(`right information from +${fmtMin(p.correct_from_min)}`);
-      parts.push(p.sync_min === null || p.sync_min === undefined ? "data not back in sync" : `in sync after ${fmtMin(p.sync_min)}`);
-      first.sub.textContent = `${parts.join(", ")} with ${p.option_label}`;
-      first.sub.title = `${lastLabel ? `${lastLabel}: ` : ""}${first.sub.textContent}`;
+      const long = [];
+      if (p.correct_from_min !== null && p.correct_from_min !== undefined) {
+        parts.push(`info +${fmtMin(p.correct_from_min)}`);
+        long.push(`right information from +${fmtMin(p.correct_from_min)}`);
+      }
+      const synced = p.sync_min !== null && p.sync_min !== undefined;
+      parts.push(synced ? `in sync after ${fmtMin(p.sync_min)}` : "data not in sync");
+      long.push(synced ? `in sync after ${fmtMin(p.sync_min)}` : "data not back in sync");
+      first.sub.textContent = parts.join(", ");
+      first.sub.title = `${lastLabel ? `${lastLabel}: ` : ""}${long.join(", ")} with ${p.option_label}`;
       first.el.dataset.tone = p.sync_min === null || p.sync_min === undefined ? "at-risk" : "resolved";
     }
   }

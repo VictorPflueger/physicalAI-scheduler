@@ -241,6 +241,17 @@ export function customerDep(sec) {
 }
 
 /** Minutes from the snapshot time to a time (negative: in the past), to a tenth. */
+/** "Köln Hbf 07:42 → Dortmund Hbf 08:56"; a trip with one corridor stop: "Dortmund Hbf 10:01 → Winterberg (Westf)". */
+export function runLabel(model, t, rows) {
+  // In the minutes passengers are shown: departures rounded down, arrivals up.
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  const firstT = first.dep !== null && first.dep !== undefined ? customerDep(first.dep) : customerArr(first.arr);
+  const lastT = last.arr !== null && last.arr !== undefined ? customerArr(last.arr) : customerDep(last.dep);
+  if (rows.length === 1 || first.point === last.point) return `${pointName(model, first.point)} ${minuteLabel(firstT)} → ${t.to}`;
+  return `${pointName(model, first.point)} ${minuteLabel(firstT)} → ${pointName(model, last.point)} ${minuteLabel(lastT)}`;
+}
+
 export function minutesFromNow(model, sec) {
   return Math.round(((sec - model.now) / 60) * 10) / 10;
 }

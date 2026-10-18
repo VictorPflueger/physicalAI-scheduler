@@ -22,10 +22,11 @@ const { base: BASE, close } = await serveStatic(ROOT, 8769);
 const browser = await launchBrowser();
 const REF = await loadRef();
 const OPTIONS_618 = [
-  { variant_id: "V1", title: "Re-publish ICE 618 from the source", description: "Release source version 2 to every channel and announce the platform change.", residual_risk: "Passengers already heading for platform 5 rely on the announcement." },
-  { variant_id: "V2", title: "Messages and platform staff, data later", description: "Messages on app, displays and announcements; staff at platform 5.", residual_risk: "Planner and coach order stay wrong." },
+  { variant_id: "V1", title: "Re-publish ICE 618 from the source", description: "Release source version 2 to every channel and announce the platform change.", residual_risk: "Passengers already heading for platform 5 rely on the announcement to reach platform 7." },
+  { variant_id: "V2", title: "Messages and platform staff, data later", description: "Messages on app, displays and announcements; staff at platform 5 send people to platform 7.", residual_risk: "Planner and coach order stay wrong." },
   { variant_id: "V3", title: "Override displays and announcements by hand", description: "Set Gleis 7 by hand on displays and announcements.", residual_risk: "A second, hand-kept truth." }
 ];
+const ALERT_SOURCES = [{ title: "Operations log OPS-05 (Fahrdienstleiter Köln Hbf)" }, { title: "Weichendiagnose, ESTW Köln Hbf" }];
 const MESSAGE_618 = "App push (DE): ICE 618 nach Hamburg-Altona, Abfahrt 07:42, fährt heute von Gleis 7 statt Gleis 5.\nApp push (EN): ICE 618 to Hamburg-Altona, departing 07:42, leaves from platform 7 today instead of platform 5.";
 const KEY = MOCK_KEY;
 const results = [];
@@ -400,14 +401,22 @@ if (run("abort")) {
 
     // L1: Live, abort while the options wait for a decision; then a fresh live run completes
     const ref = REF["SC-PLATFORM"];
+    // Options need a verified alert first: the source, the published view and the physical layer.
     const toOptions = (id) => [
       { usage: usage(), stop: "tool_use", blocks: [
+        { type: "text", text: "Check: the operations log, what the channels publish and the physical layer at Köln Hbf." },
+        { type: "tool_use", id: `toolu_${id}0a`, name: "ops_list_changes", input: { train: "ICE 618" } },
+        { type: "tool_use", id: `toolu_${id}0b`, name: "kfp_get_published", input: { train: "ICE 618" } },
+        { type: "tool_use", id: `toolu_${id}0c`, name: "phys_observe", input: { point: "KK" } }
+      ] },
+      { usage: usage(), stop: "tool_use", blocks: [
         { type: "text", text: "Finding: the source moves ICE 618 to Gleis 7; I quantify every channel." },
+        { type: "tool_use", id: `toolu_${id}0d`, name: "ui_report_alert", input: { title: "ICE 618 leaves from platform 7; every channel says platform 5", severity: "high", basis: "verified", summary: "The source moved ICE 618 to Gleis 7 at 07:21 (OPS-05).", sources: ALERT_SOURCES, train_ids: ["ICE 618"] } },
         { type: "tool_use", id: `toolu_${id}1`, name: "sim_sync", input: ref.finding }
       ] },
       { usage: usage(), stop: "tool_use", blocks: [
         { type: "text", text: "Recommendation: option A." },
-        { type: "tool_use", id: `toolu_${id}2`, name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5.", options: OPTIONS_618 } }
+        { type: "tool_use", id: `toolu_${id}2`, name: "ui_propose_options", input: { recommended_variant_id: "V1", baseline_description: "Every channel keeps showing platform 5, not platform 7.", options: OPTIONS_618 } }
       ] }
     ];
     t.holder.fake = createFakeClaude(toOptions("a"));
@@ -452,7 +461,7 @@ if (run("abort")) {
     expect(/^expired:Not decided: the run ended$/.test(checks["L2:draftAfterAbort"]), "L2: an aborted run must show its drafts as not decided");
     await page.screenshot({ path: path.join(OUT, "A-abort-outbox.png") });
     checks["L2:modelCalls"] = t.holder.fake.requests.length;
-    expect(checks["L2:modelCalls"] === 3, `L2: no model call after Abort (got ${checks["L2:modelCalls"]})`);
+    expect(checks["L2:modelCalls"] === 4, `L2: no model call after Abort (got ${checks["L2:modelCalls"]})`);
     await page.click("#btn-reset");
     await idleCheck("L2");
     // L3: Live, Reset while a model call is in flight; the late answer never appears

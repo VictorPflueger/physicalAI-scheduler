@@ -121,7 +121,7 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
         h("dt", {}, "Misinformed"), h("dd", {}, `${int(b?.misinformed_pax)} of ${int(b?.affected_pax)}`),
         h("dt", {}, "First affected"), h("dd", {}, first),
         h("dt", {}, "Back in sync"), h("dd", {}, after(b?.time_to_sync_min, H)),
-        h("dt", {}, "Next cycle"), h("dd", {}, b?.next_cycle_label || "—")),
+        h("dt", {}, "Next cycle"), h("dd", b?.next_cycle_note ? { title: b.next_cycle_note } : {}, b?.next_cycle_label || "—")),
       h("div", { class: "option-total" }, h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value num" }, int(b?.misinformed_pax))),
       actionsFor({ id: "baseline", letter: "–", title: "Do nothing" }, st, true));
   }

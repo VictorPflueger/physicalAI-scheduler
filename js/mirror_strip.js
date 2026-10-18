@@ -27,9 +27,10 @@ const PAD = 34;
 export function stripGeometry(nodes, width, size) {
   // Short names need room: on a narrow strip only the Ril 100 codes are shown.
   const names = size === "tall" && width >= 760;
-  const yTop = names ? 40 : 26;
+  // Names and codes keep a few pixels between them, whatever the font rendering.
+  const yTop = names ? 44 : 26;
   const yBot = yTop + 42;
-  const height = yBot + (names ? 40 : 26);
+  const height = yBot + (names ? 44 : 26);
   const x = (n) => PAD + (n.x / 100) * Math.max(10, width - 2 * PAD);
   const pos = new Map(nodes.map((n) => [n.id, { x: x(n), y: n.y < 20 ? yTop : yBot, top: n.y < 20 }]));
   return { yTop, yBot, height, names, pos };
@@ -83,7 +84,7 @@ export function createStrip({ onStation }) {
       }
       // Labels: the Ril 100 code, and on a tall strip the short name, away from the lines between the lanes.
       const dir = p.top ? -1 : 1;
-      const codeY = p.top ? p.y - (g.names ? 28 : 12) : p.y + (g.names ? 34 : 20);
+      const codeY = p.top ? p.y - (g.names ? 32 : 12) : p.y + (g.names ? 38 : 20);
       grp.append(s("text", { class: "node-code", x: p.x, y: codeY, "text-anchor": "middle" }, n.id));
       if (g.names) grp.append(s("text", { class: "node-name", x: p.x, y: p.y + dir * 13 + (p.top ? 0 : 7), "text-anchor": "middle", "data-hub": n.hub ? "true" : null }, SHORT[n.id] || n.name));
       svg.append(grp);

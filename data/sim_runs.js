@@ -45,7 +45,7 @@ window.SIM_RUNS = {
         title: "ICE 618: every channel shows platform 5, the train leaves from platform 7",
         severity: "critical",
         basis: "verified",
-        summary: "The source moved ICE 618 to Gleis 7 at 07:21 (OPS-05, points failure W 32), and the interlocking has the route out of Gleis 7 set. The app, the station displays, the announcements and the coach-position displays still show platform 5, generated at 05:30.",
+        summary: "The source moved ICE 618 to Gleis 7 at 07:21 (OPS-05, points failure W 32), and the interlocking has stored the route out of Gleis 7. The app, the station displays, the announcements and the coach-position displays still show platform 5, generated at 05:30.",
         train_ids: ["T-618"],
         point_ids: ["KK"],
         sources: [
@@ -60,21 +60,21 @@ window.SIM_RUNS = {
       { say: "Finding: 312 passengers board ICE 618 at Köln Hbf, 104 of them with seat reservations who look for their coach by the sector signs on the platform." },
       { state: "simulating" },
       { sync: "finding" },
-      { say: "Impact: {{pax}} passengers would act on wrong information if nothing is done, across {{contra}} contradictions; the first go to the platform in {{first_min}} minutes for the departure at 07:42. On Gleis 7 the train also stands further along: the coach-position displays show first class in {{T-618.KK.coach_order.first_pub}}, the source puts it in {{T-618.KK.coach_order.first_src}}. No cycle fixes this by itself: short-notice changes wait for a manual release." },
+      { say: "Impact: {{pax}} passengers would act on wrong information if nothing is done, across {{contra}} contradictions; the train leaves in {{first_min}} minutes, at 07:42. On Gleis 7 it also stands one sector further along: the coach-position displays show first class in {{T-618.KK.coach_order.first_pub}}, the source puts it in {{T-618.KK.coach_order.first_src}}. No cycle fixes this by itself: a short-notice change is published only when someone re-publishes the train." },
       { mirror: { train_ids: ["T-618"], point_ids: ["KK"], state: "affected" } },
 
       { options: {
         recommended: "V1",
-        baseline_description: "Every channel keeps showing platform 5 until someone publishes by hand; {{pax}} passengers would act on it.",
+        baseline_description: "Every channel keeps showing platform 5, not platform 7, until someone publishes by hand; {{pax}} passengers would act on it.",
         texts: {
           V1: {
             title: "Re-publish ICE 618 from the source",
             description: "Release source version 2 to every channel and push the platform change to app, displays and announcements.",
-            residual_risk: "Passengers already heading for platform 5 rely on the announcement."
+            residual_risk: "Passengers already at platform 5 rely on the announcement to reach platform 7."
           },
           V2: {
             title: "Messages and platform staff, data later",
-            description: "Push the change to app, displays and announcements and send staff to platform 5; the data stays as it is.",
+            description: "Push the change to app, displays and announcements, staff at platform 5 sending people to platform 7; data stays.",
             residual_risk: "Planner and coach order keep the old platform and sectors: nothing is back in sync."
           },
           V3: {
@@ -107,7 +107,7 @@ window.SIM_RUNS = {
               body: "App-Push (DE): ICE 618 nach Hamburg-Altona, Abfahrt 07:42 Uhr, fährt heute von Gleis 7 (nicht Gleis 5). Die 1. Klasse hält in Abschnitt {{T-618.KK.coach_order.first_src}}.\nApp push (EN): ICE 618 to Hamburg-Altona, departing 07:42, leaves from platform 7 today (not platform 5). First class stops in sector {{T-618.KK.coach_order.first_src}}.\n\nAnzeiger Köln Hbf (DE): ICE 618 Hamburg-Altona 07:42 – heute Gleis 7\nDisplay Köln Hbf (EN): ICE 618 Hamburg-Altona 07:42 – today platform 7\n\nAnsage (DE): Achtung an Gleis 5: ICE 618 nach Hamburg-Altona, Abfahrt 07:42 Uhr, fährt heute von Gleis 7. Die Wagen der 1. Klasse halten in Abschnitt {{T-618.KK.coach_order.first_src}}.\nAnnouncement (EN): Attention, platform 5: ICE 618 to Hamburg-Altona, departing 07:42, leaves from platform 7 today. First class stops in sector {{T-618.KK.coach_order.first_src}}."
             } },
             { awaitActions: true },
-            { report: "## ICE 618: platform change at Köln Hbf\n\n**What we found.** The source moved ICE 618 (07:42 to Hamburg-Altona) from Gl. 5 to Gl. 7 at 07:21 (OPS-05, points failure W 32); the interlocking has the route out of Gleis 7 set. Every customer channel was generated at 05:30 and still shows platform 5, and the coach-position displays still show first class in {{T-618.KK.coach_order.first_pub}} instead of {{T-618.KK.coach_order.first_src}}. The short-notice rule held the change back.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, and no publication cycle fixes it.\n\n**Decision.** Option A approved: ICE 618 re-published from the source, with a message on the app, the displays and the announcements.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V1.mis}} |\n| Right information from | – | +{{V1.from}} min |\n| Back in sync with the source | never | after {{V1.sync}} min |\n| Hand-kept values | – | {{V1.ov}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** Passengers already heading for platform 5 depend on the announcement.\n\n**How we know.** The track change from the operations log and the source timetable; the old platform from every published channel; the points failure and the stored route from the physical layer; passenger figures from today's counts; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { report: "## ICE 618: platform change at Köln Hbf\n\n**What we found.** The source moved ICE 618 (07:42 to Hamburg-Altona) from Gl. 5 to Gl. 7 at 07:21 (OPS-05, points failure W 32); the interlocking has stored the route out of Gleis 7. Every customer channel was generated at 05:30 and still shows platform 5, and the coach-position displays still show first class in {{T-618.KK.coach_order.first_pub}} instead of sector {{T-618.KK.coach_order.first_src}}. The short-notice rule held the change back.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, and no publication cycle fixes it.\n\n**Decision.** Option A approved: ICE 618 re-published from the source, with a message on the app, the displays and the announcements.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V1.mis}} |\n| Right information from | – | +{{V1.from}} min |\n| Back in sync with the source | never | after {{V1.sync}} min |\n| Hand-kept values | – | {{V1.ov}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** Passengers already heading for platform 5 depend on the announcement.\n\n**How we know.** The track change from the operations log and the source timetable; the old platform from every published channel; the points failure and the stored route from the physical layer; passenger figures from today's counts; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
             { end: "done" }
           ],
           V2: [
@@ -178,7 +178,7 @@ window.SIM_RUNS = {
       { state: "verifying" },
       { tool: "ops_get_timetable", input: { train: "ICE 1022" } },
       { tool: "phys_observe", input: { train: "ICE 1022" } },
-      { say: "Confirmed: the physical layer backs the source. The interlocking at Wuppertal-Oberbarmen has been down since 07:02 with no train movements between Hagen Hbf and Wuppertal Hbf, and train positioning shows ICE 1022 ready at Dortmund Hbf Gl. 11 with its route set towards Bochum Hbf. The source brings it to Köln Hbf at 09:03." },
+      { say: "Confirmed: the physical layer backs the source. The interlocking at Wuppertal-Oberbarmen has been down since 07:02 with no train movements between Hagen Hbf and Wuppertal Hbf, and train positioning shows ICE 1022 approaching Dortmund Hbf Gl. 11, its exit route stored towards Bochum Hbf. The source brings it to Köln Hbf at 09:03." },
       { tool: "kfp_get_published", input: { train: "ICE 1026" } },
       { say: "Check: ICE 1026, the next train on the same line, shows the old run in every channel as well: Hagen Hbf at 09:07, Wuppertal Hbf at 09:23, Köln Hbf at 09:51." },
       { tool: "kfp_get_published", input: { train: "ICE 1023" } },
@@ -188,7 +188,7 @@ window.SIM_RUNS = {
         title: "ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make",
         severity: "critical",
         basis: "verified",
-        summary: "Since 07:08 the source runs both trains via Essen Hbf and Düsseldorf Hbf (OPS-03, interlocking failure at Wuppertal-Oberbarmen). Every channel still shows Hagen Hbf and Wuppertal Hbf and the arrivals at Köln Hbf at 08:51 and 09:51: the plausibility check rejected the update.",
+        summary: "Since 07:08 the source runs both trains via Essen Hbf and Düsseldorf Hbf (OPS-03, interlocking failure at Wuppertal-Oberbarmen). Every channel still shows Hagen Hbf and Wuppertal Hbf and the old arrival times at Köln Hbf: the plausibility check rejected the update.",
         train_ids: ["T-1022", "T-1026"],
         point_ids: ["EHG", "KW", "EE", "KD"],
         sources: [
@@ -206,7 +206,7 @@ window.SIM_RUNS = {
       { say: "Check: for passengers waiting at Wuppertal Hbf, today's timetable has RB 30473 at 08:51 from platform 2, arriving at Köln Hbf at 09:27. From Hagen Hbf the replacement bus runs to Wuppertal Hbf. The engine works out an alternative for every stranded group." },
       { state: "simulating" },
       { sync: "finding" },
-      { say: "Impact: {{pax}} passengers on the two trains would act on wrong information, across {{contra}} contradictions; the first are those boarding ICE 1022 at Dortmund Hbf in {{first_min}} minutes. The plausibility check holds the update back, so no publication cycle fixes it: it needs a manual release." },
+      { say: "Impact: {{pax}} passengers on the two trains would act on wrong information, across {{contra}} contradictions; the first decide at Dortmund Hbf, which ICE 1022 leaves in {{first_min}} minutes. Of the 247 travelling to Köln Hbf on ICE 1022, {{T-1022.KK.time.onboard}} are on board from Dortmund; those who meant to board at Hagen or Wuppertal are counted there. The plausibility check holds the update back, so no publication cycle fixes it: it needs a manual release." },
       { mirror: { train_ids: ["T-1022", "T-1026"], point_ids: ["EHG", "KW"], state: "affected" } },
 
       { options: {
@@ -481,7 +481,7 @@ window.SIM_RUNS = {
       { tool: "kfp_get_published", input: { train: "ICE 1025" } },
       { say: "Check: the on-board announcements were loaded at departure from Hamburg with the planned run to Köln Hbf, and nothing refreshes them on the way. The journey planner catches up in the half-hourly cycle; the announcements do not." },
       { tool: "phys_observe", input: { train: "ICE 1025" } },
-      { say: "Confirmed: train positioning has ICE 1025 running to plan from Hamburg, with its turn at Köln Messe/Deutz Gl. 1 planned by dispatch, and the point diagnostics at Köln Hbf have shown W 32 failed since 07:12." },
+      { say: "Confirmed: the interlocking at Köln Messe/Deutz has stored ICE 1025's entry route into Gl. 1 with the end of the run and a change of direction, and no route on to Köln Hbf; the point diagnostics at Köln Hbf have shown W 32 failed since 07:12." },
       { say: "Revised: only the app → the app and the on-board announcements. The passengers on board hear 'Köln Hbf' until the train stops at Messe/Deutz, and they are the ones who must decide where to get off." },
       { alert: {
         title: "ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf",
@@ -492,7 +492,7 @@ window.SIM_RUNS = {
         point_ids: ["KKDZ", "KK"],
         sources: [
           { title: "Operations log OPS-04: long-distance dispatch Köln, terminus moved (synthetic)" },
-          { title: "Train positioning ICE 1025 and point diagnostics ESTW Köln Hbf (synthetic)" }
+          { title: "Route store, interlocking Köln Messe/Deutz, and point diagnostics ESTW Köln Hbf (synthetic)" }
         ]
       } },
 
@@ -705,7 +705,7 @@ window.SIM_RUNS = {
             { draft: {
               type: "staff_brief", recipient: "Platform staff Köln Hbf, Düsseldorf Hbf, Duisburg Hbf, Essen Hbf and Bochum Hbf",
               subject: "ICE 516 in reverse order: the coach-position displays are wrong",
-              body: "ICE 516 runs in reverse order today (OPS-01); the coach-position displays still show first class in {{T-516.KK.coach_order.first_pub}}. It stops in {{T-516.KK.coach_order.first_src}}, the restaurant in {{T-516.KK.coach_order.rest_src}}. Please point passengers with reservations to the right sector before the train arrives."
+              body: "ICE 516 runs in reverse order today (OPS-01); the coach-position displays still show first class in {{T-516.KK.coach_order.first_pub}}. First class stops in sector {{T-516.KK.coach_order.first_src}}, the restaurant in sector {{T-516.KK.coach_order.rest_src}}. Please point passengers with reservations to the right sector before the train arrives."
             } },
             { awaitActions: true },
             { report: "## ICE 516: reversed coach order\n\n**What we found.** Since 06:41 the source has ICE 516 in reverse order (OPS-01), confirmed by the RFID reading; the coach-order feed still shows the vehicle plan of 05:30 at every stop.\n\n**If we do nothing.** {{pax}} passengers with reservations wait at the wrong end, the first in {{first_min}} minutes.\n\n**Decision.** Option B approved: announcements, an app message and platform staff; the coach-order feed stays as it is.\n\n| | Do nothing | Option B |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V2.mis}} |\n| Right information from | – | +{{V2.from}} min |\n| Back in sync with the source | never | {{V2.sync}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** The coach-position displays keep the wrong sectors at every stop.\n\n**How we know.** The operations log, the source, the coach-order feed and the RFID reading; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
@@ -747,7 +747,7 @@ window.SIM_RUNS = {
       { say: "Lead received from the construction office: a timetable order for Bochum – Dortmund, a speed restriction of 'about four minutes', went out this morning. The question is what passengers are told about Dortmund and their connections. First the order itself." },
       { mirror: { view: "monitor", state: "neutral" } },
       { tool: "ops_list_changes", input: { kind: "fplo" } },
-      { say: "Finding: Fplo 1187, released by construction planning at 06:50. A 70 km/h restriction between Bochum Hbf and Dortmund Hbf for track works adds +4,0 Min from Bochum Hbf for trains 612 and 10109, valid today from 08:00 to 14:00." },
+      { say: "Finding: Fplo 1187, released by construction planning at 06:50. A 70 km/h restriction between Bochum Hbf and Dortmund Hbf for track works has been in place since 06:30; from 08:00 to 14:00 the order adds +4.0 min from Bochum Hbf to trains 612 and 10109." },
       { mirror: { train_ids: ["T-612"], state: "at_risk", focus: "T-612" } },
       { tool: "kfp_get_published", input: { train: "ICE 612", channel: "planner" } },
       { say: "Hypothesis: ICE 612's customer information still shows the arrival at Dortmund Hbf at 09:56. Construction orders are processed in the daily generation at 05:30, and this one came out at 06:50. I start with ICE 612, the long-distance train." },
@@ -759,7 +759,7 @@ window.SIM_RUNS = {
       { state: "verifying" },
       { tool: "ops_get_timetable", input: { train: "ICE 612" } },
       { tool: "phys_observe", input: { point: "EBO" } },
-      { say: "Confirmed: the running-time measurement between Bochum Hbf and Dortmund Hbf shows today's trains 3,8 and 4,1 minutes slower than the timetable at the restriction: the +4 minutes are real." },
+      { say: "Confirmed: the running-time measurement between Bochum Hbf and Dortmund Hbf shows today's trains 3.8 and 4.1 minutes slower than the timetable at the restriction: the +4 minutes are real." },
       { tool: "kfp_get_published", input: { train: "RE 10109" } },
       { say: "Check: RE 10109 runs into the same restriction, and its channels still show the old arrival at Dortmund Hbf, 09:47." },
       { tool: "ops_get_passengers", input: { train: "ICE 612" } },
@@ -769,7 +769,7 @@ window.SIM_RUNS = {
         title: "ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost",
         severity: "medium",
         basis: "verified",
-        summary: "Fplo 1187 (06:50) adds +4,0 Min from Bochum Hbf to both trains, and the running-time measurement confirms it. The customer timetable comes from the daily run at 05:30 and still shows the old arrivals and the connection to RE 57 at 10:01.",
+        summary: "Fplo 1187 (06:50) adds +4.0 min from Bochum Hbf to both trains, and the running-time measurement confirms it. The customer timetable comes from the daily run at 05:30 and still shows the old arrivals and the connection to RE 57 at 10:01.",
         train_ids: ["T-612", "T-10109"],
         point_ids: ["EDO", "EBO"],
         sources: [
@@ -821,7 +821,7 @@ window.SIM_RUNS = {
             { draft: {
               type: "republish_order", recipient: "Timetable publication team (customer timetable)",
               subject: "Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
-              body: "Please re-publish ICE 612 and RE 10109 from source version 2 (OPS-02, Fplo 1187, released 06:50) to every customer channel. The order adds +4,0 Min from Bochum Hbf; the daily generation at 05:30 did not include it, and the half-hourly cycle processes dispatch changes only.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected back in sync after {{V1.sync}} minutes."
+              body: "Please re-publish ICE 612 and RE 10109 from source version 2 (OPS-02, Fplo 1187, released 06:50) to every customer channel. The order adds +4.0 min from Bochum Hbf; the daily generation at 05:30 did not include it, and the half-hourly cycle processes dispatch changes only.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected back in sync after {{V1.sync}} minutes."
             } },
             { draft: {
               type: "hold_request", recipient: "Dispatch (Transportleitung), Dortmund",
@@ -834,7 +834,7 @@ window.SIM_RUNS = {
               body: "App-Push (DE): ICE 612: wegen Bauarbeiten zwischen Bochum und Dortmund Ankunft in Dortmund Hbf {{T-612.EDO.time.arr}} statt 09:56. Der Anschluss an RE 57 nach Winterberg (Westf) um 10:01 wird bei der Disposition angefragt; falls er nicht gehalten wird: {{alt.T-612.EDO.onboard.de}}.\nApp push (EN): ICE 612: because of construction works between Bochum and Dortmund, arrival at Dortmund Hbf {{T-612.EDO.time.arr}} instead of 09:56. Dispatch has been asked to hold the connection to RE 57 to Winterberg (Westf) at 10:01; if it is not held: {{alt.T-612.EDO.onboard.en}}.\n\nApp-Push (DE): RE 10109: Ankunft in Dortmund Hbf {{T-10109.EDO.time.arr}} statt 09:47 (Bauarbeiten).\nApp push (EN): RE 10109: arrival at Dortmund Hbf {{T-10109.EDO.time.arr}} instead of 09:47 (construction works).\n\nZugansage ICE 612 (DE): Wegen Bauarbeiten erreichen wir Dortmund Hbf einige Minuten später. Reisende nach Winterberg: Ihr Anschluss an RE 57 wird angefragt.\nOn-board announcement ICE 612 (EN): Because of construction works we reach Dortmund Hbf a few minutes late. Passengers for Winterberg: your connection to RE 57 has been requested."
             } },
             { awaitActions: true },
-            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (released 06:50) adds +4,0 Min from Bochum Hbf to ICE 612 and RE 10109; the running-time measurement confirms it. The customer timetable comes from the daily run at 05:30 and still shows the old arrivals at Dortmund Hbf, and the connection from ICE 612 to RE 57 (10:01) as reachable: {{T-612.EDO.connection.src}}.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, and {{T-612.EDO.connection.pax}} miss RE 57 without warning.\n\n**Decision.** Option A approved: both trains re-published from the source, dispatch asked to hold RE 57, passengers told.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V1.mis}} |\n| Right information from | – | +{{V1.from}} min |\n| Back in sync with the source | never | after {{V1.sync}} min |\n| Connection kept (if dispatch agrees) | – | {{V1.held}} passengers |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published or requested.\n\n**Residual risk.** Dispatch decides on the hold; a hold delays RE 57 by {{V1.wait}} minutes for {{V1.delayed}} passengers.\n\n**How we know.** The order from the operations log and the source timetable; the old times from every published channel; the slower section from the physical layer; connections from today's passenger figures; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (released 06:50) adds +4.0 min from Bochum Hbf to ICE 612 and RE 10109; the running-time measurement confirms it. The customer timetable comes from the daily run at 05:30 and still shows the old arrivals at Dortmund Hbf, and the connection from ICE 612 to RE 57 (10:01) as reachable: {{T-612.EDO.connection.src}}.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, and {{T-612.EDO.connection.pax}} miss RE 57 without warning.\n\n**Decision.** Option A approved: both trains re-published from the source, dispatch asked to hold RE 57, passengers told.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V1.mis}} |\n| Right information from | – | +{{V1.from}} min |\n| Back in sync with the source | never | after {{V1.sync}} min |\n| Connection kept (if dispatch agrees) | – | {{V1.held}} passengers |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published or requested.\n\n**Residual risk.** Dispatch decides on the hold; a hold delays RE 57 by {{V1.wait}} minutes for {{V1.delayed}} passengers.\n\n**How we know.** The order from the operations log and the source timetable; the old times from every published channel; the slower section from the physical layer; connections from today's passenger figures; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
             { end: "done" }
           ],
           V2: [
@@ -843,7 +843,7 @@ window.SIM_RUNS = {
             { draft: {
               type: "republish_order", recipient: "Timetable publication team (customer timetable)",
               subject: "Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
-              body: "Please re-publish ICE 612 and RE 10109 from source version 2 (OPS-02, Fplo 1187, released 06:50) to every customer channel. The order adds +4,0 Min from Bochum Hbf and was not part of the daily generation at 05:30.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected back in sync after {{V2.sync}} minutes."
+              body: "Please re-publish ICE 612 and RE 10109 from source version 2 (OPS-02, Fplo 1187, released 06:50) to every customer channel. The order adds +4.0 min from Bochum Hbf and was not part of the daily generation at 05:30.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected back in sync after {{V2.sync}} minutes."
             } },
             { draft: {
               type: "passenger_message", recipient: "Passenger information desk, Dortmund",
@@ -851,7 +851,7 @@ window.SIM_RUNS = {
               body: "App-Push (DE): ICE 612: wegen Bauarbeiten Ankunft in Dortmund Hbf {{T-612.EDO.time.arr}} statt 09:56. Der Anschluss an RE 57 nach Winterberg (Westf) um 10:01 ist nicht erreichbar; nächste Verbindung: {{alt.T-612.EDO.onboard.de}}.\nApp push (EN): ICE 612: because of construction works, arrival at Dortmund Hbf {{T-612.EDO.time.arr}} instead of 09:56. The connection to RE 57 to Winterberg (Westf) at 10:01 cannot be made; next connection: {{alt.T-612.EDO.onboard.en}}.\n\nApp-Push (DE): RE 10109: Ankunft in Dortmund Hbf {{T-10109.EDO.time.arr}} statt 09:47.\nApp push (EN): RE 10109: arrival at Dortmund Hbf {{T-10109.EDO.time.arr}} instead of 09:47."
             } },
             { awaitActions: true },
-            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (06:50) adds +4,0 Min from Bochum Hbf to both trains; the customer timetable still shows the old arrivals and the RE 57 connection as reachable.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\n**Decision.** Option B approved: both trains re-published from the source, and the lost connection announced.\n\n| | Do nothing | Option B |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V2.mis}} |\n| Right information from | – | +{{V2.from}} min |\n| Back in sync with the source | never | after {{V2.sync}} min |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** The passengers who change wait for the next RE 57.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (06:50) adds +4.0 min from Bochum Hbf to both trains; the customer timetable still shows the old arrivals and the RE 57 connection as reachable.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\n**Decision.** Option B approved: both trains re-published from the source, and the lost connection announced.\n\n| | Do nothing | Option B |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V2.mis}} |\n| Right information from | – | +{{V2.from}} min |\n| Back in sync with the source | never | after {{V2.sync}} min |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** The passengers who change wait for the next RE 57.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
             { end: "done" }
           ],
           V3: [
@@ -863,7 +863,7 @@ window.SIM_RUNS = {
               body: "App-Push und Reiseauskunft (DE): ICE 612: wegen Bauarbeiten Ankunft in Dortmund Hbf {{T-612.EDO.time.arr}} statt 09:56; der Anschluss an RE 57 um 10:01 ist nicht erreichbar, nächste Verbindung: {{alt.T-612.EDO.onboard.de}}. RE 10109: Ankunft {{T-10109.EDO.time.arr}} statt 09:47.\nApp push and journey planner (EN): ICE 612: because of construction works, arrival at Dortmund Hbf {{T-612.EDO.time.arr}} instead of 09:56; the connection to RE 57 at 10:01 cannot be made, next connection: {{alt.T-612.EDO.onboard.en}}. RE 10109: arrival {{T-10109.EDO.time.arr}} instead of 09:47."
             } },
             { awaitActions: true },
-            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (06:50) adds +4,0 Min from Bochum Hbf to both trains; the customer timetable still shows the old arrivals and the RE 57 connection as reachable.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\n**Decision.** Option C approved: messages on the app, the announcements and the planner; the data waits for tomorrow's daily run.\n\n| | Do nothing | Option C |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V3.mis}} |\n| Back in sync with the source | never | {{V3.sync}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** Every channel keeps the old times until tomorrow.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (06:50) adds +4.0 min from Bochum Hbf to both trains; the customer timetable still shows the old arrivals and the RE 57 connection as reachable.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\n**Decision.** Option C approved: messages on the app, the announcements and the planner; the data waits for tomorrow's daily run.\n\n| | Do nothing | Option C |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V3.mis}} |\n| Back in sync with the source | never | {{V3.sync}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** Every channel keeps the old times until tomorrow.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
             { end: "done" }
           ],
           baseline: [
@@ -872,10 +872,10 @@ window.SIM_RUNS = {
             { draft: {
               type: "memo", recipient: "Passenger information desk, Dortmund",
               subject: "Fplo 1187 (ICE 612, RE 10109): risk accepted, no publication",
-              body: "Decision recorded: no action on ICE 612 and RE 10109.\n\nFplo 1187 (06:50) adds +4,0 Min from Bochum Hbf; the customer timetable still shows the old arrivals and the connection to RE 57 at 10:01. If nothing changes, {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\nPlease review if the situation changes."
+              body: "Decision recorded: no action on ICE 612 and RE 10109.\n\nFplo 1187 (06:50) adds +4.0 min from Bochum Hbf; the customer timetable still shows the old arrivals and the connection to RE 57 at 10:01. If nothing changes, {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\nPlease review if the situation changes."
             } },
             { awaitActions: true },
-            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (06:50) adds +4,0 Min from Bochum Hbf to both trains; the customer timetable still shows the old arrivals and the RE 57 connection.\n\n**Decision.** The risk was accepted: nothing is published and nothing is requested.\n\n**What that means.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, until tomorrow's daily run.\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts (the decision memo) approved.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (06:50) adds +4.0 min from Bochum Hbf to both trains; the customer timetable still shows the old arrivals and the RE 57 connection.\n\n**Decision.** The risk was accepted: nothing is published and nothing is requested.\n\n**What that means.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, until tomorrow's daily run.\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts (the decision memo) approved.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
             { end: "done" }
           ]
         }

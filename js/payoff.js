@@ -30,6 +30,7 @@ export function baselineFigures(res, description = "") {
     first_event_short: b.first_event_short,
     time_to_sync_min: b.time_to_sync_min,
     next_cycle_label: b.next_cycle_label,
+    next_cycle_note: b.next_cycle_note || "",
     contradiction_ids: (res.contradictions || []).map((c) => c.id),
     description: String(description || "").slice(0, 300)
   };

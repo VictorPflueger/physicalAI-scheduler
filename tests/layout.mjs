@@ -31,6 +31,8 @@ async function newPage(width, height) {
   page.on("pageerror", (e) => errors.push(String(e.message || e)));
   await page.goto(BASE);
   await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
+  // Measure with the page's own fonts, not a fallback that is still on screen while they load.
+  await page.evaluate(() => document.fonts.ready);
   return { context, page, errors };
 }
 
