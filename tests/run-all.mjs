@@ -24,10 +24,24 @@ const SUITES = [
 const only = process.argv.slice(2);
 const chosen = SUITES.filter((s) => !only.length || only.includes(s.id));
 const summary = [];
+// In GitHub Actions a failed suite also becomes an annotation with its FAIL lines, readable in the
+// run's summary and through the API without the full log.
+const CI = process.env.GITHUB_ACTIONS === "true";
+const annotate = (s, out) => {
+  const lines = out.split("\n").map((l) => l.trim()).filter(Boolean);
+  const fails = lines.filter((l) => /^(FAIL|Error|AssertionError|TypeError|Timeout)|failed|exceeded/i.test(l));
+  const text = (fails.length ? fails : lines.slice(-12)).slice(0, 15).join(" ⏎ ").slice(0, 4000);
+  console.log(`::error title=${s.id} suite failed::${text}`);
+};
 for (const s of chosen) {
   console.log(`\n=== ${s.id}: ${s.what} ===`);
   const started = Date.now();
-  const r = spawnSync(process.execPath, [path.join(APP_ROOT, s.file), ...(s.args || [])], { cwd: APP_ROOT, stdio: "inherit", env: process.env });
+  const r = spawnSync(process.execPath, [path.join(APP_ROOT, s.file), ...(s.args || [])], { cwd: APP_ROOT, stdio: CI ? ["inherit", "pipe", "pipe"] : "inherit", env: process.env, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  if (CI) {
+    process.stdout.write(r.stdout || "");
+    process.stderr.write(r.stderr || "");
+    if (r.status !== 0 && !(s.optional && r.status === 2)) annotate(s, `${r.stdout || ""}\n${r.stderr || ""}`);
+  }
   // An optional suite without what it needs (parity without a sister-app checkout) exits 2: skipped.
   if (s.optional && r.status === 2) {
     summary.push({ ...s, ok: true, skipped: true, code: r.status, seconds: Math.round((Date.now() - started) / 1000) });

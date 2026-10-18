@@ -5,6 +5,8 @@
 //           checkout (Pages caches for up to ten minutes, so it retries for up to twelve)
 //   run     scenario 1 in Simulation mode to the end: the verified finding on the KPI tile, the
 //           approval, the drafts approved, Done; no page error, nothing loaded from another host
+//           (up to three runs a minute apart, for a deployment the CDN is still taking up)
+// In GitHub Actions every problem is also printed as an annotation (::error / ::warning).
 // Usage: node tests/live_site.mjs [url]   (default: the repository's GitHub Pages address; LIVE_URL)
 import fs from "node:fs";
 import path from "node:path";
@@ -38,8 +40,11 @@ while (true) {
 if (stale.length) problems.push(`the site does not serve this checkout: ${stale.join(", ")}`);
 else console.log(`PASS  files: ${FILES.length} files as served equal this checkout`);
 
-// 2. A Simulation run completes there.
-if (!stale.length) {
+// 2. A Simulation run completes there. Right after a first deployment the CDN can still answer
+// with an older or missing file for a minute or two, so a failed run is tried again (three runs,
+// a minute apart); the problems of an earlier run are reported as warnings.
+async function simulationRun() {
+  const found = [];
   const browser = await launchBrowser();
   const context = await browser.newContext({ viewport: { width: 1600, height: 900 } });
   await context.addInitScript(SKIP_INTRO);
@@ -59,24 +64,38 @@ if (!stale.length) {
     await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
     await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 120000 });
     const tile = await page.locator(".kpi").first().innerText();
-    if (!/312[\s\S]*of 312 relying on it, verified/.test(tile)) problems.push(`the finding's tile reads "${tile.replace(/\s+/g, " ")}"`);
+    if (!/312[\s\S]*of 312 relying on it, verified/.test(tile)) found.push(`the finding's tile reads "${tile.replace(/\s+/g, " ")}"`);
     await page.click('.option-card[data-recommended="true"] .btn-approve');
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 60000 });
     await page.click('button:has-text("Approve all")');
     await page.waitForSelector('button:has-text("Open management summary")', { state: "visible", timeout: 60000 });
     const status = (await page.locator(".status-pill").innerText()).trim();
-    if (!/Done/.test(status)) problems.push(`the run ends as "${status}"`);
+    if (!/Done/.test(status)) found.push(`the run ends as "${status}"`);
   } catch (e) {
-    problems.push(`the run did not complete: ${String(e.message || e).split("\n")[0]}`);
+    found.push(`the run did not complete: ${String(e.message || e).split("\n")[0]}`);
   }
   const own = new URL(URL_BASE).host;
   const other = [...hosts].filter((h) => h !== own);
-  if (other.length) problems.push(`requests to other hosts: ${other.join(", ")}`);
-  if (errors.length) problems.push(`page errors: ${errors.slice(0, 3).join(" | ")}`);
-  if (!problems.length) console.log("PASS  run: scenario 1 in Simulation mode completes on the published site");
+  if (other.length) found.push(`requests to other hosts: ${other.join(", ")}`);
+  if (errors.length) found.push(`page errors: ${errors.slice(0, 3).join(" | ")}`);
   await browser.close();
+  return found;
 }
 
+// In GitHub Actions each problem also becomes an annotation, readable without the job log.
+const annotate = (level, text) => { if (process.env.GITHUB_ACTIONS === "true") console.log(`::${level} title=live site::${text.replace(/\r?\n/g, " ")}`); };
+
+if (!stale.length) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const found = await simulationRun();
+    if (!found.length) { console.log(`PASS  run: scenario 1 in Simulation mode completes on the published site${attempt > 1 ? ` (run ${attempt})` : ""}`); break; }
+    if (attempt === 3) { problems.push(...found); break; }
+    for (const f of found) { console.log(`WARN  run ${attempt}: ${f}`); annotate("warning", `run ${attempt}: ${f}`); }
+    await new Promise((r) => setTimeout(r, 60000));
+  }
+}
+
+for (const p of problems) annotate("error", p);
 for (const p of problems) console.log(`FAIL  ${p}`);
 console.log(`${URL_BASE}: ${problems.length} problem${problems.length === 1 ? "" : "s"}.`);
 if (!problems.length) console.log("LIVE SITE OK");
