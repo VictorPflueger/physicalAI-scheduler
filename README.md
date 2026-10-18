@@ -2,7 +2,7 @@
 
 A live, agentic AI demo for passenger information on the railway. The Timetable Translator stands between the **Betriebsfahrplan**, the operational timetable that operations keep (every operating point, tenths of a minute, tracks, operational stops), and the **Kundenfahrplan**, the customer timetable passengers see in the journey planner and app, on station displays, in announcements and in the coach order. It answers the question a passenger-information desk asks every morning: *where does what we tell passengers contradict what the trains will really do, who will act on the wrong information, how soon, and what is the cleanest way to put it right?*
 
-**Live site: [victorpflueger.github.io/physicalAI-scheduler](https://victorpflueger.github.io/physicalAI-scheduler/)** · Version 1.0.0 · Static website, no backend, no build step. It is the third sister prototype of the Navigator (supply-chain disruptions) and Rebate Hunter (procurement rebates), built in the same design system and shell.
+**Live site: [victorpflueger.github.io/physicalAI-scheduler](https://victorpflueger.github.io/physicalAI-scheduler/)** · Version 1.0.0 · Static website, no backend, no build step. It is the third sister prototype of the Navigator (supply-chain disruptions) and Rebate Hunter (procurement rebates), built in the same design system and shell
 
 ---
 
