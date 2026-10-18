@@ -85,7 +85,7 @@ The live site above is served from this repository's `main` branch. To run your 
 
 1. **Fork or copy the repository.** Keep it public for Pages on a free plan. Include the hidden file **`.nojekyll`**: it stops GitHub from running Jekyll over the Markdown files. (A web upload takes at most 100 files at a time: upload everything except `fonts/` first, then that folder.)
 2. **Turn on Pages.** **Settings → Pages → Build and deployment → Source: Deploy from a branch**, branch **main**, folder **/ (root)**, **Save**.
-3. **Open the site** after a minute or two at `https://<your-user>.github.io/<repository>/`. Progress shows under **Actions** ("pages build and deployment").
+3. **Open the site** after a minute or two at `https://<your-user>.github.io/<repository>/`. Progress shows under **Actions** ("pages build and deployment"); after each build the **live site** workflow checks that the site serves the pushed files and that a simulation runs there.
 4. **Check it on the presentation laptop.** Open the site, click **Diagnostics**, then **Run all tests**. Every row should pass.
 
 **Run it locally** from the repository folder with any static server, for example `python3 -m http.server 8000`, then open `http://localhost:8000/`. Opening `index.html` from disk does not work: browsers block ES modules on `file://`, and the page explains this.

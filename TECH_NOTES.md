@@ -194,6 +194,7 @@ Run states: Idle → Scanning → Diagnosing → Verifying → Simulating → Op
 | Viewports, scenarios, targets | `tests/layout.mjs` | 7/7 |
 | Colour grammar in the app | `tests/design.mjs` | 2/2 |
 | Repository hygiene, documentation | `tests/hygiene.mjs`, `tests/docs.mjs` | Pass |
+| The published site serves the commit and runs a simulation | `tests/live_site.mjs`, run by the *live site* workflow after every GitHub Pages build | Reported in the repository's Actions tab |
 
 Found and fixed while verifying: the engine counted a passenger once per wrong fact, so the 104 seat reservations on ICE 618 were added to the 312 passengers boarding (416 instead of 312), and the 46 who change to RE 57 to those alighting in Dortmund (now each passenger counts once per stop, checked by `tests/engine.mjs` and a world check that the groups nest); the engine changed a what-if's train reference in the model's own tool input (now it works on copies); times before a comma or a full stop escaped the fact audit (the pattern now ends at a digit boundary); a flagged source row lost its focus ring; the keyboard focus left a row when the mirror redrew; the legend returned no focus on Escape; the longer brand name pushed the header to a third badge row on small laptops, which let the console overlap the drawer bar at 1280 × 720; the mirror's narrow-card rules lost to the narrow-mirror rules and squeezed station names; option cards did not fit at 1080p; a link with two contradictions read "Time +1" (now one label per contradiction).
 

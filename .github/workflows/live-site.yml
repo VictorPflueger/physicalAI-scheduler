@@ -1,0 +1,38 @@
+# Checks the published site after every GitHub Pages build: Pages serves exactly the files of this
+# commit, and a Simulation run completes there (tests/live_site.mjs). It can also be started by hand
+# (Actions → live site → Run workflow).
+name: live site
+
+on:
+  page_build:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Both triggers can fire for one build; the newer run replaces the older one.
+concurrency:
+  group: live-site
+  cancel-in-progress: true
+
+jobs:
+  live-site:
+    name: The published site serves this commit and runs a simulation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-1.56.0-chromium-${{ runner.os }}
+      - run: npm install -g playwright@1.56.0 && npx playwright install --with-deps chromium
+      # The project site of this repository: https://<owner>.github.io/<repository>/
+      - run: NODE_PATH="$(npm root -g)" node tests/live_site.mjs "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"

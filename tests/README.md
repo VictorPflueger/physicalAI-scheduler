@@ -22,7 +22,7 @@ The Timetable Translator itself needs no Node.js, npm or build step. These scrip
 
 `node tests/run-all.mjs` runs everything in that order and prints a summary. Name suites to run only those (`node tests/run-all.mjs unit engine live`); name cases to run only those within a suite (`node tests/live.mjs full abort`). The parity suite looks for a Rebate Hunter checkout next to this repository (`../PROC-Rebate-Hunter`) or in `PARITY_REF`; give its path when you run it on its own.
 
-After publishing, `node tests/remote_head.mjs` checks that GitHub's `main` holds exactly the local commit and that nothing is left uncommitted, so the site GitHub Pages serves is the code the suites ran on.
+After publishing, `node tests/remote_head.mjs` checks that GitHub's `main` holds exactly the local commit and that nothing is left uncommitted, and `node tests/live_site.mjs [url]` checks the published site: it serves exactly the files of this checkout (retrying while the Pages cache catches up) and a Simulation run of scenario 1 completes there with no error and no request to another host. The *live site* workflow (`.github/workflows/live-site.yml`) runs it after every GitHub Pages build.
 
 No test calls a real API or spends money: the Anthropic API is replaced by the scripted stand-in inside the browser. The app loads nothing else from outside, and the browser suites block any other request.
 
