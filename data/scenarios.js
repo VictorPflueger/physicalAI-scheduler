@@ -10,16 +10,18 @@
  *
  * `train_id` is the train the timetable mirror shows when the scenario is chosen or starts (the agent
  * never sees it). `exposure_check` is used ONLY by the offline integrity check (js/world_check.js) and
- * is never shown to the agent.
+ * is never shown to the agent. `start_here` marks the scenario the five-minute pitch uses (the menu
+ * says so); the others are there for questions.
  */
 window.SCENARIOS = [
   {
     id: "SC-PLATFORM",
     number: 1,
+    start_here: true,
     title: "Short-notice platform change at Köln Hbf",
     short: "Platform change",
     category: "Platform / short-notice rule",
-    seed: "Radio message from the platform staff at Köln Hbf: ICE 618 to Hamburg leaves from track 7 today because of a points failure, but the app still says track 5. Is that right, and who needs to know?",
+    seed: "Radio message from the platform staff at Köln Hbf: ICE 618 to Hamburg leaves from platform 7 today because of a points failure, but the app still says platform 5. Is that right, and who needs to know?",
     train_id: "T-618",
     exposure_check: { train_ids: ["T-618"], types: ["platform", "coach_order"] }
   },

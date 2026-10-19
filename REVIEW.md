@@ -1,14 +1,15 @@
 # REVIEW — the Timetable Translator and its parity with the sister prototypes
 
-This document has five parts:
+This document has six parts:
 
 1. **What was asked and what was built:** the brief, the concept, and where each requirement lives.
 2. **Parity checklist:** every feature of the sister apps and its counterpart here, with a status.
 3. **Findings** from building and verifying this version, fixed and open.
 4. **Back-port recommendations** for the Rebate Hunter and the Navigator.
-5. **Decisions and open points.**
+5. **The customer's view:** the rework for a five-to-ten-minute pitch, finding by finding.
+6. **Decisions and open points.**
 
-Subject: Timetable Translator 1.0.0 (`js/config.js`), 18 October 2026. Reference: Rebate Hunter 7.1.0 (`VictorPflueger/PROC-Rebate-Hunter`, the most recent sister app, whose shell this build reuses) and Navigator 1.1.0 (`VictorPflueger/supply-chain-navigator`). Live sites: `victorpflueger.github.io/PROC-Rebate-Hunter/`, `victorpflueger.github.io/supply-chain-navigator/`.
+Subject: Timetable Translator 1.1.0 (`js/config.js`), 19 October 2026: version 1.0.0 of 18 October 2026, reworked for a five-to-ten-minute customer pitch (Part 5). Reference: Rebate Hunter 7.1.0 (`VictorPflueger/PROC-Rebate-Hunter`, the most recent sister app, whose shell this build reuses) and Navigator 1.1.0 (`VictorPflueger/supply-chain-navigator`). Live sites: `victorpflueger.github.io/PROC-Rebate-Hunter/`, `victorpflueger.github.io/supply-chain-navigator/`.
 
 ---
 
@@ -44,7 +45,7 @@ Status: **Same** — identical code or behaviour (the shared modules are charact
 | P8 | Motion and reduced motion | Same, plus the mirror's pulses and flashes, all off under reduced motion | Adapted |
 | P9 | Accessibility: skip link, live regions, focus trap, keyboard menus, large targets, focus ring | Same; every mirror row, channel chip, station, monitor row and legend toggle is a button of at least 40 px with a full accessible name, keeps the focus across redraws and returns it from its popover | Adapted |
 | P10 | Projector features: Larger text, tested viewports | Same; tested from 1920 × 1080 to 1280 × 720 | Same |
-| P11 | Centrepiece: the Navigator's map, the Rebate Hunter's board | **Timetable mirror**: corridor strip, Betriebsfahrplan beside the published Kundenfahrplan with the translation as lines, sync monitor, legend, popovers, state colours with a mark per state | Replaced |
+| P11 | Centrepiece: the Navigator's map, the Rebate Hunter's board | **Timetable mirror**, opening on the **alignment view** (the source and its sensors, the AI translator and the person who decides, every channel with its verdict, the passenger impact); one click away the timetables (corridor strip, Betriebsfahrplan beside the published Kundenfahrplan with the translation as lines, popovers) and all trains; legend; state colours with a mark per state | Replaced |
 
 ### Run model and features
 
@@ -67,13 +68,14 @@ Status: **Same** — identical code or behaviour (the shared modules are charact
 | F15 | Open-data tools (weather, LEI index, exchange rates) | None: the snapshot and its physical layer are the only sources (D-T3) | Changed |
 | F16 | ERP tools | `ops_*` (operations log, Betriebsfahrplan, passengers, alternatives), `kfp_get_published`, `phys_observe` | Replaced |
 | F17 | Deterministic engine (impact, rebate) | Deterministic sync engine | Replaced |
-| F18 | Intro window, five steps, under 200 words | Same structure, timetable copy | Adapted |
-| F19 | KPI tiles with payoff after a decision | Passengers at risk, First affected in, Detection → decision, Session cost | Adapted |
+| F18 | Intro window, five steps, under 200 words | The same window, ordered for a pitch: what it does (the problem in one example, in the engine's own figures), how the AI aligns the information (the five steps), what it achieves (three outcomes) | Adapted |
+| F19 | KPI tiles with payoff after a decision | Passengers at risk, First affected in, Detection → decision, Session cost; after a decision who is left and when the information is right and every channel aligned | Adapted |
 | F20 | Hand-over labels, progress rail, AI labels | Same; the AI labels name what was checked (trains, times, platforms) | Adapted |
-| F21 | Options: three plus doing nothing, bars, recommended frame, accept the risk | Same; Still misinformed, Back in sync, Hand-kept values, Staff effort, Protected passengers, Connection held | Adapted |
+| F21 | Options: three plus doing nothing, bars, recommended frame, accept the risk | Same, with one big figure per card (*Still misinformed*) and three rows (*All channels aligned*, *Kept by hand*, *Staff effort*), plus *Connection held* where an option holds a connection | Adapted |
 | F22 | Outbox with footers, Approve all, unchecked-figures chip | Re-publication orders, passenger messages, override requests, staff briefings, hold requests, memos; "Unchecked facts" chip | Adapted |
 | F23 | Management summary, Abort, Reset, New run, replay speeds | Same | Same |
 | F24 | `ui_mark_board`, `board_update`, the centrepiece following lookups, results and decisions by itself | `ui_mark_mirror`, `mirror_update`; the mirror follows the run events itself | Changed |
+| F25 | Console entries name the tool and its arguments | A plain sentence above each tool call says what it reads or calculates (`js/tool_plain.js`); the tool line stays below it | New |
 
 ### Shared shell (identical apart from names and comments)
 
@@ -85,8 +87,9 @@ Status: **Same** — identical code or behaviour (the shared modules are charact
 |---|---|---|
 | tokens, unit | Same | Same |
 | world | 41 checks for the rail world, the scripts held to the live guardrails | Adapted |
-| engine | 12 groups: golden figures, passengers counted once, projection, honest negatives, refusals, fact audit, guards, tools, the audit by train, mirror data, texts | Adapted |
-| smoke, sims, live, accept, layout, design | 8 cases, 6 simulations with four decision patterns, 6 live cases against the protocol-checking stand-in, 4 acceptance cases, 7 layout checks, 2 design checks | Adapted |
+| engine | 13 groups: golden figures, passengers counted once, projection, honest negatives, refusals, fact audit, guards, tools, the audit by train, mirror data, texts, the alignment view's data | Adapted |
+| smoke, sims, live, accept, layout, design | 8 cases, 6 simulations with four decision patterns, 6 live cases against the protocol-checking stand-in, 4 acceptance cases, 7 layout checks (no cut values or verdicts included), 2 design checks | Adapted |
+| pitch | 7 cases: the pitch as the audience sees it, before, during and after the run, every expected figure worked out by the engine in the test | New |
 | parity, hygiene, docs | The shared shell against the sister app; no client, contact or meeting named; the documents complete and consistent with the code | New |
 | CI | GitHub Actions: Node suites, parity against the public sister repository, browser suites | Same |
 | Documents | `README.md`, `DESIGN.md`, `TECH_NOTES.md`, `DATA_SOURCES.md`, `DEMO_SCRIPT.md` (German), `tests/README.md`, this file | Adapted |
@@ -137,7 +140,61 @@ Open:
 | B3 | Adopt `tests/parity.mjs` in both directions, with the marked app-specific block at the end of `css/style.css`, so a shared-shell change is caught on push |
 | B4 | Adopt `tests/hygiene.mjs` and `tests/docs.mjs`: the first keeps prospect names out of public repositories with its term list kept outside them, the second keeps cited sections and named paths true |
 | B5 | Where a centrepiece's legend docks below it on narrow screens, subtract its height before choosing a size class, as `sizeClass` in `js/mirror.js` does |
+| B6 | Open the centrepiece on one picture a customer reads in a minute: the source, the AI, the person who decides, the outcome per channel and the impact (the alignment view), with the expert view one click away |
+| B7 | Lead every console tool call with a plain sentence of what it reads or calculates (`js/tool_plain.js`) |
+| B8 | Let a centrepiece step down a size when its content outgrows the size its height chose, and fail the layout suite on any value or verdict cut to an ellipsis |
 
-## Part 5. Decisions and open points
+## Part 5. The customer's view: a five-to-ten-minute pitch
 
-The decisions are logged as D-T1 to D-T19 in `TECH_NOTES.md` §8. Open points for a next version: a rehearsal and a recorded live run per scenario (O1, O2); origin–destination figures if a pilot has them (O3); a German interface if the audience asks for it (O4); an audit by train and stop in live mode (O5); and, for a client setting, the app on its own host rather than a shared `github.io` origin (`README.md`, *Your API key*).
+**The request.** Version 1.0.0 was complete, but too much to explain in a five-minute call. The rework had to let a customer understand, in five to ten minutes, what the prototype does, what it achieves and how the AI aligns the information, without leaving the sister apps' design.
+
+**Method.** The pitch was watched from the customer's seat: the first screen, a run at ×1 without explanation, the decision and what it leaves, at 1920 × 1080, 1600 × 900 and 1280 × 720 (a projector), and every figure on screen compared with the engine's. Each row below is something a customer would not have understood, or would have read wrongly, and what changed. `tests/pitch.mjs` checks the result as the audience sees it; `DEMO_SCRIPT.md` is the stage script for five and for ten minutes.
+
+| ID | What the customer saw | Change | Where |
+|---|---|---|---|
+| C1 | The first window explained the mechanism (five steps) before the problem; after it, nobody could say in one sentence what the product does | The window opens with **What it does**: the problem in one example, in the engine's own figures (the source says platform 7, every channel platform 5, 312 passengers, the first in 14 minutes); then **How the AI aligns the information** (five steps) and **What it achieves** (three outcomes); it fits on one screen at 1280 × 720 | `js/intro.js` |
+| C2 | The centrepiece opened on two timetables in tenths of a minute with Ril 100 codes: an expert view that takes longer to read than the pitch lasts | The mirror opens on the **alignment view**: the source and its sensors, the AI translator and **You decide**, what every channel tells passengers, the passenger impact below; the timetables and all trains are one click away and unchanged (D-T20) | `js/mirror_align.js`, `js/align_data.js`, `css/align.css` |
+| C3 | How the AI aligns the information was not visible: a contradiction was a row colour among many | Each channel card shows its value, its age and its state as the run goes on: *Not checked yet*, *Reading…*, *Read, not compared yet*, *Contradicts the source* in red, and after the decision *Re-publication approved* in green with the old value struck through | `js/mirror_align.js` |
+| C4 | The physical layer, the link to the world model, appeared only as a line in the console | A sensor card under the source shows the readings that bear on the train (*Interlocking: route out of platform 7 stored*) and that they confirm the source | `js/align_data.js`, `js/mirror_align.js` |
+| C5 | The console was too dense to follow while talking: tool names and arguments, many long paragraphs, more than a minute to the decision | Eight short paragraphs before the decision, none over 240 characters; a plain sentence on every tool call; the decision after about 33 seconds at ×1 (D-T22, D-T24) | `data/sim_runs.js`, `js/tool_plain.js`, `js/console.js` |
+| C6 | Option cards repeated figures and used internal words (*protected passengers*, *hand-kept values*, *back in sync*) | One big figure per card, *Still misinformed*, and three rows: *All channels aligned*, *Kept by hand*, *Staff effort* (D-T23) | `js/options_panel.js` |
+| C7 | The passenger message, the draft a customer understands first, came after the re-publication order | The passenger message is drafted first, German then English | `data/sim_runs.js`, `js/prompt.js` |
+| C8 | After the decision the tiles did not say when passengers get the right information | *7 left with option A (was 312)* and *info in 2 min, aligned in 8 min* | `js/kpi.js` |
+| C9 | Six equal scenarios: which one to show? | Scenario 1 is marked **Start here**; the ten-minute version adds the construction order | `data/scenarios.js`, `js/controls.js` |
+| C10 | The customer's own condition, no second source of timetable truth, was buried in the README | The AI card carries it as two rules (*Keeps no timetable of its own*, *Every fact traced to the source*); the intro's first line says it; option C names its hand-set values a *second truth* | `js/mirror_align.js`, `js/intro.js` |
+| C11 | The moment the human decides was visible only in the drawer | The **You decide** card under the AI turns burgundy when a decision or an approval waits, and says what is left after it | `js/mirror.js` |
+| C12 | No stage script that fits five minutes | A five-minute core with timed beats and the sentence to say when each picture appears, a ten-minute version, contingencies and the objections that come | `DEMO_SCRIPT.md` |
+| C13 | During the run, channels the AI had already read still said *Not checked yet* while the console said every channel was wrong | *Read, not compared yet* until the engine has compared the channel: the colour comes from the engine, never from the language model's reading (D-T25) | `js/mirror_align.js` |
+| C14 | The first estimate was called *partial scope* on the caption chip and the tile, and the impact line said *not every channel checked* even where the estimate had left out a train or a stop | *First estimate* everywhere, with what it left out as the engine names it: a channel, a stop or a train | `js/align_data.js`, `js/mirror.js`, `js/payoff.js` |
+| C15 | On a 1280 × 720 projector with the options open, the source card read *Plat…* and *1st cl…*, and verdicts ended in *Contradicts the s…* or *Re-…* | In the smallest view the values stand one under the other; a verdict that does not fit beside its value moves under it and wraps; content that outgrows its size steps the view down a size; the layout suite fails on any cut value or verdict | `css/align.css`, `js/mirror.js`, `tests/layout.mjs` |
+| C16 | At 1280 × 720 two of the four option cards fit beside the chart; C and *Do nothing* are scrolled to | Kept: the drawer is the sister apps'. The stage script recommends 1920 × 1080 and says where to scroll | `DEMO_SCRIPT.md` |
+| C17 | Before the run, the impact line said *The AI calculates it* | *The sync engine calculates it once the AI has read the source and the channels*: the division of labour the pitch rests on | `js/mirror_align.js` |
+
+Found by the independent customer review (an agent that had not built the rework, 19 October 2026: the first visit, the five-minute script at ×1 at 1920 × 1080 and 1280 × 720 with every change of the alignment view timed, and the ten-minute additions) and fixed:
+
+| ID | What the customer saw | Change | Where |
+|---|---|---|---|
+| C18 | Right after option A was approved, every channel card said *Re-published: aligned in 8 min*, while the re-publication order still waited for approval and the prototype publishes nothing at all: the payoff screen contradicted *nothing goes out without your approval* | *Re-publication approved*; option C's cards *Override approved: a second truth*; the stage script says the prototype is connected to no system (D-T26) | `js/mirror_align.js`, `DEMO_SCRIPT.md` |
+| C19 | The lines spoken during the run took about 48 seconds for 28 seconds of screen, and the whole script about 550 words: the narration fell 10 to 15 seconds behind | At most 12 words per line during the run, about 440 spoken words in all | `DEMO_SCRIPT.md` |
+| C20 | At 1280 × 720 the option cards sit two by two (C and *Do nothing* under A and B, not beside them), and the *You decide* card leaves the condensed view while the options are open | The stage script says to scroll down and to point at *Your decision* in the step rail at that size | `DEMO_SCRIPT.md` |
+| C21 | One platform had three names: *Platform 7* on the source card, *track 7* on the sensor card, *Gl. 7* and *Gleis 7* in the console and on option C | *platform 7* in English on the cards, the sensor readings and the scripts' English text; *Gleis 7* only in German | `js/align_data.js`, `data/sim_runs.js` |
+| C22 | The status pill and the console's phase lines said *Scanning*, *Diagnosing*, *Verifying*, *Simulating* beside a step rail of *Spot*, *Check*, *Calculate*, *Propose*, *Prepare*; *Simulating* stood next to the SIMULATION badge | *Spotting*, *Assessing*, *Checking*, *Calculating*, *Proposing*, *Preparing* (D-T26) | `js/events.js` |
+| C23 | The count had five names (*at risk*, *affected*, *misinformed*, *would act on wrong information*, *relying on it*), and *8 passengers of 312 affected* at the first estimate invited the question why only 8 | The first tile is *Misinformed passengers* with the result's stage under it; the impact line reads *8 passengers would act on wrong information (first estimate: journey planner & app only)*; *affected* stays on the do-nothing card and in the tooltips | `js/kpi.js`, `js/align_data.js`, `js/mirror_align.js` |
+| C24 | Nothing explained why option C leaves 72 misinformed and B 15; the script's reason fitted B as well | C's residual risk and the script: the coach order keeps the old sectors and only the app names the new ones, so most reservation holders wait in the wrong place (the engine: 68 of the 72) | `data/sim_runs.js`, `DEMO_SCRIPT.md` |
+| C25 | The spoken script never said the run is a replay, and the mode dialog called Live *the real thing* | One sentence as the run starts; the dialog says what each mode is, and that Simulation's figures come from the same engine | `DEMO_SCRIPT.md`, `js/dialogs.js` |
+| C26 | A timetable link labelled *Platform 312* read like a platform number | A people mark before the passenger count | `js/mirror_card.js`, `css/mirror.css` |
+| C27 | The do-nothing card gave *Next cycle 08:00* beside *All channels aligned: not within 180 min* | *08:00, does not fix it* | `js/options_panel.js` |
+| C28 | The console said *2 contradictions* while four cards were red | *2 contradictions on 4 channels* | `js/summaries.js` |
+| C29 | Nothing gave the current time that makes 07:21, 07:42 and 14 minutes add up; the intro's footer read like a software trial | The intro's example opens with *It is 07:28*; the footer says how to watch a run | `js/intro.js` |
+| C30 | After the first run, choosing scenario 6 left the AI card at *Done* | A train the finished run never looked at shows *Waiting for a lead* | `js/mirror.js` |
+| C31 | Ten claims of the stage script did not match the screen: the scroll direction, the decision card at 1280 × 720, the coach order's values, C's reason, *New run* before the scenario menu, the summary shown after a second run had cleared it, *Run facts* for *Replay facts*, when a new replay speed applies, every operating point at 1280 × 720, and a *Guardrail* line a simulation does not show | All corrected; the ten-minute version shows the summary and the audit before the second run | `DEMO_SCRIPT.md` |
+| C32 | Second round: while the status pill said *Checking*, the step rail showed *Calculate*, and the pill ran Spotting, Calculating, Checking, Assessing, Calculating, Proposing, out of the five steps' order | A scripted first estimate stays in the *Check* step (it tests the hypothesis); passenger counts are read while calculating: pill and rail now run Spotting, Checking, Calculating, Proposing, Preparing in step | `js/simulation.js`, `data/sim_runs.js` |
+| C33 | Second round: the management summary said *ICE 618 re-published from the source* two lines above *nothing was published*, in scenario 6 too | Every summary's decision line names what was approved (*re-publication of ICE 618 from the source, with a message …*) | `data/sim_runs.js` |
+| C34 | Second round: the radio message still said *track 7 … track 5*; the do-nothing card said *Affected* | *platform 7 … platform 5*; the row reads *Relying on wrong facts*, beside *Still misinformed* | `data/scenarios.js`, `js/options_panel.js` |
+| C35 | Second round: option B's card said the coach order keeps the old sectors, yet B leaves only 15; why B does better was only in the questions | B's residual risk: until someone re-publishes, only the messages and the staff carry the new platform and sector; B's and C's passenger messages now name the sector, as the engine assumes a message does | `data/sim_runs.js` |
+
+Answered and kept: the timetables view keeps *Track* on the source side, because the operational timetable also routes trains over tracks without a platform, and says *Platform* on the customer side; after the decision the *First affected in* tile turns green, because the right information arrives 12 minutes before the first passenger acts; *Detection → decision* counts the presenter's talk, because it measures the time to a human decision; at 1280 × 720 the caption shortens the train's name to *ICE 618 …* while the result chip is shown.
+
+## Part 6. Decisions and open points
+
+The decisions are logged as D-T1 to D-T26 in `TECH_NOTES.md` §8. Open points for a next version: a rehearsal and a recorded live run per scenario (O1, O2); origin–destination figures if a pilot has them (O3); a German interface if the audience asks for it (O4); an audit by train and stop in live mode (O5); and, for a client setting, the app on its own host rather than a shared `github.io` origin (`README.md`, *Your API key*).

@@ -18,6 +18,11 @@
 //   mirror      the mirror's data: links between the timetables, row placement, published rows with
 //               cancelled stops, the corridor strip, the sync monitor, and what a lookup touches
 //   texts       placeholders, journeys in German and English, draft safety lines, decision payoff
+//   alignment   the alignment view's data for all six scenarios: the stop of the most urgent
+//               contradiction, the source's values there, each channel's value and the verdict the
+//               engine gives (none before a result, none outside a first estimate's scope, violet
+//               for a what-if), the impact as the engine's misinformed figure; the sensor readings
+//               that bear on a train; the plain sentence for each tool call
 // A change that moves a figure must be deliberate: update the golden value and say why in the commit.
 // Usage: node tests/engine.mjs
 import assert from "node:assert/strict";
@@ -45,6 +50,8 @@ const { callTrains, callPoints, resultChecks, contradictionsOf } = await mod("js
 const { syncVars, journeyText, fillTemplate, unresolvedKeys } = await mod("js/sim_vars.js");
 const { finalizeDraft, sourceReference, DRAFT_FOOTER, MOCK_LINES } = await mod("js/drafts.js");
 const { decisionEffects, optionFigures, baselineFigures } = await mod("js/payoff.js");
+const { alignmentData, sensorReadings, shortFact, appliesTo, trainChannels } = await mod("js/align_data.js");
+const { toolPlain } = await mod("js/tool_plain.js");
 
 const model = buildModel(WORLD);
 let passed = 0;
@@ -495,6 +502,90 @@ const GOLDEN = {
   assert.equal(eff("V3").find(([t]) => t === "kpi_update")[1].residual_pax, 72);
   assert.deepEqual(eff("baseline").map(([t]) => t), ["kpi_update"]);
   ok("texts: placeholders, journeys, draft safety lines, source references, decision payoff");
+}
+
+// ---- alignment: the alignment view's data -----------------------------------------------------------------------------
+{
+  // The short forms a channel card shows.
+  assert.equal(shortFact("platform", "platform 5", "published"), "Platform 5");
+  assert.equal(shortFact("coach_order", "1st class G–H, restaurant F, 2nd class B–E", "published"), "1st class G–H");
+  assert.equal(shortFact("time", "arr 08:51", "published"), "Arrives 08:51");
+  assert.equal(shortFact("time", "arr 08:51, dep 08:53", "source"), "Arrives 08:51, departs 08:53");
+  assert.equal(shortFact("stop_not_served", "stops at Hagen Hbf 08:06 (dep 08:07), platform 3", "published"), "Stop at 08:06");
+  assert.equal(shortFact("stop_not_served", "operational stop only (Betriebshalt): no passengers, doors stay closed", "source"), "No passenger stop");
+  assert.equal(shortFact("stop_missing", "extra stop Essen Hbf arr 08:07 dep 08:08, platform 4", "source"), "Extra stop 08:07");
+  assert.equal(shortFact("terminus", "ICE 1025 to Köln Hbf, arrives Köln Hbf 09:20", "published"), "To Köln Hbf");
+  assert.equal(shortFact("terminus", "ends at Köln Messe/Deutz (arrives 09:16); Köln Hbf not served", "source"), "Ends at Köln Messe/Deutz");
+  assert.equal(shortFact("connection", "connection to RE 57 (dep 10:01) shown as reachable", "published"), "RE 57 reachable");
+  assert.ok(appliesTo("coach_order", "coach") && !appliesTo("platform", "coach") && !appliesTo("connection", "displays"));
+
+  const urgent = (list) => [...list].sort((a, b) => (a.minutes_to_first_event ?? 1e9) - (b.minutes_to_first_event ?? 1e9) || b.passengers - a.passengers || a.id.localeCompare(b.id))[0];
+  for (const sc of SCENARIOS) {
+    const tid = sc.train_id;
+    const res = compactForModel(simulateSync(model, structuredClone(REF[sc.id].finding)));
+    const mine = res.contradictions.filter((c) => c.id.startsWith(`${tid}/`));
+    assert.ok(mine.length, `${sc.id}: the finding has contradictions for the scenario's train`);
+    const key = urgent(mine);
+    const here = mine.filter((c) => c.point === key.point);
+    const d = alignmentData(model, tid, { result: res, basisKey: "verified" });
+    // The stop: the most urgent contradiction's; the facts: every contradiction there, the source's side.
+    assert.equal(d.stop.point, key.point, `${sc.id}: stop`);
+    assert.deepEqual(d.facts.map((f) => f.id).sort(), here.map((c) => c.id).sort(), `${sc.id}: facts at the stop`);
+    for (const f of d.facts) assert.equal(f.source, shortFact(f.type, here.find((c) => c.id === f.id).source_says, "source"), `${sc.id}: ${f.id} source value`);
+    // Each channel: the published value where the engine finds it wrong, the source's where right; the verdict follows.
+    assert.deepEqual(d.channels.map((c) => c.channel), trainChannels(model, tid), `${sc.id}: channels`);
+    for (const ch of d.channels) {
+      const facts = here.filter((c) => appliesTo(c.type, ch.channel));
+      const wrong = facts.filter((c) => c.channels_wrong.includes(ch.channel));
+      assert.equal(ch.verdict, !facts.length ? "na" : wrong.length ? "wrong" : "right", `${sc.id}: ${ch.channel} verdict`);
+      assert.deepEqual(ch.values.map((v) => v.text).sort(), facts.map((c) => shortFact(c.type, c.channels_wrong.includes(ch.channel) ? c.published : c.source_says, c.channels_wrong.includes(ch.channel) ? "published" : "source")).sort(), `${sc.id}: ${ch.channel} values`);
+    }
+    // The impact is the engine's misinformed figure and first moment.
+    assert.equal(d.impact.pax, res.baseline.misinformed_pax, `${sc.id}: impact`);
+    assert.equal(d.impact.minutes, res.baseline.first_event_min, `${sc.id}: first moment`);
+    assert.equal(d.more, new Set(mine.filter((c) => c.point !== key.point).map((c) => c.point)).size, `${sc.id}: more stops`);
+    // Before any result: the same values, no verdict and no impact.
+    const idle = alignmentData(model, tid);
+    assert.equal(idle.stop.point, key.point, `${sc.id}: idle stop`);
+    assert.ok(idle.channels.every((c) => c.verdict === null) && idle.impact === null && idle.checked === false, `${sc.id}: idle has no verdict`);
+    assert.deepEqual(idle.channels.map((c) => c.values.map((v) => v.text)), d.channels.map((c) => c.values.map((v) => v.text)), `${sc.id}: idle values`);
+    // A first estimate judges only the channels it looked at.
+    if (REF[sc.id].hypothesis) {
+      const hyp = compactForModel(simulateSync(model, structuredClone(REF[sc.id].hypothesis)));
+      const scope = hyp.scope?.channels || null;
+      const h = alignmentData(model, tid, { result: hyp, basisKey: "partial" });
+      for (const ch of h.channels) if (scope && !scope.includes(ch.channel)) assert.equal(ch.verdict, null, `${sc.id}: ${ch.channel} outside the estimate's scope`);
+      assert.equal(h.impact.stage, "estimate");
+      assert.equal(h.impact.pax, hyp.baseline.misinformed_pax);
+      // The impact line names what the estimate left out, as the engine does: channels, a stop or a train.
+      const leftOut = { "SC-PLATFORM": "channel", "SC-DIVERSION": "train", "SC-OPSSTOP": "channel", "SC-TERMINUS": "channel", "SC-COACH": "stop", "SC-FPLO": "train" }[sc.id];
+      assert.deepEqual(h.impact.notChecked, [leftOut], `${sc.id}: what the first estimate left out`);
+    }
+  }
+  // The pitch scenario in plain values.
+  const pitch = alignmentData(model, "T-618", { result: compactForModel(simulateSync(model, structuredClone(REF["SC-PLATFORM"].finding))), basisKey: "verified" });
+  assert.deepEqual(pitch.facts.map((f) => f.source), ["Platform 7", "1st class F–G"]);
+  assert.deepEqual(pitch.channels.map((c) => `${c.channel}:${c.values.map((v) => v.text).join("+")}:${c.verdict}`), ["planner:Platform 5:wrong", "displays:Platform 5:wrong", "announcements:Platform 5:wrong", "coach:1st class G–H:wrong"]);
+  assert.equal(pitch.change.text, "Changed 07:21 · OPS-05 · Fahrdienstleiter Köln Hbf");
+  // A what-if is violet, never wrong.
+  const wi = compactForModel(simulateSync(model, { train_ids: ["RE 10109"], what_if: { changes: [{ train: "RE 10109", op: "skip", point: "KLMI" }] } }));
+  const w = alignmentData(model, "T-10109", { result: wi, basisKey: "what_if" });
+  assert.ok(w.whatIf && w.channels.some((c) => c.verdict === "what_if") && w.channels.every((c) => c.verdict !== "wrong"));
+  // A train in sync shows its platform on every channel, without a verdict before a check.
+  const calm = alignmentData(model, "T-614");
+  assert.ok(calm.facts.length && calm.channels.every((c) => c.verdict === null && c.values.every((v) => v.ok)));
+  // The sensors that bear on a train: the stored route of ICE 618 first, then the point failure.
+  assert.deepEqual(sensorReadings(model, "T-618", ["KK"]).map((r) => r.id), ["PHY-02", "PHY-01"]);
+  assert.match(sensorReadings(model, "T-618", ["KK"])[0].text, /route out of platform 7 stored/);
+  assert.deepEqual(sensorReadings(model, "T-618", ["EDO"]), [], "no reading where the agent did not look");
+  // The plain sentence of each tool call.
+  assert.equal(toolPlain("ops_list_changes", { train: "ICE 618" }, model), "Reads the operations log for ICE 618: the source");
+  assert.equal(toolPlain("kfp_get_published", { train: "ICE 618", channel: "planner" }, model), "Reads what the journey planner and app tells passengers about ICE 618");
+  assert.equal(toolPlain("kfp_get_published", { train: "T-618" }, model), "Reads what every channel tells passengers about ICE 618");
+  assert.equal(toolPlain("phys_observe", { point: "KK" }, model), "Reads the sensors at Köln Hbf: the physical layer");
+  assert.match(toolPlain("sim_sync", { train_ids: ["ICE 618"] }, model), /^Calculates who would act on wrong information/);
+  assert.equal(toolPlain("web_search", { query: "x" }, model), null);
+  ok("alignment: the stop, the source's values, each channel's value and verdict, the impact, the sensors and the plain tool sentences for all six scenarios");
 }
 
 console.log(`\nAll ${passed} engine tests passed.`);

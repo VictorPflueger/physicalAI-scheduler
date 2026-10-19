@@ -11,12 +11,12 @@ import { execFileSync } from "node:child_process";
 import { APP_ROOT } from "./lib/harness.mjs";
 
 const DOCS = {
-  "README.md": { words: 1500, sections: ["What it is and why it matters", "The concept", "How it works", "Deploy", "The two modes", "Your API key", "What a run costs", "Troubleshooting", "Safety and the EU AI Act", "Quality and acceptance", "Files"] },
+  "README.md": { words: 1500, sections: ["The pitch in five minutes", "What it is and why it matters", "The concept", "How it works", "Deploy", "The two modes", "Your API key", "What a run costs", "Troubleshooting", "Safety and the EU AI Act", "Quality and acceptance", "Files"] },
   "DESIGN.md": { words: 900, numbered: 9 },
-  "DEMO_SCRIPT.md": { words: 900, sections: ["Pre-flight", "Contingencies"] },
+  "DEMO_SCRIPT.md": { words: 900, sections: ["Pre-flight", "Die 5-Minuten-Fassung", "Die 10-Minuten-Fassung", "Contingencies", "Fragen, die kommen werden"] },
   "DATA_SOURCES.md": { words: 700, numbered: 6 },
   "TECH_NOTES.md": { words: 1500, numbered: 12 },
-  "REVIEW.md": { words: 700, sections: ["Parity checklist"] },
+  "REVIEW.md": { words: 700, sections: ["Parity checklist", "The customer's view"] },
   "tests/README.md": { words: 300, sections: ["What runs", "Setup for the browser suites"] }
 };
 const LIVE_URL = "https://victorpflueger.github.io/physicalAI-scheduler/";

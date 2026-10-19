@@ -18,7 +18,8 @@ const SUITES = [
   { id: "live", what: "live agent against the scripted API stand-in", file: "tests/live.mjs", browser: true },
   { id: "accept", what: "acceptance: key, Diagnostics, Abort/Reset, offline", file: "tests/accept.mjs", browser: true },
   { id: "layout", what: "viewports and touch targets", file: "tests/layout.mjs", browser: true },
-  { id: "design", what: "colour grammar in the app, projector and colour-blind captures", file: "tests/design.mjs", browser: true }
+  { id: "design", what: "colour grammar in the app, projector and colour-blind captures", file: "tests/design.mjs", browser: true },
+  { id: "pitch", what: "the five-minute pitch: alignment view, run, decisions, timing, captions, intro, cards", file: "tests/pitch.mjs", browser: true }
 ];
 
 const only = process.argv.slice(2);
@@ -64,4 +65,7 @@ console.log("\n=== Summary ===");
 for (const s of summary) console.log(`${s.skipped ? "SKIP" : s.ok ? "PASS" : "FAIL"}  ${s.id.padEnd(7)} ${String(s.seconds).padStart(4)} s  ${s.what}`);
 const skipped = chosen.length - summary.length;
 if (skipped) console.log(`(${skipped} suite${skipped === 1 ? "" : "s"} not run)`);
-process.exit(summary.length === chosen.length && summary.every((s) => s.ok) ? 0 : 1);
+const allPassed = summary.length === chosen.length && summary.every((s) => s.ok);
+// The success line names a run of every suite, none skipped (a partial run or a skipped suite says so above).
+if (allPassed && !only.length && summary.every((s) => !s.skipped)) console.log(`ALL SUITES PASSED (${summary.length} of ${SUITES.length})`);
+process.exit(allPassed ? 0 : 1);

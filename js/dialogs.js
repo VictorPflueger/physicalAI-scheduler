@@ -49,7 +49,7 @@ export function chooseMode({ runLabel, simBlocked = null }) {
 
     modal = openModal({
       title: "How should the agent run?",
-      intro: "Live is the real thing. Simulation is for rehearsal, offline fallback and exploring without a key.",
+      intro: "Live runs Claude on your own API key. Simulation replays a representative run through the same interface, with every figure calculated by the same engine: for a pitch, a rehearsal or exploring without a key.",
       body: [
         h("div", { class: "run-summary" }, h("span", { class: "label" }, "Will run:"), h("strong", {}, runLabel)),
         h("div", { class: "mode-cards" }, simCard, liveCard)

@@ -23,7 +23,7 @@ export function createControls(root, scenarios, handlers) {
     caption: "Scenario",
     width: 330,
     items: [
-      ...scenarios.map((s) => ({ id: s.id, badge: String(s.number), title: s.title, hint: s.category })),
+      ...scenarios.map((s) => ({ id: s.id, badge: String(s.number), title: s.title, hint: s.category, startHere: !!s.start_here })),
       { sep: true },
       { id: "custom", badge: "+", title: "Custom what-if…", hint: "Describe any timetable question in your own words", liveOnly: true }
     ],
@@ -131,7 +131,8 @@ function dropdown({ id, caption, items, onSelect, width }) {
     const el = h("button", { class: "menu-item", type: "button", role: "menuitemradio", "aria-checked": "false", dataset: { id: it.id } },
       it.badge ? h("span", { class: "num-badge" }, it.badge) : h("span"),
       h("span", {}, h("span", { class: "menu-title" }, it.title), it.hint ? h("span", { class: "menu-hint" }, it.hint) : null),
-      it.liveOnly ? h("span", { class: "chip", dataset: { tone: "live-only" } }, "Live only") : h("span"));
+      it.liveOnly ? h("span", { class: "chip", dataset: { tone: "live-only" } }, "Live only")
+        : it.startHere ? h("span", { class: "chip", dataset: { tone: "start-here" }, title: "The scenario of the five-minute demonstration" }, "Start here") : h("span"));
     el.addEventListener("click", () => {
       if (isDisabled(el)) return;
       close();

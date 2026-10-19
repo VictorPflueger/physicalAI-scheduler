@@ -222,7 +222,9 @@ export function createSimulationPlayer({ getSpeed }) {
     const spec = isRef ? globalThis.REFERENCE_CASES?.[run.scenario]?.[def] : def.spec;
     if (!spec) throw new Error(`No sync specification "${name}" for ${run.scenario}`);
     const call_id = `sim-c${++run.call}`;
-    bus.emit("state_change", { state: "simulating" });
+    // A scripted first estimate tests the hypothesis while the agent checks: the run stays in the step
+    // the script set (Check), so the status pill and the step rail keep to the five steps in order.
+    if (name !== "hypothesis") bus.emit("state_change", { state: "simulating" });
     bus.emit("tool_call", { call_id, name: "sim_sync", input: spec, server: false });
     await wait(run, 1200);
     const res = simulateSync(run.model, structuredClone(spec));

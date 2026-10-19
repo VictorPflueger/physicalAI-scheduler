@@ -50,7 +50,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-1.56.0-chromium-${{ runner.os }}
       - run: npm install -g playwright@1.56.0 && npx playwright install --with-deps chromium
-      - run: NODE_PATH="$(npm root -g)" node tests/run-all.mjs smoke sims live accept layout design
+      - run: NODE_PATH="$(npm root -g)" node tests/run-all.mjs smoke sims live accept layout design pitch
         env:
           TT_TEST_OUT: ${{ runner.temp }}/timetable-translator-tests
       - if: failure()

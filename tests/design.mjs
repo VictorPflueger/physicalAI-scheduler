@@ -1,6 +1,6 @@
 // Design checks and review captures (DESIGN.md §8):
-//   states   the colour grammar in the running app: the timetable mirror's rows, lines, line labels,
-//            corridor rings and monitor rows use the state tokens (red: contradicts the source; amber:
+//   states   the colour grammar in the running app: the alignment view's channel cards, the timetable
+//            mirror's rows, lines, line labels, corridor rings and monitor rows use the state tokens (red: contradicts the source; amber:
 //            informed, data still behind; green: re-publication approved; violet: a what-if), so does
 //            its legend; the status pill and the progress rail name the human step ("Your decision",
 //            then "Your approval"), the rail ends with every step done, and the AI labels open and close
@@ -75,8 +75,11 @@ function mirrorColours(page) {
       const pills = all(`#mirror .ml-pill[data-state="${st}"]`).map((e) => ["line label", getComputedStyle(e).borderTopColor]);
       const rings = all(`#mirror .strip .node[data-state="${st}"] .node-ring`).map((e) => ["strip ring", getComputedStyle(e).stroke]);
       const mon = all(`#mirror .mon-row[data-state="${st}"]`).map((e) => ["monitor row", getComputedStyle(e).borderLeftColor]);
-      out.counted[st] = rows.length + lines.length + pills.length + rings.length + mon.length;
-      for (const [what, got] of [...rows, ...lines, ...pills, ...rings, ...mon]) if (got !== want) out.mismatches.push(`${st} ${what} ${got} ≠ ${want}`);
+      // The alignment view's channel cards carry the state as their left bar (an accepted risk is amber, as at_risk).
+      const tone = { affected: "affected", at_risk: "at-risk", resolved: "resolved", what_if: "what-if" }[st];
+      const cards = tone ? all(`#mirror .al-channel[data-tone="${tone}"]`).map((e) => [`channel card ${e.dataset.channel}`, getComputedStyle(e).borderLeftColor]) : [];
+      out.counted[st] = rows.length + lines.length + pills.length + rings.length + mon.length + cards.length;
+      for (const [what, got] of [...rows, ...lines, ...pills, ...rings, ...mon, ...cards]) if (got !== want) out.mismatches.push(`${st} ${what} ${got} ≠ ${want}`);
     }
     const status = [...document.querySelectorAll("#mirror .legend-group")].find((g) => /Status/.test(g.querySelector("h4")?.textContent || ""));
     const rows = status ? [...status.querySelectorAll(".legend-row")] : [];
@@ -146,19 +149,24 @@ if (wanted("states")) {
 
     await toDone(page);
     await waitPill(page, /^Done$/);
-    // After the approval the re-published contradictions turn the resolved colour, in the train view
-    // and in the sync monitor.
+    // After the approval the re-published contradictions turn the resolved colour, in the alignment
+    // view, in all trains and in the timetables.
     await page.click('.drawer button:has-text("Hide")').catch(() => {});
     await page.waitForTimeout(1200);
     const after2 = await mirrorColours(page);
     problems.push(...after2.mismatches.map((m) => `after approval: ${m}`));
     if (after2.counted.resolved < 4 || after2.counted.affected) problems.push(`the approval is not green on the mirror (${JSON.stringify(after2.counted)})`);
-    await page.click('#mirror .mirror-tools button:has-text("Sync monitor")');
+    await page.click('#mirror .mirror-tools button:has-text("All trains")');
     await page.waitForTimeout(400);
     const monitor = await mirrorColours(page);
     problems.push(...monitor.mismatches.map((m) => `monitor: ${m}`));
     if (!monitor.counted.resolved) problems.push(`the monitor shows no decided train (${JSON.stringify(monitor.counted)})`);
-    await page.click('#mirror .mirror-tools button:has-text("Train view")');
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForTimeout(400);
+    const timetables = await mirrorColours(page);
+    problems.push(...timetables.mismatches.map((m) => `timetables: ${m}`));
+    if (timetables.counted.resolved < 4 || timetables.counted.affected) problems.push(`the approval is not green in the timetables (${JSON.stringify(timetables.counted)})`);
+    await page.click('#mirror .mirror-tools button:has-text("Alignment")');
     rail = await railNow(page);
     if (rail.states.some((s) => s !== "done")) problems.push(`done: rail states ${rail.states.join(", ")}`);
     if ((await pillText(page)) !== "Done") problems.push(`done: pill reads ${await pillText(page)}`);

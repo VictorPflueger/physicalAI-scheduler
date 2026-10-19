@@ -46,9 +46,12 @@ export function summarizeToolResult(name, result) {
     }
     case "sim_sync": {
       const b = result.baseline || {};
-      const what = result.basis === "what_if" ? " (what-if, not the source)" : result.basis === "partial" ? " (partial scope)" : "";
+      const what = result.basis === "what_if" ? " (what-if, not the source)" : result.basis === "partial" ? " (first estimate)" : "";
       const first = b.first_event_min === null || b.first_event_min === undefined ? "nothing affected within the horizon" : `first affected in ${b.first_event_min} min (${b.first_event_label})`;
-      return `${b.contradictions ?? 0} contradiction${b.contradictions === 1 ? "" : "s"}${what}: ${b.misinformed_pax ?? 0} of ${b.affected_pax ?? 0} passengers would act on wrong information; ${first}${result.variants?.length ? `; ${result.variants.length} options costed` : ""}`;
+      // A contradiction is one wrong fact; it can show on several channels (one card each in the alignment view).
+      const channels = new Set((result.contradictions || []).flatMap((c) => c.channels_wrong || [])).size;
+      const on = channels ? ` on ${channels} channel${channels === 1 ? "" : "s"}` : "";
+      return `${b.contradictions ?? 0} contradiction${b.contradictions === 1 ? "" : "s"}${on}${what}: ${b.misinformed_pax ?? 0} passengers would act on wrong information; ${first}${result.variants?.length ? `; ${result.variants.length} options costed` : ""}`;
     }
     default:
       if (typeof result.summary === "string") return result.summary;

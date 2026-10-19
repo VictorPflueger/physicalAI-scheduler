@@ -854,6 +854,8 @@ export function compactForModel(res) {
     label: res.label,
     basis: res.basis,
     ...(res.left_out ? { left_out: res.left_out } : {}),
+    // The channels and stops a scoped calculation looked at: what lies outside was not checked.
+    ...(res.scope && (res.scope.channels || res.scope.stops) ? { scope: res.scope } : {}),
     snapshot_time: res.now_label,
     horizon_min: res.horizon_min,
     trains: res.trains,

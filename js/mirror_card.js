@@ -291,7 +291,8 @@ export function createCard({ onSource, onCustomer, onChannel }) {
       // A mark per state, so the state reads without its colour (as in the sister apps' legends).
       icon(STATE_ICON[st] || "alert", 12, "ml-mark"),
       h("strong", {}, label),
-      pax ? h("span", {}, String(pax)) : null));
+      // The passengers behind it, with a people mark so the figure never reads as a platform number.
+      pax ? h("span", { class: "ml-pax" }, icon("users", 11), String(pax)) : null));
     }
   }
 

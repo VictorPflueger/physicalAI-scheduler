@@ -1,13 +1,15 @@
 // Smoke tests of the main flows and the failure modes of loading:
-//   sim          a full Simulation run (ICE 618's platform change) with the finding on the mirror,
-//                options, the approval's payoff (mirror and KPI tiles), outbox, summary and audit export
+//   sim          a full Simulation run (ICE 618's platform change) with the finding on the alignment
+//                view and in the timetables, options, the approval's payoff (both views and the KPI
+//                tiles), outbox, summary and audit export
 //   live         key check (401, then accepted), a model that keeps ending its turn early
 //   diag         Diagnostics dialog, custom what-if blocks Simulation
 //   intro        first visit opens the intro window; "How it works" reopens it; Start agent leads to the mode choice
-//   mirror       the timetable mirror by mouse and keyboard: a scenario's train, the popovers of both
-//                timetables and of a station (Escape returns the focus), the channel chips, the legend
-//                and its toggles, focus kept across a redraw, the sync monitor (a row opens its train
-//                and the focus follows); every control at least 40 px; nothing loads from outside
+//   mirror       the timetable mirror by mouse and keyboard: a scenario's train in the alignment view
+//                (its cards with the focus ring), then the timetables: the popovers of both timetables
+//                and of a station (Escape returns the focus), the channel chips, the legend and its
+//                toggles, focus kept across a redraw, all trains (a row opens its train and the focus
+//                follows); every control at least 40 px; nothing loads from outside
 //   motion       reduced motion: a Simulation run shows the mirror's final state at once, no motion
 //   file         opened from file://: the page explains how to start a server
 //   missing-data a data file is missing: the boot screen names it
@@ -89,27 +91,40 @@ if (wanted("sim")) {
       const body = document.querySelector(".drawer-body").getBoundingClientRect();
       return [...document.querySelectorAll(".option-actions .btn")].every((b) => { const r = b.getBoundingClientRect(); return r.top >= body.top && r.bottom <= body.bottom; });
     });
-    // The finding on the mirror: Köln Hbf's published row contradicts the source, with its line label,
-    // and the caption says the result was verified against the source.
+    // The finding on the alignment view: every channel contradicts the source, the impact is the
+    // verified figure, and the caption says the result was verified against the source.
     checks.finding = await page.evaluate(() => ({
-      kk: document.querySelector('#mirror .mrow[data-side="customer"][data-point="KK"]')?.dataset.state || null,
-      flag: document.querySelector('#mirror .mrow[data-side="source"][data-point="KK"]')?.dataset.flag || null,
-      pill: document.querySelector("#mirror .ml-pill strong")?.textContent || null,
+      view: document.getElementById("mirror").dataset.view,
+      tones: [...document.querySelectorAll("#mirror .al-channel")].map((c) => c.dataset.tone).join(","),
+      impact: document.querySelector("#mirror .al-impact")?.dataset.tone || null,
       chip: document.querySelector("#mirror .cap-chip:not([hidden])")?.textContent || null,
       pax: document.getElementById("kpi-pax-value").textContent
+    }));
+    // The same finding in the timetables: Köln Hbf's published row contradicts the source, with its line label.
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForSelector('#mirror .mrow[data-side="customer"][data-point="KK"]', { timeout: 5000 });
+    checks.findingTimetables = await page.evaluate(() => ({
+      kk: document.querySelector('#mirror .mrow[data-side="customer"][data-point="KK"]')?.dataset.state || null,
+      flag: document.querySelector('#mirror .mrow[data-side="source"][data-point="KK"]')?.dataset.flag || null,
+      pill: document.querySelector("#mirror .ml-pill strong")?.textContent || null
     }));
     // A flagged source row keeps its keyboard focus ring with its bar.
     await page.keyboard.press("Shift");
     checks.flagRing = await page.evaluate(() => { const b = document.querySelector('#mirror .mrow[data-side="source"][data-flag]'); b.focus(); return getComputedStyle(b).boxShadow; });
+    await page.click('#mirror .mirror-tools button:has-text("Alignment")');
     await page.click('.option-card[data-recommended="true"] .btn-approve');
-    // The mirror follows the decision: the re-published row turns green, the tiles show what is left.
-    await page.waitForSelector('#mirror .mrow[data-side="customer"][data-point="KK"][data-state="resolved"]', { timeout: 15000 });
+    // The mirror follows the decision: the re-published channels turn green, the tiles show what is left.
+    await page.waitForSelector('#mirror .al-channel[data-tone="resolved"]', { timeout: 15000 });
     checks.payoff = await page.evaluate(() => ({
       pax: document.getElementById("kpi-pax-value").textContent,
       paxSub: document.getElementById("kpi-pax-sub").textContent,
       firstSub: document.getElementById("kpi-first-sub").textContent,
-      pill: document.querySelector("#mirror .ml-pill")?.dataset.state || null
+      tones: [...document.querySelectorAll("#mirror .al-channel")].map((c) => c.dataset.tone).join(",")
     }));
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForSelector('#mirror .mrow[data-side="customer"][data-point="KK"][data-state="resolved"]', { timeout: 15000 });
+    checks.payoff.pill = await page.evaluate(() => document.querySelector("#mirror .ml-pill")?.dataset.state || null);
+    await page.click('#mirror .mirror-tools button:has-text("Alignment")');
     await page.waitForSelector('button:has-text("Approve all")', { state: "visible", timeout: 120000 });
     await page.waitForTimeout(600);
     await shot(page, "04-outbox.png");
@@ -157,11 +172,13 @@ if (wanted("sim")) {
     [checks.badgeSim === "SIMULATION" && checks.watermarkVisible, "SIMULATION badge and watermark"],
     [checks.optionCards?.length === 4 && checks.optionCards.some((c) => c.startsWith("baseline:")), "three options plus do nothing"],
     [checks.approveButtonsVisibleWithoutScroll, "the option buttons fit at 1080p"],
-    [checks.finding?.kk === "affected" && checks.finding?.flag === "affected" && /^Platform/.test(checks.finding?.pill || "") && checks.finding?.chip === "Verified against the source" && checks.finding?.pax === "312",
-      `the mirror shows the verified finding (${JSON.stringify(checks.finding)})`],
+    [checks.finding?.view === "align" && checks.finding?.tones === "affected,affected,affected,affected" && checks.finding?.impact === "affected" && checks.finding?.chip === "Verified against the source" && checks.finding?.pax === "312",
+      `the alignment view shows the verified finding (${JSON.stringify(checks.finding)})`],
+    [checks.findingTimetables?.kk === "affected" && checks.findingTimetables?.flag === "affected" && /^Platform/.test(checks.findingTimetables?.pill || ""),
+      `the timetables show the same finding (${JSON.stringify(checks.findingTimetables)})`],
     [RING.test(checks.flagRing || ""), `a flagged source row shows the focus ring (${checks.flagRing})`],
-    [checks.payoff?.pax === "7" && /was 312/.test(checks.payoff?.paxSub || "") && /^info \+2 min, in sync after 8 min$/.test(checks.payoff?.firstSub || "") && checks.payoff?.pill === "resolved",
-      `the approval's payoff on the tiles and the mirror (${JSON.stringify(checks.payoff)})`],
+    [checks.payoff?.pax === "7" && /was 312/.test(checks.payoff?.paxSub || "") && /^info in 2 min, aligned in 8 min$/.test(checks.payoff?.firstSub || "") && checks.payoff?.tones === "resolved,resolved,resolved,resolved" && checks.payoff?.pill === "resolved",
+      `the approval's payoff on the tiles, the alignment view and the timetables (${JSON.stringify(checks.payoff)})`],
     [checks.drafts > 0, "approval must produce drafts"],
     [checks.statusEnd === "Done" && checks.startLabel === "New run", "run ends Done"],
     [checks.lastEntryInView && checks.replayFacts, "console ends on the Replay facts line"],
@@ -322,13 +339,13 @@ if (wanted("intro")) {
   await finish("intro: first visit, reopen, start", t, checks, [
     [checks.autoOpened && checks.title === "How the Timetable Translator works", `the intro opens by itself on the first visit (${checks.title})`],
     [checks.steps?.join(",") === "Spot,Check,Calculate,Propose,Prepare" && checks.values?.length === 3, "five steps and three value points"],
-    [checks.words <= 200, `the intro stays brief (${checks.words} words)`],
+    [checks.words <= 230, `the intro stays brief (${checks.words} words)`],
     [checks.fits, "the intro fits the screen"],
     [checks.focus === "Start agent", "the main button has focus"],
     [checks.flag === "1" && checks.reopenedOnReload === false, "once closed, it does not open again on reload"],
     [checks.buttonLabel === "How it works", "header button labelled How it works"],
     [checks.startOpensModeChoice === "simulation,live", "Start agent in the intro opens the mode choice"],
-    [JSON.stringify(checks.duringRunButtons) === '["Close"]' && /Scanning|Diagnosing|Verifying|Simulating|Options/.test(checks.statusAfterClose || ""), `during a run: Close only, and the run carries on (${checks.duringRunButtons}, ${checks.statusAfterClose})`]
+    [JSON.stringify(checks.duringRunButtons) === '["Close"]' && /Spotting|Assessing|Checking|Calculating|Proposing/.test(checks.statusAfterClose || ""), `during a run: Close only, and the run carries on (${checks.duringRunButtons}, ${checks.statusAfterClose})`]
   ]);
 }
 
@@ -341,6 +358,16 @@ if (wanted("mirror")) {
   try {
     await boot(page);
     await pickScenario(page, "SC-DIVERSION");
+    // The alignment view opens first; its cards are buttons with the focus ring, and a card opens the timetables.
+    await page.keyboard.press("Shift");
+    checks.alignRings = await page.evaluate(() => ["#mirror .al-source", "#mirror .al-channel"].map((sel) => {
+      const el = document.querySelector(sel);
+      el.focus();
+      return `${sel}:${/ 0px 0px 0px 4px/.test(getComputedStyle(el).boxShadow)}`;
+    }));
+    checks.alignView = `${await page.$eval("#mirror", (m) => m.dataset.view)}:${(await page.textContent("#mirror .mirror-caption strong")).trim()}`;
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForSelector('#mirror .mrow[data-side="source"]', { timeout: 5000 });
     checks.caption = (await page.textContent("#mirror .mirror-caption strong")).trim();
     checks.sub = (await page.textContent("#mirror .cap-sub")).trim();
     checks.rows = await page.evaluate(() => ({
@@ -424,7 +451,7 @@ if (wanted("mirror")) {
     }));
     // The sync monitor: every train in the window, first departure first; a row opens its train and
     // the keyboard focus moves into the card.
-    await page.click('#mirror .mirror-tools button:has-text("Sync monitor")');
+    await page.click('#mirror .mirror-tools button:has-text("All trains")');
     await page.waitForSelector('#mirror .mirror-view[data-view="monitor"]:not([hidden])');
     await page.waitForTimeout(300);
     checks.monitor = await page.evaluate(() => {
@@ -449,8 +476,9 @@ if (wanted("mirror")) {
     checks.FAILED = String(err.message).split("\n")[0];
     await shot(page, "mirror-fail.png");
   }
-  await finish("mirror: train view, popovers, legend, monitor", t, checks, [
-    [checks.caption === "ICE 1022 · Berlin Hbf → Köln Hbf" && /^Source v2 \(OPS-03, 07:08\) · Planner v1 · Displays v1/.test(checks.sub || ""), `the mirror opens on the chosen scenario's train (${checks.caption}; ${checks.sub})`],
+  await finish("mirror: alignment, timetables, popovers, legend, all trains", t, checks, [
+    [checks.alignView === "align:ICE 1022 · Berlin Hbf → Köln Hbf" && (checks.alignRings || []).every((r) => r.endsWith(":true")), `the alignment view opens on the chosen scenario's train, its cards with the focus ring (${checks.alignView}; ${checks.alignRings})`],
+    [checks.caption === "ICE 1022 · Berlin Hbf → Köln Hbf" && /^Source v2 \(OPS-03, 07:08\) · Planner v1 · Displays v1/.test(checks.sub || ""), `the timetables show the same train (${checks.caption}; ${checks.sub})`],
     [checks.rows?.source === 11 && /EHG:/.test(checks.rows?.customer || "") && /KW:/.test(checks.rows?.customer || "") && checks.rows?.links >= 6 && checks.rows?.ends >= 2,
       `source rows, the published rows with their lines and the stop marks (${JSON.stringify(checks.rows)})`],
     [checks.rows?.routePub && checks.rows?.trainPos, "the strip shows the published route beside today's and the train's position"],
@@ -464,7 +492,7 @@ if (wanted("mirror")) {
     [checks.legendClosed === "true:mirror-legend", `Escape closes the legend and returns the focus to its button (${checks.legendClosed})`],
     [/mrow\|source\|EDO/.test(checks.focusKept || "") && /mrow\|source\|EDO/.test(checks.focusBackAfterRedraw || ""), `focus survives a redraw, and the popover gives it back after one (${checks.focusKept}; ${checks.focusBackAfterRedraw})`],
     [(checks.rings || []).length === 6 && checks.rings.every((r) => r.endsWith(":true")), `the mirror's buttons show the focus ring (${checks.rings})`],
-    [checks.monitor?.n === 34 && checks.monitor?.sorted && /^Sync monitor: 34 trains/.test(checks.monitor?.caption || "") && checks.monitor?.sev === "created by OPS-03", `the monitor lists 34 trains, first departure first (${JSON.stringify(checks.monitor)})`],
+    [checks.monitor?.n === 34 && checks.monitor?.sorted && /^All trains: 34 in the next/.test(checks.monitor?.caption || "") && checks.monitor?.sev === "created by OPS-03", `all trains: 34, first departure first (${JSON.stringify(checks.monitor)})`],
     [checks.afterRow === "train:ICE 1026 · Berlin Hbf → Köln Hbf" && /mrow\|source\|/.test(checks.focusAfterRow || ""), `a monitor row opens its train and the focus follows (${checks.afterRow}; ${checks.focusAfterRow})`],
     [(checks.small || []).length === 0, `every mirror control is at least 40 px (${checks.small})`],
     [(checks.external || []).length === 0, `nothing loads from outside (${checks.external})`]
@@ -486,7 +514,7 @@ if (wanted("motion")) {
     await page.waitForTimeout(300);
     // The finding is on the mirror straight away, and no mirror element animates (no pulse, no
     // running lines, no flash).
-    checks.kk = await page.evaluate(() => document.querySelector('#mirror .mrow[data-side="customer"][data-point="KK"]')?.dataset.state || null);
+    checks.kk = await page.evaluate(() => [...document.querySelectorAll("#mirror .al-channel")].map((c) => c.dataset.tone).join(","));
     checks.animations = await page.evaluate(() => document.getAnimations().filter((a) => document.querySelector("#mirror")?.contains(a.effect?.target) && a.playState === "running").map((a) => `${a.effect?.target?.className?.baseVal ?? a.effect?.target?.className}:${a.animationName || a.transitionProperty || a.constructor.name}`));
     await shot(page, "18-reduced-motion.png");
     await page.click("#btn-abort");
@@ -495,7 +523,7 @@ if (wanted("motion")) {
     await shot(page, "motion-fail.png");
   }
   await finish("motion: reduced motion", t, checks, [
-    [checks.kk === "affected", `the mirror shows the finding (${checks.kk})`],
+    [checks.kk === "affected,affected,affected,affected", `the alignment view shows the finding (${checks.kk})`],
     [(checks.animations || []).length === 0, `no animation on the mirror (${JSON.stringify(checks.animations)})`]
   ]);
 }

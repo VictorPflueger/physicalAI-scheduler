@@ -261,6 +261,8 @@
 .ml-pill strong { font: 700 0.74rem / 1 var(--font-figures); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ml-pill .ml-mark { flex: none; margin-left: -2px; align-self: center; }
 .ml-pill span { font: 600 0.72rem / 1 var(--font-figures); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.ml-pill .ml-pax { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; }
+.ml-pill .ml-pax .icon { flex: none; }
 .ml-pill[data-state="at_risk"], .ml-pill[data-state="accepted"] { border-color: var(--at-risk); color: var(--warning-text); }
 .ml-pill[data-state="resolved"] { border-color: var(--resolved); color: var(--success-text); }
 .ml-pill[data-state="what_if"] { border-color: var(--violet-line); color: var(--violet-text); border-style: dashed; }

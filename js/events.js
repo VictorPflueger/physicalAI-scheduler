@@ -32,15 +32,18 @@
 //   run_end          { status: "done"|"no_findings"|"incomplete"|"aborted"|"error", reason? }
 //                    incomplete: the agent stopped before the workflow was finished
 
+// The status pill and the console's phase lines say what the agent does in the words of the five
+// steps (Spot, Check, Calculate, Propose, Prepare), never "Simulating", which a Simulation run's badge
+// already uses for something else.
 export const RUN_STATES = {
   idle: "Idle",
-  scanning: "Scanning",
-  diagnosing: "Diagnosing",
-  verifying: "Verifying",
-  simulating: "Simulating",
-  options: "Options",
+  scanning: "Spotting",
+  diagnosing: "Assessing",
+  verifying: "Checking",
+  simulating: "Calculating",
+  options: "Proposing",
   awaiting_approval: "Awaiting approval",
-  executing: "Executing",
+  executing: "Preparing",
   done: "Done",
   stopped: "Stopped",
   aborted: "Aborted",

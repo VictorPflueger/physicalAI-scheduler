@@ -108,7 +108,20 @@ const lastResults = (req) => {
 };
 const safeJson = (s) => { try { return JSON.parse(s); } catch { return null; } };
 const consoleHas = (page, re) => page.evaluate((src) => [...document.querySelectorAll("#console .entry")].some((e) => new RegExp(src).test(e.textContent)), re.source);
-const mirrorRow = (page, side, point) => page.evaluate(([s, p]) => document.querySelector(`#mirror .mrow[data-side="${s}"][data-point="${p}"]`)?.dataset.state || document.querySelector(`#mirror .mrow[data-side="${s}"][data-point="${p}"]`)?.dataset.flag || null, [side, point]);
+// A row's state in the timetables. The mirror opens on the alignment view, so the read switches to the
+// timetables and back.
+const mirrorRow = async (page, side, point) => {
+  const view = await page.$eval("#mirror", (m) => m.dataset.view);
+  if (view !== "train") {
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForSelector('#mirror .mrow[data-side="source"]', { timeout: 5000 });
+  }
+  const v = await page.evaluate(([s, p]) => document.querySelector(`#mirror .mrow[data-side="${s}"][data-point="${p}"]`)?.dataset.state || document.querySelector(`#mirror .mrow[data-side="${s}"][data-point="${p}"]`)?.dataset.flag || null, [side, point]);
+  if (view === "align") await page.click('#mirror .mirror-tools button:has-text("Alignment")');
+  return v;
+};
+// The alignment view's channel cards, by tone.
+const alignTones = (page) => page.$$eval("#mirror .al-channel", (els) => els.map((c) => c.dataset.tone).join(","));
 
 const PLATFORM = REF["SC-PLATFORM"];
 const SEED = SCEN.find((s) => s.id === "SC-PLATFORM").seed;
@@ -127,7 +140,7 @@ if (run("full")) {
   const script = [
     { usage: usage({ input_tokens: 3400, cache_creation_input_tokens: 6100, cache_read_input_tokens: 0, output_tokens: 380 }), stop: "tool_use", blocks: [
       { type: "thinking", thinking: "The radio message is a lead. First the operations log and what the channels publish for ICE 618; both lookups are independent.", signature: "SIG-THINK-1==" },
-      { type: "text", text: "Lead received: platform staff at Köln Hbf say ICE 618 leaves from track 7 today, but the app still says track 5. I read the operations log and the published view in parallel." },
+      { type: "text", text: "Lead received: platform staff at Köln Hbf say ICE 618 leaves from platform 7 today, but the app still says platform 5. I read the operations log and the published view in parallel." },
       { type: "tool_use", id: "toolu_01", name: "ops_list_changes", input: { train: "ICE 618" } },
       { type: "tool_use", id: "toolu_02", name: "kfp_get_published", input: { train: "ICE 618" } }
     ], expect: (req, { check }) => {
@@ -236,6 +249,7 @@ if (run("full")) {
     await page.screenshot({ path: path.join(OUT, "L2-live-options.png") });
     checks.optionTotals = await page.$$eval(".option-card", (els) => els.map((e) => e.querySelector(".option-total .value")?.textContent));
     checks.kpiBefore = await page.$eval("#kpi-pax-value", (e) => `${e.closest(".kpi").dataset.tone}|${e.textContent}`);
+    checks.alignBefore = await alignTones(page);
     checks.mirrorBefore = `${await page.textContent("#mirror .mirror-caption strong")}|${await page.textContent("#mirror .cap-chip")}|${await mirrorRow(page, "customer", "KK")}|${await mirrorRow(page, "source", "KK")}`;
     // Reject option B first, then approve the recommended option A.
     await page.click('.option-card[aria-label^="Option B:"] .btn-reject');
@@ -245,6 +259,7 @@ if (run("full")) {
     await page.waitForTimeout(400);
     checks.payoffPax = await page.$eval("#kpi-pax-value", (e) => `${e.closest(".kpi").dataset.tone}|${e.textContent}|${e.nextElementSibling.textContent}`);
     checks.payoffFirst = await page.$eval("#kpi-first-value", (e) => `${e.closest(".kpi").dataset.tone}|${e.textContent}|${e.nextElementSibling.textContent}`);
+    checks.alignAfter = await alignTones(page);
     checks.mirrorAfter = await mirrorRow(page, "customer", "KK");
     await page.waitForSelector('button:has-text("Approve all")', { state: "visible", timeout: 30000 });
     await page.waitForTimeout(300);
@@ -611,9 +626,11 @@ const EXPECT = {
     [/^verified\|/.test(c.alert || "") && /ICE 618 leaves from platform 7/.test(c.alert || "") && /physical layer: PHY-01/.test(c.alert || ""), `verified alert card with its evidence (got ${c.alert})`],
     [c.optionTotals?.length === 4, "three options plus do nothing"],
     [c.kpiBefore === "affected|312", `passengers-at-risk tile shows the verified figure (got ${c.kpiBefore})`],
-    [c.mirrorBefore === "ICE 618 · Köln Hbf → Hamburg-Altona|Verified against the source|affected|affected", `the mirror shows the verified finding on ICE 618 (got ${c.mirrorBefore})`],
+    [c.alignBefore === "affected,affected,affected,affected", `the alignment view shows every channel contradicting the source (got ${c.alignBefore})`],
+    [c.mirrorBefore === "ICE 618 · Köln Hbf → Hamburg-Altona|Verified against the source|affected|affected", `the timetables show the verified finding on ICE 618 (got ${c.mirrorBefore})`],
     [/^at-risk\|7\|left with option A \(was 312\)$/.test(c.payoffPax || ""), `the first tile shows the payoff of the approved option (got ${c.payoffPax})`],
-    [/^resolved\|14 min\|info \+2 min, in sync after 8 min$/.test(c.payoffFirst || ""), `the second tile shows the payoff (got ${c.payoffFirst})`],
+    [/^resolved\|14 min\|info in 2 min, aligned in 8 min$/.test(c.payoffFirst || ""), `the second tile shows the payoff (got ${c.payoffFirst})`],
+    [c.alignAfter === "resolved,resolved,resolved,resolved", `the approved re-publication turns the channels green (got ${c.alignAfter})`],
     [c.mirrorAfter === "resolved", `the approved re-publication turns the row green (got ${c.mirrorAfter})`],
     [/Guardrail: The draft was refused\. These timetable facts match nothing this text may quote: 07:44/.test(c.factRefusal || "") && c.draftTypedTime === false, `the typed time was refused in view and never reached the Outbox (got ${c.factRefusal})`],
     [/1 guardrail refusal/.test(c.runFacts || ""), `run facts count the refusal (got ${c.runFacts})`],

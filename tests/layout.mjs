@@ -1,12 +1,15 @@
 // Layout checks for projector use:
 //   viewports  at 1920×1080, 1600×900, 1536×864, 1366×768 and 1280×720 (idle, the finding during the
 //              run, options, outbox, approved with the drawer hidden, that again with the legend opened
-//              by the presenter, and the sync monitor): no horizontal overflow, header badges never
-//              overlap the KPI tiles, the header keeps its height and the control bar stays on one row;
-//              on the timetable mirror nothing leaves the panel, the caption, view buttons, legend,
-//              corridor strip and card never cover each other, the strip's labels stay apart, the rows
-//              and the lines between them stay inside the card, the line labels never stack on each
-//              other, and the finding is in view in the card
+//              by the presenter, and all trains): no horizontal overflow, header badges never overlap
+//              the KPI tiles, the header keeps its height and the control bar stays on one row; on the
+//              alignment view (the mirror's first view) no card leaves the view, no two cards cover
+//              each other, the caption and view buttons cover none, every value stays inside its card
+//              and the finding is in view, with the drawer open and closed and beside the legend; on
+//              the timetables nothing leaves the panel, the caption, view buttons, legend, corridor
+//              strip and card never cover each other, the strip's labels stay apart, the rows and the
+//              lines between them stay inside the card, the line labels never stack on each other, and
+//              the finding is in view in the card
 //   scenarios  the other five scenarios at 1280×720 through the finding, options and outbox, whose
 //              longer KPI subtitles must not push the header to a third row, and whose mirrors follow
 //              the rules above; their findings at 1600×900 too
@@ -122,6 +125,90 @@ async function mirrorOverlaps(page, { finding = false } = {}) {
   }, finding);
 }
 
+/** What covers or clips what on the alignment view (empty when every card has its own place). */
+async function alignOverlaps(page, opts = {}) {
+  // Measured at rest: the drawer slides and the view resizes (the options can open right after the
+  // finding), so a measurement counts only if the view kept its size and no CSS transition ran from just
+  // before it until a moment after it; a frame in the middle of the drawer's slide is not a layout.
+  const atRest = () => page.evaluate(() => {
+    const v = document.querySelector('#mirror .mirror-view[data-view="align"]');
+    const moving = document.getAnimations().some((a) => a instanceof CSSTransition && a.playState === "running");
+    return { size: v ? `${v.clientWidth}x${v.clientHeight}` : "none", moving };
+  });
+  let last = [];
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await page.waitForFunction(() => {
+      const v = document.querySelector('#mirror .mirror-view[data-view="align"]');
+      const size = v ? `${v.clientWidth}x${v.clientHeight}` : "none";
+      const moving = document.getAnimations().some((a) => a instanceof CSSTransition && a.playState === "running");
+      const same = window.__alignSize === size;
+      window.__alignSize = size;
+      return same && !moving;
+    }, null, { polling: 200, timeout: 6000 }).catch(() => {});
+    await page.waitForTimeout(150);
+    const before = await atRest();
+    last = await measureAlign(page, opts);
+    await page.waitForTimeout(300);
+    const after = await atRest();
+    if (!before.moving && !after.moving && before.size === after.size) return last;
+  }
+  return last;
+}
+
+async function measureAlign(page, { finding = false } = {}) {
+  return page.evaluate((finding) => {
+    const view = document.querySelector('#mirror .mirror-view[data-view="align"]');
+    const out = [];
+    const shown = (el) => el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden" && getComputedStyle(el).display !== "none" && !el.closest("[hidden]");
+    if (!shown(view)) return ["the alignment view is not shown"];
+    const box = (el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
+    const hit = (a, b) => a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1;
+    const within = (a, B) => a.l >= B.l - 1 && a.r <= B.r + 1 && a.t >= B.t - 1 && a.b <= B.b + 1;
+    const V = box(view);
+    const name = (el) => el.classList.contains("al-channel") ? `channel ${el.dataset.channel}` : [...el.classList].find((c) => c.startsWith("al-") && c !== "al-card") || el.className;
+    const cards = [...view.querySelectorAll(".al-card, .al-impact")].filter(shown);
+    for (const c of cards) if (!within(box(c), V)) out.push(`the ${name(c)} card leaves the view`);
+    for (let i = 0; i < cards.length; i++) for (let j = i + 1; j < cards.length; j++) {
+      if (hit(box(cards[i]), box(cards[j]))) out.push(`the ${name(cards[i])} and ${name(cards[j])} cards overlap`);
+    }
+    for (const sel of ["#mirror .mirror-caption", "#mirror .mirror-tools", "#mirror .legend"]) {
+      const el = document.querySelector(sel);
+      if (shown(el)) for (const c of cards) if (hit(box(el), box(c))) out.push(`${sel.replace("#mirror .", "")} covers the ${name(c)} card`);
+    }
+    for (const c of cards) {
+      const C = box(c);
+      for (const v of c.querySelectorAll(".al-fact, .al-ch-value, .al-ch-status, .al-title, .al-ch-name, .al-impact-text, .al-gate-text, .al-ai-status, .al-train")) {
+        if (shown(v) && !within(box(v), C)) out.push(`"${v.textContent.trim().slice(0, 24)}" leaves the ${name(c)} card`);
+      }
+    }
+    for (const head of view.querySelectorAll(".al-head")) if (shown(head) && !within(box(head), V)) out.push("a column head leaves the view");
+    // The source's values, each channel's values and the verdict words are read whole, never cut to an
+    // ellipsis (the smallest view shows the verdict as a mark only, so it has no word to cut).
+    const size = view.querySelector(".align")?.dataset.size || "?";
+    const cut = (el) => el.scrollWidth > el.clientWidth + 1;
+    for (const f of view.querySelectorAll(".al-fact")) if (shown(f) && cut(f)) out.push(`the source value "${f.textContent.trim()}" is cut (${size})`);
+    for (const v of view.querySelectorAll(".al-ch-value")) if (shown(v) && cut(v)) out.push(`the channel value "${v.textContent.trim()}" is cut (${size})`);
+    for (const s of view.querySelectorAll(".al-ch-status > span:not(.icon)")) if (shown(s) && cut(s)) out.push(`the verdict "${s.textContent.trim()}" is cut (${size})`);
+    if (finding) {
+      const red = [...view.querySelectorAll('.al-channel[data-tone="affected"], .al-channel[data-tone="resolved"], .al-channel[data-tone="at-risk"]')].filter(shown);
+      if (!red.length) out.push("no finding on the alignment view");
+      else if (!red.some((r) => within(box(r), V))) out.push("the finding is out of view");
+    }
+    return out;
+  }, finding);
+}
+
+/** The timetables for a measurement, then back to the alignment view. */
+async function inTimetables(page, measure) {
+  await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+  await page.waitForSelector('#mirror .mirror-view[data-view="train"]:not([hidden]) .mrow', { timeout: 5000 });
+  await page.waitForTimeout(500);
+  const r = await measure();
+  await page.click('#mirror .mirror-tools button:has-text("Alignment")');
+  await page.waitForTimeout(300);
+  return r;
+}
+
 async function toOutbox(page) {
   await page.click('.option-card[data-recommended="true"] .btn-approve');
   await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 120000 });
@@ -164,41 +251,50 @@ if (wanted("viewports")) {
     try {
       const idle = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
       const headerIdle = await headerGeometry(page);
-      const mirrorIdle = await mirrorOverlaps(page);
+      const alignIdle = await alignOverlaps(page);
+      const mirrorIdle = await inTimetables(page, () => mirrorOverlaps(page));
       await page.screenshot({ path: path.join(OUT, `vp-${w}x${h}-idle.png`) });
       await toFinding(page);
-      const mirrorFinding = await mirrorOverlaps(page, { finding: true });
+      const alignFinding = await alignOverlaps(page, { finding: true });
       await page.screenshot({ path: path.join(OUT, `vp-${w}x${h}-finding.png`) });
+      const mirrorFinding = await inTimetables(page, () => mirrorOverlaps(page, { finding: true }));
       await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 120000 });
       await page.waitForFunction(() => document.querySelector(".status-pill .text")?.textContent.trim() === "Awaiting your decision", null, { timeout: 30000 });
       await page.waitForTimeout(300);
       const options = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
       const headerRun = await headerGeometry(page);
-      const mirrorOptions = await mirrorOverlaps(page, { finding: true });
+      const alignOptions = await alignOverlaps(page, { finding: true });
       await page.screenshot({ path: path.join(OUT, `vp-${w}x${h}-options.png`) });
+      const mirrorOptions = await inTimetables(page, () => mirrorOverlaps(page, { finding: true }));
       await toOutbox(page);
       const outbox = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
       const headerOutbox = await headerGeometry(page);
-      const mirrorOutbox = await mirrorOverlaps(page);
+      const alignOutbox = await alignOverlaps(page, { finding: true });
       await page.screenshot({ path: path.join(OUT, `vp-${w}x${h}-outbox.png`) });
-      // The decision on the full mirror: the drawer hidden, the re-published rows green.
+      const mirrorOutbox = await inTimetables(page, () => mirrorOverlaps(page));
+      // The decision on the full mirror: the drawer hidden, the re-published channels and rows green.
       await page.click('.drawer button:has-text("Hide")');
       await page.waitForTimeout(900);
-      const mirrorApproved = await mirrorOverlaps(page, { finding: true });
+      const alignApproved = await alignOverlaps(page, { finding: true });
       await page.screenshot({ path: path.join(OUT, `vp-${w}x${h}-approved.png`) });
+      const mirrorApproved = await inTimetables(page, () => mirrorOverlaps(page, { finding: true }));
       // The presenter opens the legend: it docks beside the views (below them on a narrow mirror).
       await page.click('#mirror .mirror-tools button[aria-controls="mirror-legend"]');
       await page.waitForTimeout(600);
-      const mirrorLegend = await mirrorOverlaps(page);
+      const alignLegend = await alignOverlaps(page);
       await page.screenshot({ path: path.join(OUT, `vp-${w}x${h}-legend.png`) });
+      const mirrorLegend = await inTimetables(page, () => mirrorOverlaps(page));
       await page.click('#mirror .mirror-tools button[aria-controls="mirror-legend"]');
-      // The sync monitor of all trains.
-      await page.click('#mirror .mirror-tools button:has-text("Sync monitor"), #mirror .mirror-tools button[title^="Every train"]');
+      // All trains in the window.
+      await page.click('#mirror .mirror-tools button:has-text("All trains")');
       await page.waitForTimeout(500);
       const mirrorMonitor = await mirrorOverlaps(page);
       await page.screenshot({ path: path.join(OUT, `vp-${w}x${h}-monitor.png`) });
-      for (const [label, list] of [["idle", mirrorIdle], ["finding", mirrorFinding], ["options", mirrorOptions], ["outbox", mirrorOutbox], ["approved", mirrorApproved], ["legend opened", mirrorLegend], ["monitor", mirrorMonitor]]) {
-        for (const p of list) problems.push(`${label}: mirror: ${p}`);
+      for (const [label, list] of [["idle", alignIdle], ["finding", alignFinding], ["options", alignOptions], ["outbox", alignOutbox], ["approved", alignApproved], ["legend opened", alignLegend]]) {
+        for (const p of list) problems.push(`${label}: alignment view: ${p}`);
+      }
+      for (const [label, list] of [["idle", mirrorIdle], ["finding", mirrorFinding], ["options", mirrorOptions], ["outbox", mirrorOutbox], ["approved", mirrorApproved], ["legend opened", mirrorLegend], ["all trains", mirrorMonitor]]) {
+        for (const p of list) problems.push(`${label}: timetables: ${p}`);
       }
       if (idle || options || outbox) problems.push(`horizontal overflow (idle ${idle}, options ${options}, outbox ${outbox})`);
       for (const [label, g] of [["idle", headerIdle], ["options", headerRun], ["outbox", headerOutbox]]) {
@@ -208,7 +304,7 @@ if (wanted("viewports")) {
       }
     } catch (e) { problems.push(`exception: ${String(e.message).split("\n")[0]}`); }
     problems.push(...errors.map((e) => `page error: ${e}`));
-    results.push({ name: `viewport ${w}×${h}`, ok: !problems.length, problems });
+    results.push({ name: `viewport ${w}×${h} (alignment view, timetables, all trains)`, ok: !problems.length, problems });
     await context.close();
   }
 }
@@ -219,22 +315,26 @@ if (wanted("scenarios")) {
     const { context, page, errors } = await newPage(1280, 720);
     try {
       await toFinding(page, id);
-      const mirrorFinding = await mirrorOverlaps(page, { finding: true });
+      const alignFinding = await alignOverlaps(page, { finding: true });
       await page.screenshot({ path: path.join(OUT, `sc-${id}-1280-finding.png`) });
+      const mirrorFinding = await inTimetables(page, () => mirrorOverlaps(page, { finding: true }));
       await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 120000 });
       await page.waitForFunction(() => document.querySelector(".status-pill .text")?.textContent.trim() === "Awaiting your decision", null, { timeout: 30000 });
       await page.waitForTimeout(300);
       const atOptions = await headerGeometry(page);
-      const mirrorOptions = await mirrorOverlaps(page, { finding: true });
+      const alignOptions = await alignOverlaps(page, { finding: true });
+      const mirrorOptions = await inTimetables(page, () => mirrorOverlaps(page, { finding: true }));
       await toOutbox(page);
       const atOutbox = await headerGeometry(page);
-      const mirrorOutbox = await mirrorOverlaps(page);
+      const alignOutbox = await alignOverlaps(page, { finding: true });
       await page.screenshot({ path: path.join(OUT, `sc-${id}-1280-outbox.png`) });
+      const mirrorOutbox = await inTimetables(page, () => mirrorOverlaps(page));
       for (const [label, g] of [["options", atOptions], ["outbox", atOutbox]]) {
         if (g.overlap) problems.push(`${id} ${label}: header badges overlap the KPI tiles`);
         if (g.headerHeight > 115) problems.push(`${id} ${label}: header grew to ${g.headerHeight} px`);
       }
-      for (const [label, list] of [["finding", mirrorFinding], ["options", mirrorOptions], ["outbox", mirrorOutbox]]) for (const p of list) problems.push(`${id} ${label}: mirror: ${p}`);
+      for (const [label, list] of [["finding", alignFinding], ["options", alignOptions], ["outbox", alignOutbox]]) for (const p of list) problems.push(`${id} ${label}: alignment view: ${p}`);
+      for (const [label, list] of [["finding", mirrorFinding], ["options", mirrorOptions], ["outbox", mirrorOutbox]]) for (const p of list) problems.push(`${id} ${label}: timetables: ${p}`);
     } catch (e) { problems.push(`${id}: exception: ${String(e.message).split("\n")[0]}`); }
     problems.push(...errors.map((e) => `${id}: page error: ${e}`));
     await context.close();
@@ -244,13 +344,14 @@ if (wanted("scenarios")) {
     const { context, page, errors } = await newPage(1600, 900);
     try {
       await toFinding(page, id);
-      for (const p of await mirrorOverlaps(page, { finding: true })) problems.push(`${id} finding at 1600×900: mirror: ${p}`);
+      for (const p of await alignOverlaps(page, { finding: true })) problems.push(`${id} finding at 1600×900: alignment view: ${p}`);
       await page.screenshot({ path: path.join(OUT, `sc-${id}-1600-finding.png`) });
+      for (const p of await inTimetables(page, () => mirrorOverlaps(page, { finding: true }))) problems.push(`${id} finding at 1600×900: timetables: ${p}`);
     } catch (e) { problems.push(`${id} at 1600×900: exception: ${String(e.message).split("\n")[0]}`); }
     problems.push(...errors.map((e) => `${id}: page error: ${e}`));
     await context.close();
   }
-  results.push({ name: "five more scenarios at 1280×720 (finding, options, outbox) and 1600×900 (finding)", ok: !problems.length, problems });
+  results.push({ name: "five more scenarios at 1280×720 (finding, options, outbox) and 1600×900 (finding), alignment view and timetables", ok: !problems.length, problems });
 }
 
 if (wanted("targets")) {

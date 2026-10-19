@@ -1,4 +1,4 @@
-// Header KPI strip: passengers at risk (who would act on wrong information if nothing is done), the
+// Header KPI strip: misinformed passengers (who would act on wrong information if nothing is done), the
 // first affected moment, detection → decision stopwatch, session cost. After a decision the first two
 // tiles show what is left with the approved option, so the payoff of the decision is visible at a
 // glance.
@@ -12,7 +12,7 @@ import { STORAGE, UI } from "./config.js";
 const WATCH_STATE = {
   scanning: "reading the operations log",
   diagnosing: "comparing the timetables",
-  verifying: "checking the physical layer",
+  verifying: "checking channels and sensors",
   simulating: "running the sync engine",
   options: "options ready",
   awaiting_approval: "waiting for your decision",
@@ -29,7 +29,7 @@ export function createKpis(container) {
     return { el, value, sub: subEl };
   };
 
-  const atRisk = make("pax", "Passengers at risk", "acting on wrong information");
+  const atRisk = make("pax", "Misinformed passengers", "acting on wrong information");
   const first = make("first", "First affected in", "no run yet");
   const watch = make("watch", "Detection → decision", "starts with the run");
   const cost = make("cost", "Session cost", "no model calls yet");
@@ -117,7 +117,8 @@ export function createKpis(container) {
       // first estimate is not yet a result: 0 there is not "resolved", so it is not green.
       const estimate = p.stage === "estimate";
       const tone = p.basis === "what_if" ? "at-risk" : p.pax_at_risk > 0 ? (estimate ? "at-risk" : "affected") : estimate ? "muted" : "resolved";
-      set(atRisk, int(p.pax_at_risk), tone, `of ${int(p.affected_pax || 0)} relying on it${p.label ? `, ${p.label}` : ""}`);
+      // The stage only (verified, first estimate, what-if); how many rely on a wrong fact is in the title.
+      set(atRisk, int(p.pax_at_risk), tone, p.label === "verified" ? "verified against the source" : p.label || "engine result");
       atRisk.sub.title = `${int(p.pax_at_risk)} passengers are expected to act on wrong information within ${p.horizon_min || 180} minutes if nothing is done (${int(p.affected_pax || 0)} rely on a wrong fact; each passenger counted once per stop); ${p.label || "engine result"}`;
     }
     if ("first_event_min" in p) {
@@ -149,12 +150,12 @@ export function createKpis(container) {
       const parts = [];
       const long = [];
       if (p.correct_from_min !== null && p.correct_from_min !== undefined) {
-        parts.push(`info +${fmtMin(p.correct_from_min)}`);
-        long.push(`right information from +${fmtMin(p.correct_from_min)}`);
+        parts.push(`info in ${fmtMin(p.correct_from_min)}`);
+        long.push(`the right information reaches passengers in ${fmtMin(p.correct_from_min)}`);
       }
       const synced = p.sync_min !== null && p.sync_min !== undefined;
-      parts.push(synced ? `in sync after ${fmtMin(p.sync_min)}` : "data not in sync");
-      long.push(synced ? `in sync after ${fmtMin(p.sync_min)}` : "data not back in sync");
+      parts.push(synced ? `aligned in ${fmtMin(p.sync_min)}` : "data not aligned");
+      long.push(synced ? `every channel is aligned with the source in ${fmtMin(p.sync_min)}` : "the data is not aligned with the source");
       first.sub.textContent = parts.join(", ");
       first.sub.title = `${lastLabel ? `${lastLabel}: ` : ""}${long.join(", ")} with ${p.option_label}`;
       first.el.dataset.tone = p.sync_min === null || p.sync_min === undefined ? "at-risk" : "resolved";

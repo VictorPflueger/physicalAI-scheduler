@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/mirror.css">
+  <link rel="stylesheet" href="css/align.css">
   <link rel="stylesheet" href="css/console.css">
   <link rel="stylesheet" href="css/drawer.css">
   <link rel="stylesheet" href="css/modals.css">
@@ -67,8 +68,9 @@
 
   <main class="workspace">
     <!-- The workspace's first panel (layout class shared with the sister apps, where it holds the map
-         and the board) holds the timetable mirror: the source timetable beside what passengers are told. -->
-    <section class="map-panel" aria-label="Timetable mirror: the source timetable beside what passengers are told">
+         and the board) holds the timetable mirror: first the alignment of one train (the source, the AI
+         and every channel), then the two timetables side by side and every train in the window. -->
+    <section class="map-panel" aria-label="Timetable mirror: the source against what every channel tells passengers">
       <div id="mirror"></div>
     </section>
     <section id="console" class="console-panel" aria-label="Agent console" tabindex="-1"></section>

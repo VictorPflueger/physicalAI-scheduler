@@ -26,7 +26,7 @@ Find where customer information contradicts the source, verify the operational c
 3. Quantify: first estimate with sim_sync, then refine the scope with the evidence (every train the same change touches, every channel, every stop) and run sim_sync again.
 4. Alert: ui_report_alert once the contradiction is verified (or once you decide to treat an unconfirmed lead as a what-if exercise).
 5. Options: one sim_sync call on the full scope with exactly three variants V1, V2, V3; ops_get_passengers and ops_find_alternatives for the facts a passenger message needs; then ui_propose_options and wait.
-6. Execute: after approval, one ui_draft_action per action the approved option contains (passenger message, re-publication order, override request, staff briefing, hold request), then ui_await_approvals, then ui_final_report.
+6. Execute: after approval, one ui_draft_action per action the approved option contains, the passenger message first (then re-publication order, override request, staff briefing, hold request), then ui_await_approvals, then ui_final_report.
 
 # Rules
 - Verification: never alert on a single source. A verified alert needs two distinct sources, and for every train it names the source record (ops_get_timetable or ops_list_changes), the published view (kfp_get_published) and a physical observation that corroborates it (phys_observe), all read in this run. If the physical layer does not confirm a lead, write "Not confirmed:" and say what is missing. For a lead you cannot confirm, continue as a what-if exercise: run sim_sync with what_if, call ui_report_alert with basis "what_if" and state your assumptions.
@@ -52,6 +52,8 @@ Find where customer information contradicts the source, verify the operational c
 - Open with one sentence that restates the lead in plain words.
 - Before each group of tool calls, say in one sentence what you check and why. Do not repeat tool output; interpret it.
 - Name trains by number ("ICE 618") and stations by name ("Köln Hbf"); Ril 100 codes only in brackets where they help.
+- A platform is "platform 7" in English text and "Gleis 7" only in German text.
+- Nothing is published from this app: say what a person approved ("re-publication approved"), never that something was re-published or sent.
 
 # Efficiency
 - Finish the whole workflow in about 20 tool calls or fewer. Call independent lookups in parallel in one turn.
@@ -63,7 +65,7 @@ Find where customer information contradicts the source, verify the operational c
 - Staff briefing: what staff and crew should tell passengers, where, until when. Hold request: to dispatch, which connection, how many passengers, how long a wait the engine computed; dispatch decides.
 
 # Management summary (ui_final_report)
-Markdown, at most 250 words: a "## <train(s)>: passenger-information decision" heading, then short paragraphs led by **What we found.** (what passengers are told, what the source says, why the channels lag), **If we do nothing.**, **Decision.**, a small table (Do nothing vs approved option: still misinformed, correct information from, back in sync, manual overrides), **Actions.** (approved and rejected drafts; nothing was published), **Residual risk.**, **How we know.** (the source timetable and operations log, the published channels, the physical layer, the deterministic engine). End with the line "*Live agent run. The trains, times, passenger figures and sensor readings are fictional; the stations and lines are real; every figure comes from the deterministic sync engine and every fact was checked against the source.*"`;
+Markdown, at most 250 words: a "## <train(s)>: passenger-information decision" heading, then short paragraphs led by **What we found.** (what passengers are told, what the source says, why the channels lag), **If we do nothing.**, **Decision.**, a small table (Do nothing vs approved option: still misinformed, correct information from, every channel aligned with the source, values kept by hand), **Actions.** (approved and rejected drafts; nothing was published), **Residual risk.**, **How we know.** (the source timetable and operations log, the published channels, the physical layer, the deterministic engine). End with the line "*Live agent run. The trains, times, passenger figures and sensor readings are fictional; the stations and lines are real; every figure comes from the deterministic sync engine and every fact was checked against the source.*"`;
 }
 
 /** First user message for a run. */

@@ -1,10 +1,13 @@
 // The timetable mirror, the Timetable Translator's centrepiece (where the Navigator has its map and
-// Rebate Hunter its board). Two views:
-//   train view    one train: the corridor strip (its route today and as published) over the mirror
+// Rebate Hunter its board). Three views:
+//   alignment     one train at one stop, the first view: the source and the sensors the AI reads, the
+//                 AI translator and the person who decides, and what every channel tells passengers,
+//                 with the passenger impact (js/mirror_align.js);
+//   timetables    one train: the corridor strip (its route today and as published) over the mirror
 //                 card, the source timetable (Betriebsfahrplan) beside what one customer channel
 //                 publishes (Kundenfahrplan), with the translation between them as lines;
-//   sync monitor  every train in the window with its source version, the channels behind it and what
-//                 the agent's check found.
+//   all trains    every train in the window with its source version, the channels behind it and what
+//                 the agent's check found (the sync monitor).
 // The mirror listens to the run events itself: it focuses the train the agent works on, pulses what a
 // lookup reads (the source column, a channel, the station of a sensor reading), badges what a result
 // confirmed, colours the contradictions of the agent's sim_sync results (red, or violet for a
@@ -18,6 +21,8 @@ import { getModel, findTrain, findPoint, minuteLabel } from "./world.js";
 import { h } from "./dom.js";
 import { icon } from "./icons.js";
 import { sourceRows, channelRows, channelStates, stripData, monitorTrains } from "./mirror_data.js";
+import { alignmentData, sensorReadings } from "./align_data.js";
+import { createAlign } from "./mirror_align.js";
 import { createCard, worstState } from "./mirror_card.js";
 import { createStrip } from "./mirror_strip.js";
 import { createMonitor } from "./mirror_monitor.js";
@@ -26,6 +31,25 @@ import { sourceRowPopover, customerRowPopover, stationPopover } from "./popovers
 
 const STATES = new Set(["affected", "at_risk", "resolved", "neutral"]);
 const CHECK_KIND = { ops_get_timetable: "source", ops_list_changes: "operations", kfp_get_published: "published", phys_observe: "physical", ops_get_passengers: "passengers" };
+
+/** What the AI is doing, for the alignment view's translator card: the call in flight wins, then the run state. */
+const CALL_DOING = {
+  sim_sync: "Calculating who would act on wrong information",
+  phys_observe: "Reading the sensors",
+  kfp_get_published: "Reading what passengers are told",
+  ops_get_passengers: "Counting today's passengers",
+  ops_get_timetable: "Reading the operational timetable",
+  ops_list_changes: "Reading the operations log",
+  ops_find_alternatives: "Looking for other connections",
+  ops_get_overview: "Reading every train in the window"
+};
+const STATE_DOING = {
+  scanning: "Following the lead to the source",
+  diagnosing: "Working out who is affected",
+  verifying: "Checking every channel and the sensors",
+  simulating: "Calculating the impact",
+  executing: "Drafting what passengers should be told"
+};
 const TRAIN_TOOLS = ["ops_get_timetable", "kfp_get_published", "ops_get_passengers", "phys_observe", "ops_list_changes"];
 
 /** The caption's chip for the engine result of the train in focus: its basis, or the stage the KPI update names. */
@@ -33,7 +57,8 @@ export const BASIS_CHIP = {
   estimate: ["First estimate", "ai"],
   verified: ["Verified against the source", "info"],
   what_if: ["What-if, not the source", "ai"],
-  partial: ["Partial scope", "risk"]
+  // a result that left channels, stops or trains out: in the run's words, still a first estimate
+  partial: ["First estimate", "risk"]
 };
 function basisKeyOf(basis, stage) {
   if (basis === "what_if") return "what_if";
@@ -81,7 +106,8 @@ export function contradictionsOf(result, trainId) {
 export function createMirror(container, { scenarios = [], initialScenario = null } = {}) {
   const model = getModel();
   const st = {
-    view: "train",
+    view: "align",
+    trainView: "align",           // the view a train opens in: "align" (the first view) or "train" (timetables)
     focus: null,
     channel: "planner",
     channelNow: "planner",        // the channel the right column shows now
@@ -99,6 +125,10 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     decisions: new Map(),         // train → { label, state }  (an approved option, or the accepted risk)
     flagged: null,
     checkedTrains: new Set(),
+    chRead: new Map(),            // train → Set(channel): the published view the agent has read
+    runState: null,               // the run state last announced (state_change)
+    ended: null,                  // the run_end status, once the run has ended
+    drafts: new Map(),            // action_id → "pending" | "approved" | "rejected"
     focusCard: false,             // move the focus into the card once the train is drawn
     bodyH: null,                  // the card body's height when last drawn
     showPasses: null,             // null: the mirror decides by the room it has
@@ -113,22 +143,27 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   const capChip = h("span", { class: "chip cap-chip", hidden: true }, "");
   const capSub = h("span", { class: "cap-sub" }, "");
   const caption = h("div", { class: "mirror-caption" }, h("div", { class: "cap-line" }, capTitle, capChip), capSub);
-  const btnTrain = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "true", title: "One train: its source timetable beside what passengers are told" }, icon("translate", 18), h("span", { class: "btn-text" }, "Train view"));
-  const btnMonitor = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "false", title: "Every train in the window, first departure first" }, icon("list", 18), h("span", { class: "btn-text" }, "Sync monitor"));
+  const btnAlign = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "true", title: "One train at one stop: the source, the AI and what every channel tells passengers" }, icon("translate", 18), h("span", { class: "btn-text" }, "Alignment"));
+  const btnTrain = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "false", title: "One train: its source timetable beside what passengers are told, stop by stop" }, icon("timetable", 18), h("span", { class: "btn-text" }, "Timetables"));
+  const btnMonitor = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "false", title: "Every train in the window, first departure first" }, icon("list", 18), h("span", { class: "btn-text" }, "All trains"));
   const btnLegend = h("button", { class: "btn btn-sm", type: "button", "aria-expanded": "false", "aria-controls": "mirror-legend", title: "What the marks and colours mean" }, icon("info", 18), h("span", { class: "btn-text" }, "Legend"));
-  const tools = h("div", { class: "mirror-tools" }, btnTrain, btnMonitor, btnLegend);
+  const tools = h("div", { class: "mirror-tools" }, btnAlign, btnTrain, btnMonitor, btnLegend);
+  btnAlign.addEventListener("click", () => showAlign());
   btnTrain.addEventListener("click", () => showTrain());
   btnMonitor.addEventListener("click", () => showMonitor());
   btnLegend.addEventListener("click", () => setLegend(legend.hidden));
 
   const strip = createStrip({ onStation: openStation });
   const card = createCard({ onSource: openSource, onCustomer: openCustomer, onChannel: pickChannel });
-  const trainEl = h("div", { class: "mirror-view", dataset: { view: "train" } }, strip.element, card.element);
+  // A channel card opens that channel's timetable; the source card opens the timetables as they are.
+  const align = createAlign({ onChannel: (ch) => { st.channel = ch; st.channelPicked = true; showTrain(); }, onSource: () => showTrain() });
+  const alignEl = h("div", { class: "mirror-view", dataset: { view: "align" } }, align.element);
+  const trainEl = h("div", { class: "mirror-view", dataset: { view: "train" }, hidden: true }, strip.element, card.element);
   // A row of the monitor opens its train; the keyboard focus follows into the card.
   const monitor = createMonitor({ onRow: (id) => { pop.hide(); st.focusCard = true; focus(id); } });
   const monitorEl = h("div", { class: "mirror-view", dataset: { view: "monitor" }, hidden: true }, monitor.element);
   const legend = buildLegend();
-  container.append(caption, tools, trainEl, monitorEl, legend);
+  container.append(caption, tools, alignEl, trainEl, monitorEl, legend);
   const pop = createPopover(container, { resolve: resolveKey });
 
   // ---- state helpers ----------------------------------------------------------------------------------
@@ -205,14 +240,26 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     if (!model.trains.has(trainId)) return;
     if (st.focus !== trainId) { pop.hide(); st.channelPicked = false; }
     st.focus = trainId;
-    st.view = "train";
+    st.view = st.trainView;
     render();
   }
   function showTrain() {
     if (!st.focus) st.focus = scenarioTrain(scenarios[0]?.id) || "T-618";
     st.view = "train";
+    st.trainView = "train";
     pop.hide();
     render();
+  }
+  function showAlign() {
+    if (!st.focus) st.focus = scenarioTrain(scenarios[0]?.id) || "T-618";
+    st.view = "align";
+    st.trainView = "align";
+    pop.hide();
+    render();
+  }
+  /** The view a train opens in (the agent's "train" view): the alignment, unless the presenter chose the timetables. */
+  function showTrainLevel() {
+    if (st.trainView === "train") showTrain(); else showAlign();
   }
   function showMonitor() {
     st.view = "monitor";
@@ -237,6 +284,8 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     const p = ev.payload;
     st.running = true;
     st.entry = p.entry;
+    st.ended = null;
+    st.runState = "scanning";
     if (p.entry === "scenario" && scenarioTrain(p.scenario_id)) focus(scenarioTrain(p.scenario_id));
     else showMonitor();
   });
@@ -287,7 +336,26 @@ export function createMirror(container, { scenarios = [], initialScenario = null
       }
       if (name === "sim_sync") st.pendingBasis = null;
       for (const c of checks) st.checkedTrains.add(c.train);
+      // The channels whose published view the agent has now read (the alignment view's "read" marks).
+      if (name === "kfp_get_published" && r.train_id && r.channels && typeof r.channels === "object") {
+        if (!st.chRead.has(r.train_id)) st.chRead.set(r.train_id, new Set());
+        for (const ch of Object.keys(r.channels)) st.chRead.get(r.train_id).add(ch);
+      }
     }
+    render();
+  });
+
+  bus.on("state_change", (ev) => {
+    st.runState = ev.payload.state || st.runState;
+    render();
+  });
+
+  bus.on("action_draft", (ev) => {
+    st.drafts.set(ev.payload.action_id, "pending");
+    render();
+  });
+  bus.on("action_decision", (ev) => {
+    if (st.drafts.has(ev.payload.action_id)) st.drafts.set(ev.payload.action_id, ev.payload.decision);
     render();
   });
 
@@ -318,7 +386,7 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     if (p.source === "decision") applyDecision(p);
     if (p.focus && model.trains.has(p.focus)) focus(p.focus);
     else if (p.view === "monitor") showMonitor();
-    else if (p.view === "train") showTrain();
+    else if (p.view === "train") showTrainLevel();
     else render();
   });
 
@@ -337,19 +405,33 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     render();
   });
 
-  bus.on("run_end", () => {
+  bus.on("run_end", (ev) => {
     st.running = false;
+    st.ended = ev.payload?.status || "done";
     st.calls.clear();
     render();
   });
 
-  /** An approved option: its trains show what it does (re-published and in sync, or informed only). */
+  /**
+   * An approved option: its trains show what it does (re-published and aligned, or informed only), with
+   * the option's engine figures for the alignment view's impact line.
+   */
   function applyDecision(p) {
     const opt = (st.options?.options || []).find((o) => o.id === p.option_id);
     const label = opt ? `Option ${opt.letter} approved` : "Option approved";
+    const state = p.state === "resolved" ? "resolved" : "at_risk";
     for (const id of p.train_ids || []) {
       if (!model.trains.has(id)) continue;
-      st.decisions.set(id, { label: p.state === "resolved" ? `${label}: re-publish` : `${label}: informed, data behind`, state: p.state === "resolved" ? "resolved" : "at_risk" });
+      st.decisions.set(id, {
+        label: state === "resolved" ? `${label}: re-publish` : `${label}: informed, data behind`,
+        state,
+        letter: opt?.letter || "",
+        residual: typeof opt?.misinformed_pax === "number" ? opt.misinformed_pax : null,
+        before: st.options?.baseline?.misinformed_pax ?? null,
+        fromMin: opt?.correct_info_from_min ?? null,
+        syncMin: opt?.time_to_sync_min ?? null,
+        overrides: opt?.manual_overrides || 0
+      });
     }
   }
 
@@ -357,7 +439,7 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   function acceptRisk() {
     const ids = st.options?.baseline?.contradiction_ids || [];
     for (const id of ids) st.marks.set(`cx:${id}`, "accepted");
-    for (const id of st.options?.train_ids || []) if (model.trains.has(id)) st.decisions.set(id, { label: "Risk accepted: nothing changed", state: "at_risk" });
+    for (const id of st.options?.train_ids || []) if (model.trains.has(id)) st.decisions.set(id, { label: "Risk accepted: nothing changed", state: "at_risk", accepted: true });
   }
 
   // ---- popovers -------------------------------------------------------------------------------------------
@@ -400,14 +482,95 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   function draw() {
     container.dataset.view = st.view;
     container.dataset.strip = st.showStrip ? "on" : "off";
+    btnAlign.setAttribute("aria-pressed", String(st.view === "align"));
     btnTrain.setAttribute("aria-pressed", String(st.view === "train"));
     btnMonitor.setAttribute("aria-pressed", String(st.view === "monitor"));
     container.style.setProperty("--tools-w", `${Math.round(tools.offsetWidth || 320)}px`);
     for (const g of legend.querySelectorAll("[data-only]")) g.hidden = g.dataset.only !== st.view;
     fitLegend();
     sizeClass();
-    if (st.view === "train" && st.focus) drawTrain();
+    if (st.view === "align" && st.focus) drawAlign();
+    else if (st.view === "train" && st.focus) drawTrain();
     else drawMonitor();
+  }
+
+  /** The translator card's line: what the AI is doing now, else where the run stands. */
+  function aiDoing(id) {
+    const names = [...st.calls.values()].map((c) => c.name);
+    for (const n of Object.keys(CALL_DOING)) if (names.includes(n)) return CALL_DOING[n];
+    if (st.ended) {
+      // A train the finished run never looked at (another scenario chosen afterwards) waits for its own run.
+      if (!st.results.has(id) && !st.chRead.get(id)?.size) return "Waiting for a lead: start the agent";
+      if (st.ended === "done" || st.ended === "no_findings") return st.ended === "no_findings" ? "Done: nothing contradicts the source" : "Done: every figure from the source";
+      return st.ended === "aborted" ? "Stopped by you" : "Stopped";
+    }
+    if (!st.running) return "Waiting for a lead: start the agent";
+    const pendingDrafts = [...st.drafts.values()].filter((v) => v === "pending").length;
+    if (pendingDrafts) return `${pendingDrafts} ${pendingDrafts === 1 ? "draft is" : "drafts are"} ready for your approval`;
+    if (st.options && !st.decisions.size && !optionsDecided()) return `${(st.options.options || []).length} responses proposed next to doing nothing`;
+    return STATE_DOING[st.runState] || "Working on the lead";
+  }
+  const optionsDecided = () => [...st.decisions.values()].some(Boolean);
+
+  /** The decision card in the alignment view: before options, waiting for you, decided. */
+  function gateState(id) {
+    const d = st.decisions.get(id) || null;
+    const drafts = [...st.drafts.values()];
+    const pending = drafts.filter((v) => v === "pending").length;
+    const approved = drafts.filter((v) => v === "approved").length;
+    if (d?.accepted) return { state: "accepted", text: "Risk accepted: nothing goes out" };
+    if (d) {
+      const head = d.letter ? `Option ${d.letter} approved` : "Option approved";
+      if (pending) return { state: "yours", text: `${head}: approve ${pending} ${pending === 1 ? "draft" : "drafts"} in the Outbox` };
+      if (drafts.length) return { state: "approved", text: `${head} · ${approved} of ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"} approved` };
+      return { state: "approved", text: head };
+    }
+    if (st.options && (st.options.train_ids || []).includes(id)) {
+      if (st.ended) return { state: "idle", text: "No decision: the run ended" };
+      return { state: "yours", text: `Your decision: ${(st.options.options || []).length} responses` };
+    }
+    return { state: "idle", text: "Nothing goes out without your approval" };
+  }
+
+  function drawAlign() {
+    trainEl.hidden = true;
+    monitorEl.hidden = true;
+    alignEl.hidden = false;
+    const id = st.focus;
+    const t = model.trains.get(id);
+    const rec = st.results.get(id) || null;
+    const data = alignmentData(model, id, { result: rec?.result || null, basisKey: rec?.basisKey || null });
+    setCaption(`${t.number} · ${t.from} → ${t.to}`, "What every channel tells passengers, against the source", rec ? rec.basisKey : null);
+
+    const kinds = checksOf(id);
+    const reading = { source: false, physical: false, calculating: false, channels: new Set() };
+    for (const c of st.calls.values()) {
+      if (c.name === "sim_sync") reading.calculating = true;
+      if (!c.trains.includes(id) && !(c.name === "phys_observe")) continue;
+      if (c.name === "ops_get_timetable" || c.name === "ops_list_changes") reading.source = true;
+      if (c.name === "kfp_get_published") { if (c.channel) reading.channels.add(c.channel); else reading.channels = "all"; }
+      if (c.name === "phys_observe") reading.physical = true;
+    }
+    const sensors = sensorReadings(model, id, [...st.observed.keys()]);
+    const decision = st.decisions.get(id) || null;
+    // The view sizes itself by its own height: the drawer below and the caption above take their share.
+    const hgt = alignEl.clientHeight || container.clientHeight - 66;
+    const size = hgt >= 520 ? "tall" : hgt >= 380 ? "mid" : hgt >= 200 ? "short" : "tiny";
+    align.render(data, {
+      size,
+      read: { source: kinds.includes("source") || kinds.includes("operations"), physical: kinds.includes("physical") || sensors.length > 0, channels: st.chRead.get(id) || new Set() },
+      reading,
+      sensors,
+      ai: aiDoing(id),
+      gate: gateState(id),
+      decision: decision ? (decision.accepted ? { state: "accepted" } : decision) : null
+    });
+    // Content that outgrows its size (long values, verdicts that moved under their values, a docked
+    // legend that narrows the cards) steps the view down a size, so the impact line stays in view.
+    const SIZES = ["tall", "mid", "short", "tiny"];
+    const view = align.element;
+    for (let i = SIZES.indexOf(size); i < SIZES.length - 1 && view.clientHeight > 0 && view.scrollHeight > view.clientHeight + 1; i++) view.dataset.size = SIZES[i + 1];
+    if (st.focusCard) { st.focusCard = false; align.focusFirst(); }
   }
 
   function setCaption(title, sub, chipKey) {
@@ -434,6 +597,7 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   function drawTrain() {
     trainEl.hidden = false;
     monitorEl.hidden = true;
+    alignEl.hidden = true;
     const id = st.focus;
     const t = model.trains.get(id);
     const rows = sourceRows(model, id);
@@ -523,10 +687,11 @@ export function createMirror(container, { scenarios = [], initialScenario = null
 
   function drawMonitor() {
     trainEl.hidden = true;
+    alignEl.hidden = true;
     monitorEl.hidden = false;
     const rows = monitorTrains(model);
     const checking = new Set([...st.calls.values()].flatMap((c) => c.trains));
-    setCaption(`Sync monitor: ${rows.length} trains in the next ${model.horizonMin} minutes`,
+    setCaption(`All trains: ${rows.length} in the next ${model.horizonMin} minutes`,
       st.entry === "scan" && (st.running || st.checkedTrains.size)
         ? `Live sweep: ${rows.filter((r) => st.checkedTrains.has(r.id)).length} of ${rows.length} checked · first departure first`
         : `Source version against what each channel published · S-Bahn shuttles left out · first departure first`,
@@ -649,6 +814,10 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     st.checks.clear();
     st.observed.clear();
     st.results.clear();
+    st.chRead.clear();
+    st.drafts.clear();
+    st.runState = null;
+    st.ended = null;
     st.lastResultTrains = [];
     st.pendingBasis = null;
     st.options = null;
@@ -666,7 +835,7 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     ready: true,
     focusTrain: (id) => focus(id),
     focusScenario: (id) => { const t = scenarioTrain(id); if (t) focus(t); },
-    showTrain, showMonitor, reset,
+    showTrain, showAlign, showMonitor, reset,
     invalidate: () => { sizeClass(); render(); }
   };
 }

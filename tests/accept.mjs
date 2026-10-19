@@ -8,8 +8,9 @@
 //   abort    Abort/Reset matrix in Simulation and Live at several phases; every path recovers to
 //            Idle and a new run completes
 //   offline  Simulation with every external host blocked (no APIs): runs to Done with the timetable
-//            mirror drawn and following the decision, SIMULATION badge and watermark visible at every
-//            stage, replay facts shown, and not a single request leaves the page's own server
+//            mirror drawn (the alignment view, then the timetables) and following the decision,
+//            SIMULATION badge and watermark visible at every stage, replay facts shown, and not a
+//            single request leaves the page's own server
 // Usage: node tests/accept.mjs [case…]
 import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
@@ -161,8 +162,8 @@ if (run("key")) {
   try {
     await boot(page);
     checks.noKeyAtLoad = await page.evaluate((k) => !sessionStorage.getItem(k), KEYS.apiKey);
-    checks.rendered = await page.evaluate(() => !!document.querySelector('#mirror .mrow[data-side="source"]') && !!document.querySelector('#mirror .mrow[data-side="customer"]') && document.querySelectorAll(".kpi").length);
-    expect(checks.rendered === 4, "the mirror and the four KPI tiles are drawn at load");
+    checks.rendered = await page.evaluate(() => !!document.querySelector("#mirror .al-source .al-fact") && document.querySelectorAll("#mirror .al-channel").length === 4 && document.querySelectorAll(".kpi").length);
+    expect(checks.rendered === 4, "the mirror (its alignment view: the source and four channels) and the four KPI tiles are drawn at load");
     // Privacy row with no key
     await page.click("#btn-diagnostics");
     await page.waitForFunction(() => [...document.querySelectorAll(".diag-table tbody tr")].some((r) => /Key and privacy/.test(r.textContent) && r.querySelector('.diag-status[data-s="pass"], .diag-status[data-s="fail"]')), null, { timeout: 5000 });
@@ -356,7 +357,7 @@ if (run("abort")) {
     await startMode(page, "simulation");
     await page.waitForTimeout(1200);
     checks["S1:restart"] = await status(page);
-    expect(/Scanning|Analysing|Verifying|Simulating|Running/i.test(checks["S1:restart"]) || checks["S1:restart"] !== "Aborted", `S1: Start after Abort must begin a new run (got ${checks["S1:restart"]})`);
+    expect(/Spotting|Assessing|Checking|Calculating|Proposing|Running/i.test(checks["S1:restart"]) || checks["S1:restart"] !== "Aborted", `S1: Start after Abort must begin a new run (got ${checks["S1:restart"]})`);
     // S2: abort while options wait for a decision
     await page.click('button[aria-label="Replay speed ×4"]');
     await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 90000 });
@@ -513,6 +514,9 @@ if (run("offline")) {
     await marks("start");
     await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 90000 });
     await marks("options");
+    checks.alignBefore = await page.$$eval("#mirror .al-channel", (els) => els.map((e) => `${e.dataset.channel}:${e.dataset.tone}`));
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForSelector('#mirror .mrow[data-side="source"]', { timeout: 5000 });
     checks.mirrorBefore = await page.$$eval('#mirror .mrow[data-side="customer"][data-state]', (els) => els.map((e) => `${e.dataset.point}:${e.dataset.state}`));
     await page.click('.option-card[aria-label^="Option C:"] .btn-reject');
     await page.waitForTimeout(1500);
@@ -534,7 +538,8 @@ if (run("offline")) {
       rows: [...document.querySelectorAll('#mirror .mrow[data-side="customer"][data-state]')].map((e) => `${e.dataset.point}:${e.dataset.state}`),
       links: document.querySelectorAll("#mirror .mc-links .ml").length
     }));
-    expect(checks.mirrorBefore.length > 0 && checks.mirrorBefore.every((x) => x.endsWith(":affected")), `the finding is red on the mirror offline (${checks.mirrorBefore})`);
+    expect(checks.alignBefore.some((x) => x.endsWith(":affected")), `the finding is red on the alignment view offline (${checks.alignBefore})`);
+    expect(checks.mirrorBefore.length > 0 && checks.mirrorBefore.every((x) => x.endsWith(":affected")), `the finding is red in the timetables offline (${checks.mirrorBefore})`);
     expect(checks.mirror.source > 0 && checks.mirror.links > 0 && checks.mirror.rows.length > 0 && checks.mirror.rows.every((x) => x.endsWith(":resolved")), `the mirror is drawn offline and shows the approved re-publication (${JSON.stringify(checks.mirror)})`);
     checks.externalAttempts = [...new Set(t.requests.filter((r) => !r.host.startsWith("127.0.0.1")).map((r) => r.host))].sort();
     expect(checks.externalAttempts.length === 0, `an offline simulation must not try any external host: ${checks.externalAttempts.join(", ")}`);

@@ -3,8 +3,8 @@
 // the risk) and checks the integrity rules: no unresolved placeholders, SIMULATION markings, no
 // network at all, the reasoning labels in the console, the payoff of the decision on the KPI tiles
 // and on the mirror (a re-publication turns the contradictions green, an option that only informs
-// turns them amber, an accepted risk keeps them and says so, in the train view and in the sync
-// monitor), the audit export marked as simulation with every decision recorded.
+// turns them amber, an accepted risk keeps them and says so, in the alignment view, in the
+// timetables and in all trains), the audit export marked as simulation with every decision recorded.
 // Usage: node tests/sims.mjs [scenarioId…]
 import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
@@ -65,6 +65,22 @@ async function playScenario(id, plan) {
   const checks = {};
   const problems = [];
   const short = id.replace("SC-", "").toLowerCase();
+  // The alignment view (the mirror's first view): each channel card's tone, the impact line's tone.
+  const alignState = () => page.evaluate(() => ({
+    view: document.getElementById("mirror").dataset.view,
+    channels: [...document.querySelectorAll("#mirror .al-channel")].map((c) => `${c.dataset.channel}:${c.dataset.tone}`),
+    impact: document.querySelector("#mirror .al-impact")?.dataset.tone || null
+  }));
+  // The timetables (the train view), opened with their button and left again for the alignment view.
+  const timetables = async () => {
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForSelector('#mirror .mrow[data-side="source"]', { timeout: 5000 });
+    await page.waitForTimeout(300);
+    const m = await mirrorState();
+    await page.click('#mirror .mirror-tools button:has-text("Alignment")');
+    await page.waitForTimeout(200);
+    return m;
+  };
   const mirrorState = () => page.evaluate(() => ({
     view: document.getElementById("mirror").dataset.view,
     train: document.querySelector("#mirror .mirror-caption strong")?.textContent || "",
@@ -91,7 +107,8 @@ async function playScenario(id, plan) {
     await page.screenshot({ path: path.join(OUT, `${short}-1-options.png`) });
     checks.options = await page.$$eval(".option-card", (els) => els.map((e) => `${e.querySelector(".option-letter")?.textContent}:${e.querySelector(".option-total .value")?.textContent}`));
     checks.kpiBefore = await page.$$eval(".kpi", (els) => els.slice(0, 2).map((e) => `${e.dataset.tone}|${e.innerText.replace(/\s+/g, " ").trim()}`));
-    checks.mirrorBefore = await mirrorState();
+    checks.alignBefore = await alignState();
+    checks.mirrorBefore = await timetables();
     const letterOf = (v) => ({ V1: "A", V2: "B", V3: "C" }[v]);
     for (const v of plan.reject) {
       const n0 = await page.$$eval(".entry", (els) => els.length);
@@ -106,7 +123,8 @@ async function playScenario(id, plan) {
     }
     await page.waitForTimeout(1500);
     checks.kpiAfter = await page.$$eval(".kpi", (els) => els.slice(0, 3).map((e) => `${e.dataset.tone}|${e.innerText.replace(/\s+/g, " ").trim()}`));
-    checks.mirrorAfter = await mirrorState();
+    checks.alignAfter = await alignState();
+    checks.mirrorAfter = await timetables();
     // drafts
     await page.waitForSelector(".action-card[data-status='pending']", { timeout: 120000 });
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 120000 });
@@ -162,9 +180,13 @@ async function playScenario(id, plan) {
     // the decision carries it.
     await page.click('.drawer button:has-text("Hide")').catch(() => {});
     await page.waitForTimeout(600);
-    checks.mirrorEnd = await mirrorState();
+    checks.alignEnd = await alignState();
+    await page.screenshot({ path: path.join(OUT, `${short}-5-alignment.png`) });
+    checks.mirrorEnd = await timetables();
+    await page.click('#mirror .mirror-tools button:has-text("Timetables")');
+    await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, `${short}-5-mirror.png`) });
-    await page.click('#mirror .mirror-tools button:has-text("Sync monitor")');
+    await page.click('#mirror .mirror-tools button:has-text("All trains")');
     await page.waitForTimeout(500);
     checks.monitor = await page.evaluate((ids) => {
       const out = {};
@@ -188,16 +210,29 @@ async function playScenario(id, plan) {
     if (network.length) problems.push(`network requests: ${network.join(", ")}`);
     if (checks.optionDecisions.filter((d) => d.startsWith("rejected")).length !== plan.reject.length) problems.push("rejections not recorded");
     if (!checks.optionDecisions.includes(`approved ${plan.approve}`)) problems.push(`the approval of ${plan.approve} is not recorded`);
-    // Before the decision the finding is red on the mirror, and the first tile is the verified figure.
-    if (!checks.mirrorBefore.rows.length || !checks.mirrorBefore.rows.every((r) => r.endsWith(":affected"))) problems.push(`the finding is not red on the mirror: ${checks.mirrorBefore.rows.join(" ")}`);
-    if (!/^affected\|Passengers at risk \d/.test(checks.kpiBefore[0])) problems.push(`the verified figure is not on the first tile: ${checks.kpiBefore[0]}`);
+    // Before the decision the finding is red on the mirror (the alignment view first, then the
+    // timetables), and the first tile is the verified figure.
+    const red = checks.alignBefore.channels.filter((c) => c.endsWith(":affected")).map((c) => c.split(":")[0]);
+    if (checks.alignBefore.view !== "align" || !red.length || checks.alignBefore.impact !== "affected" || checks.alignBefore.channels.some((c) => !/:(affected|ok|muted)$/.test(c))) problems.push(`the finding is not red on the alignment view: ${JSON.stringify(checks.alignBefore)}`);
+    if (!checks.mirrorBefore.rows.length || !checks.mirrorBefore.rows.every((r) => r.endsWith(":affected"))) problems.push(`the finding is not red in the timetables: ${checks.mirrorBefore.rows.join(" ")}`);
+    if (!/^affected\|Misinformed passengers \d[\d,]* verified against the source/.test(checks.kpiBefore[0])) problems.push(`the verified figure is not on the first tile: ${checks.kpiBefore[0]}`);
     // After the decision: the tiles and the mirror follow it.
     if (plan.approve === "baseline") {
       if (!/risk accepted, nothing published/.test(checks.kpiAfter[0])) problems.push(`the accepted risk is not on the tile: ${checks.kpiAfter[0]}`);
     } else {
-      if (!/^(at-risk|resolved)\|Passengers at risk [\d,]+ left with option [A-C] \(was [\d,]+\)/.test(checks.kpiAfter[0])) problems.push(`the tile did not show the payoff: ${checks.kpiAfter[0]}`);
+      if (!/^(at-risk|resolved)\|Misinformed passengers [\d,]+ left with option [A-C] \(was [\d,]+\)/.test(checks.kpiAfter[0])) problems.push(`the tile did not show the payoff: ${checks.kpiAfter[0]}`);
       const synced = plan.mirror === "resolved";
-      if (synced !== /in sync after/.test(checks.kpiAfter[1])) problems.push(`the second tile does not say whether the data is back in sync: ${checks.kpiAfter[1]}`);
+      if (synced !== /aligned in/.test(checks.kpiAfter[1])) problems.push(`the second tile does not say whether the data is aligned again: ${checks.kpiAfter[1]}`);
+    }
+    // The channels that were red follow the decision on the alignment view (an accepted risk turns
+    // amber with the hand, as in the legend), and so does the impact line (which stays red while
+    // passengers act on wrong information).
+    const tone = { resolved: "resolved", at_risk: "at-risk", accepted: "at-risk" }[plan.mirror];
+    const impactTone = { resolved: "resolved", at_risk: "at-risk", accepted: "affected" }[plan.mirror];
+    for (const [when, a] of [["after the decision", checks.alignAfter], ["with the drawer hidden", checks.alignEnd]]) {
+      const now = Object.fromEntries(a.channels.map((c) => c.split(":")));
+      if (red.some((ch) => now[ch] !== tone)) problems.push(`alignment view ${when}: ${a.channels.join(" ")} (expected ${tone} where it was red)`);
+      if (a.impact !== impactTone) problems.push(`alignment view ${when}: impact line ${a.impact} (expected ${impactTone})`);
     }
     for (const [when, m] of [["after the decision", checks.mirrorAfter], ["with the drawer hidden", checks.mirrorEnd]]) {
       if (!m.rows.length || !m.rows.every((r) => r.endsWith(`:${plan.mirror}`))) problems.push(`mirror ${when}: rows ${m.rows.join(" ")} (expected ${plan.mirror})`);

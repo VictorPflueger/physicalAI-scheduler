@@ -16,6 +16,8 @@ import { runStateLabel } from "./handover.js";
 import { LABELS, splitParagraphs } from "./labels.js";
 import { STORAGE } from "./config.js";
 import { DRAFT_LABEL } from "./drafts.js";
+import { toolPlain } from "./tool_plain.js";
+import { getModel } from "./world.js";
 
 const PHASES = new Set(["diagnosing", "verifying", "simulating", "options", "awaiting_approval", "executing"]);
 const TEXT_SIZE_KEY = STORAGE.consoleText;
@@ -176,7 +178,11 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     const line = p.name === "web_search"
       ? h("div", { class: "tool-line" }, h("strong", {}, "Web search"), h("span", { class: "tool-query" }, p.input?.query || ""))
       : h("div", { class: "tool-line" }, h("span", { class: "tool-name" }, p.name), h("span", { class: "tool-args" }, argsSummary(p.name, p.input)));
-    const el = add(entry("tool_call", ev.t, p.server ? "globe" : "gear", line, { server: String(!!p.server) }));
+    // What the call does in one plain sentence, above the tool's own name: for the audience.
+    let plainText = null;
+    try { plainText = toolPlain(p.name, p.input || {}, getModel()); } catch { plainText = null; }
+    const plain = plainText ? h("div", { class: "tool-plain" }, plainText) : null;
+    const el = add(entry("tool_call", ev.t, p.server ? "globe" : "gear", plain ? [plain, line] : line, { server: String(!!p.server) }));
     byCall.set(p.call_id, el);
   });
 

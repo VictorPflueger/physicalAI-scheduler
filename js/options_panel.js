@@ -1,9 +1,9 @@
 // Options tab: three costed options plus the do-nothing baseline, a comparison, and the approval
-// gate. Card state follows option_decision events, so live and simulated runs behave alike. Fewer
-// passengers still misinformed is better; the cards also say when every channel is back in sync with
-// the source, how many values would be kept by hand (a second truth the source does not know) and the
-// staff effort. When the right information reaches passengers is nearly the same for every option, so
-// the comparison says it once, next to the bars.
+// gate. Card state follows option_decision events, so live and simulated runs behave alike. Each card
+// carries one big figure, the passengers still misinformed (fewer is better), and three plain rows:
+// when every channel is aligned with the source again, how many values would be kept by hand (a second
+// truth the source does not know) and the staff effort. When the right information reaches passengers
+// is nearly the same for every option, so the comparison says it once, next to the bars.
 
 import { bus } from "./events.js";
 import { h, clear } from "./dom.js";
@@ -96,12 +96,12 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
         o.recommended ? h("span", { class: "chip", dataset: { tone: "recommended" } }, "Recommended") : null),
       o.description ? renderInline(o.description, h("p", { class: "option-desc" })) : null,
       h("dl", { class: "option-figures" },
-        h("dt", {}, "Still misinformed"), h("dd", { title: `The right information reaches passengers after ${plus(o.correct_info_from_min)}` }, int(o.misinformed_pax)),
-        h("dt", {}, "Back in sync"), h("dd", { title: "When every channel shows what the source says" }, after(o.time_to_sync_min, H)),
-        h("dt", {}, "Hand-kept values"), h("dd", { title: "Manual overrides: values kept by hand on displays or announcements, a second truth the source does not know" }, o.manual_overrides ? `${int(o.manual_overrides)} (second truth)` : "none"),
+        h("dt", {}, "All channels aligned"), h("dd", { title: "When every channel shows what the source says again" }, after(o.time_to_sync_min, H)),
+        h("dt", {}, "Kept by hand"), h("dd", { title: "Manual overrides: values kept by hand on displays or announcements, a second truth the source does not know" }, o.manual_overrides ? `${int(o.manual_overrides)} ${o.manual_overrides === 1 ? "value" : "values"} (second truth)` : "none"),
         h("dt", {}, "Staff effort"), h("dd", {}, `${int(o.effort_min)} min`),
         ...(o.hold ? [h("dt", {}, "Connection held"), h("dd", { title: `${o.hold.train} waits ${int(o.hold.wait_min)} min if dispatch agrees: ${int(o.held_pax)} passengers keep the connection, ${int(o.hold.delayed_pax)} on ${o.hold.train} are delayed. ${o.hold.note || ""}`.trim() }, `${int(o.held_pax)} keep it, ${o.hold.train} +${int(o.hold.wait_min)} min`)] : [])),
-      h("div", { class: "option-total" }, h("span", { class: "label" }, "Protected passengers"), h("span", { class: "value num" }, int(o.protected_pax))),
+      h("div", { class: "option-total", title: `${int(o.protected_pax)} passengers protected; the right information reaches them after ${plus(o.correct_info_from_min)}` },
+        h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value num" }, int(o.misinformed_pax))),
       o.residual_risk ? h("p", { class: "option-risk" }, h("strong", {}, "Residual risk: "), o.residual_risk) : null,
       actionsFor(o, st));
     return card;
@@ -118,10 +118,12 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
         h("h4", { class: "option-title" }, "Do nothing")),
       h("p", { class: "option-desc" }, b?.description || "Publish nothing and wait for the publication cycles."),
       h("dl", { class: "option-figures" },
-        h("dt", {}, "Misinformed"), h("dd", {}, `${int(b?.misinformed_pax)} of ${int(b?.affected_pax)}`),
+        // Everyone who relies on a wrong fact; "Still misinformed" below is who would act on it.
+        h("dt", {}, "Relying on wrong facts"), h("dd", {}, `${int(b?.affected_pax)} passengers`),
         h("dt", {}, "First affected"), h("dd", {}, first),
-        h("dt", {}, "Back in sync"), h("dd", {}, after(b?.time_to_sync_min, H)),
-        h("dt", {}, "Next cycle"), h("dd", b?.next_cycle_note ? { title: b.next_cycle_note } : {}, b?.next_cycle_label || "—")),
+        h("dt", {}, "All channels aligned"), h("dd", {}, after(b?.time_to_sync_min, H)),
+        // The next publication cycle, and whether it puts this right (a short-notice change it does not take).
+        h("dt", {}, "Next cycle"), h("dd", b?.next_cycle_note ? { title: b.next_cycle_note } : {}, b?.next_cycle_label ? `${b.next_cycle_label}${b.time_to_sync_min === null || b.time_to_sync_min === undefined ? ", does not fix it" : ""}` : "—")),
       h("div", { class: "option-total" }, h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value num" }, int(b?.misinformed_pax))),
       actionsFor({ id: "baseline", letter: "–", title: "Do nothing" }, st, true));
   }

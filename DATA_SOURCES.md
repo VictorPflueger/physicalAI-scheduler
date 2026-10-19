@@ -1,6 +1,6 @@
 # Timetable Translator — data sources
 
-What the Timetable Translator reads, what is real and what is invented, and every assumption the sync engine makes. Version 1.0.0, 18 October 2026.
+What the Timetable Translator reads, what is real and what is invented, and every assumption the sync engine makes. World and engine version 1.0.0, 18 October 2026, unchanged in app version 1.1.0.
 
 **In one paragraph.** The stations, their Ril 100 codes and the lines between them are real public facts. Everything that happens on them is invented: every train number, time, track, passenger figure, operational change, publication state, sensor reading and connection. No railway's data, systems or rules are used, and the publication rules are assumptions written for this demonstration. The only outside service the app talks to is the Anthropic API, for the live agent.
 

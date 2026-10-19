@@ -48,7 +48,7 @@ export function kpiFromResult(res, label) {
     first_event_short: b.first_event_short,
     basis: res.basis,
     stage: res.basis !== "source" || /first estimate/.test(String(label)) ? "estimate" : "verified",
-    label: res.basis === "what_if" ? "what-if, not the source" : res.basis === "partial" ? "partial scope" : label
+    label: res.basis === "what_if" ? "what-if, not the source" : res.basis === "partial" ? "first estimate" : label
   };
 }
 
