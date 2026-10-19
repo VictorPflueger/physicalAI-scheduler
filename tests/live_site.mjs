@@ -72,6 +72,8 @@ async function simulationRun() {
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 60000 });
     await page.click('button:has-text("Approve all")');
     await page.waitForSelector('button:has-text("Open management summary")', { state: "visible", timeout: 60000 });
+    // The run ends a moment after the summary appears (the player's last step), so wait for it to end.
+    await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill")?.innerText || ""), null, { timeout: 15000 }).catch(() => {});
     const status = (await page.locator(".status-pill").innerText()).trim();
     if (!/Done/.test(status)) found.push(`the run ends as "${status}"`);
   } catch (e) {
