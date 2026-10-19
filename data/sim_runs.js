@@ -63,22 +63,22 @@ window.SIM_RUNS = {
 
       { options: {
         recommended: "V1",
-        baseline_description: "Every channel keeps showing platform 5, not platform 7, until someone publishes by hand; {{pax}} passengers would act on it.",
+        baseline_description: "Every channel keeps platform 5, not platform 7; {{pax}} passengers act on it.",
         texts: {
           V1: {
-            title: "Re-publish ICE 618 from the source",
-            description: "Release the new version to every channel and push the platform change to app, displays and announcements.",
-            residual_risk: "Passengers already at platform 5 rely on the announcement to reach platform 7."
+            title: "Re-publish from the source",
+            description: "Every channel re-published from the source, plus a passenger message.",
+            residual_risk: "Some already head for the old platform."
           },
           V2: {
-            title: "Messages and platform staff, data later",
-            description: "Push the change to app, displays and announcements; staff at platform 5 send people to platform 7. The data stays as it is.",
-            residual_risk: "Nothing is aligned: until someone re-publishes, only the messages and the staff carry the new platform and sector."
+            title: "Messages and staff only",
+            description: "Messages on every channel and staff on the platform; the data stays wrong.",
+            residual_risk: "The data stays wrong; messages miss some passengers."
           },
           V3: {
-            title: "Override displays and announcements by hand",
-            description: "Set platform 7 by hand on the station displays and the announcements, and push an app message.",
-            residual_risk: "A second truth kept by hand; the coach order keeps the old sectors, so most reservation holders wait in the wrong place."
+            title: "Override by hand",
+            description: "Platform 7 set by hand on displays and announcements, plus an app message.",
+            residual_risk: "The coach order stays wrong for reservation holders."
           }
         }
       } },
@@ -93,16 +93,16 @@ window.SIM_RUNS = {
         approved: {
           V1: [
             { state: "executing" },
-            { say: "Option A approved. I draft the passenger message and the re-publication order. Both wait for your approval in the Outbox; nothing is published." },
+            { say: "Option A approved. I draft the passenger message and the re-publication order." },
             { draft: {
               type: "passenger_message", recipient: "Passenger information desk, Köln Hbf",
               subject: "ICE 618 to Hamburg-Altona, 07:42: today from platform 7",
               body: "App-Push (DE): ICE 618 nach Hamburg-Altona, Abfahrt 07:42 Uhr, fährt heute von Gleis 7 (nicht Gleis 5). Die 1. Klasse hält in Abschnitt {{T-618.KK.coach_order.first_src}}.\nApp push (EN): ICE 618 to Hamburg-Altona, departing 07:42, leaves from platform 7 today (not platform 5). First class stops in sector {{T-618.KK.coach_order.first_src}}.\n\nAnzeiger Köln Hbf (DE): ICE 618 Hamburg-Altona 07:42 – heute Gleis 7\nDisplay Köln Hbf (EN): ICE 618 Hamburg-Altona 07:42 – today platform 7\n\nAnsage (DE): Achtung an Gleis 5: ICE 618 nach Hamburg-Altona, Abfahrt 07:42 Uhr, fährt heute von Gleis 7. Die Wagen der 1. Klasse halten in Abschnitt {{T-618.KK.coach_order.first_src}}.\nAnnouncement (EN): Attention, platform 5: ICE 618 to Hamburg-Altona, departing 07:42, leaves from platform 7 today. First class stops in sector {{T-618.KK.coach_order.first_src}}."
             } },
             { draft: {
-              type: "republish_order", recipient: "Timetable publication team (customer timetable)",
-              subject: "Release ICE 618, source version 2 (OPS-05), to every channel now",
-              body: "Please release ICE 618 from source version 2 to every customer channel: journey planner and app, station displays, announcements and coach order.\n\nWhy: OPS-05 (signaller Köln Hbf, 07:21) moves the departure at 07:42 from platform 5 to platform 7. The short-notice rule held the change back, so every channel still shows platform 5, generated at 05:30.\n\nNo value is typed by hand: the channels are generated from the source. With the release, every channel is expected to be aligned after {{V1.sync}} minutes."
+              type: "republish_order", recipient: "Timetable publication team",
+              subject: "Release ICE 618 from the source to every channel now",
+              body: "Please release ICE 618, source version 2 (OPS-05: platform 7, not platform 5, from 07:21), to every customer channel: journey planner and app, station displays, announcements, coach order.\n\nNo value is typed by hand. Every channel is expected to be aligned after {{V1.sync}} minutes."
             } },
             { awaitActions: true },
             { report: "## ICE 618: platform change at Köln Hbf\n\n**What we found.** The source moved ICE 618 (07:42 to Hamburg-Altona) from platform 5 to platform 7 at 07:21 (OPS-05, points failure W 32); the interlocking has stored the route out of platform 7. Every customer channel was generated at 05:30 and still shows platform 5, and the coach-position displays still show first class in {{T-618.KK.coach_order.first_pub}} instead of sector {{T-618.KK.coach_order.first_src}}. The short-notice rule held the change back.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, and no publication cycle fixes it.\n\n**Decision.** Option A approved: re-publication of ICE 618 from the source, with a message on the app, the displays and the announcements.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V1.mis}} |\n| Right information from | – | +{{V1.from}} min |\n| Every channel aligned with the source | never | after {{V1.sync}} min |\n| Values kept by hand | – | {{V1.ov}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** Passengers already heading for platform 5 depend on the announcement.\n\n**How we know.** The platform change from the operations log and the source timetable; the old platform from every published channel; the points failure and the stored route from the physical layer; passenger figures from today's counts; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
@@ -110,7 +110,7 @@ window.SIM_RUNS = {
           ],
           V2: [
             { state: "executing" },
-            { say: "Option B approved. I draft the passenger message and the briefing for the platform staff; the published data stays as it is. Both wait for your approval in the Outbox." },
+            { say: "Option B approved. I draft the passenger message and the briefing for the platform staff; the published data stays as it is." },
             { draft: {
               type: "passenger_message", recipient: "Passenger information desk, Köln Hbf",
               subject: "ICE 618 to Hamburg-Altona, 07:42: today from platform 7",
@@ -237,9 +237,9 @@ window.SIM_RUNS = {
         approved: {
           V1: [
             { state: "executing" },
-            { say: "Option A approved. Drafting the release order, the passenger message with the alternatives and the staff briefing. Each draft waits for your approval in the Outbox; nothing is published." },
+            { say: "Option A approved. Drafting the release order, the passenger message with the alternatives and the staff briefing." },
             { draft: {
-              type: "republish_order", recipient: "Timetable publication team (customer timetable)",
+              type: "republish_order", recipient: "Timetable publication team",
               subject: "Release the rejected update for ICE 1022 and ICE 1026 (OPS-03) and re-publish both trains",
               body: "Please release by hand the update for ICE 1022 and ICE 1026 that the plausibility check rejected at 07:10, and re-publish both trains from source version 2 (OPS-03) to every customer channel.\n\nWhy: the diversion via Essen Hbf and Düsseldorf Hbf adds two stops that are not in the trains' list of commercial stops; for today they are commercial stops. Every channel still shows Hagen Hbf and Wuppertal Hbf.\n\nNo value is to be typed by hand: the customer timetable is generated from the source. With the release, every channel is expected to be aligned after {{V1.sync}} minutes."
             } },
@@ -385,9 +385,9 @@ window.SIM_RUNS = {
         approved: {
           V1: [
             { state: "executing" },
-            { say: "Option A approved. Drafting the re-publication order, a note on the conversion rule and the passenger message. Each draft waits for your approval in the Outbox; nothing is published." },
+            { say: "Option A approved. Drafting the re-publication order, a note on the conversion rule and the passenger message." },
             { draft: {
-              type: "republish_order", recipient: "Timetable publication team (customer timetable)",
+              type: "republish_order", recipient: "Timetable publication team",
               subject: "Re-publish ICE 1027 with the Betriebshalt at Köln-Mülheim",
               body: "Please re-publish ICE 1027 from the source to every customer channel with the operational-stop flag at Köln-Mülheim kept: the stop at 08:43 is a Betriebshalt without passenger exchange and must not appear in the customer timetable.\n\nWhy: the conversion rule loses the operational-stop flag on stops of 1.5 minutes or more, so the journey planner, the station displays and the announcements list Köln-Mülheim as a passenger stop.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected to be aligned after {{V1.sync}} minutes."
             } },
@@ -530,9 +530,9 @@ window.SIM_RUNS = {
         approved: {
           V1: [
             { state: "executing" },
-            { say: "Option A approved. Drafting the re-publication order and the passenger message. Each draft waits for your approval in the Outbox; nothing is published." },
+            { say: "Option A approved. Drafting the re-publication order and the passenger message." },
             { draft: {
-              type: "republish_order", recipient: "Timetable publication team (customer timetable)",
+              type: "republish_order", recipient: "Timetable publication team",
               subject: "Re-publish ICE 1025 (OPS-04, terminus Köln Messe/Deutz) and reload the on-board announcements",
               body: "Please re-publish ICE 1025 from source version 2 (OPS-04, 07:17) to every customer channel, including the on-board announcements, which were loaded at departure from Hamburg with the planned run to Köln Hbf.\n\nThe train ends at Köln Messe/Deutz on platform 1 (arrival 09:16); Köln Hbf is not served. The journey planner's import missed the 07:30 cycle.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected to be aligned after {{V1.sync}} minutes."
             } },
@@ -669,7 +669,7 @@ window.SIM_RUNS = {
         approved: {
           V1: [
             { state: "executing" },
-            { say: "Option A approved. Drafting the coach-order refresh and the passenger message. Each draft waits for your approval in the Outbox; nothing is published." },
+            { say: "Option A approved. Drafting the coach-order refresh and the passenger message." },
             { draft: {
               type: "republish_order", recipient: "Timetable publication team (coach order)",
               subject: "Refresh the coach order of ICE 516 from the source (OPS-01, reversed)",
@@ -805,9 +805,9 @@ window.SIM_RUNS = {
         approved: {
           V1: [
             { state: "executing" },
-            { say: "Option A approved. Drafting the re-publication order, the hold request to dispatch and the passenger message. Each draft waits for your approval in the Outbox; nothing is published or requested." },
+            { say: "Option A approved. Drafting the re-publication order, the hold request to dispatch and the passenger message." },
             { draft: {
-              type: "republish_order", recipient: "Timetable publication team (customer timetable)",
+              type: "republish_order", recipient: "Timetable publication team",
               subject: "Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
               body: "Please re-publish ICE 612 and RE 10109 from source version 2 (OPS-02, Fplo 1187, released 06:50) to every customer channel. The order adds +4.0 min from Bochum Hbf; the daily generation at 05:30 did not include it, and the half-hourly cycle processes dispatch changes only.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected to be aligned after {{V1.sync}} minutes."
             } },
@@ -829,7 +829,7 @@ window.SIM_RUNS = {
             { state: "executing" },
             { say: "Option B approved. Drafting the re-publication order and the passenger message about the lost connection." },
             { draft: {
-              type: "republish_order", recipient: "Timetable publication team (customer timetable)",
+              type: "republish_order", recipient: "Timetable publication team",
               subject: "Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
               body: "Please re-publish ICE 612 and RE 10109 from source version 2 (OPS-02, Fplo 1187, released 06:50) to every customer channel. The order adds +4.0 min from Bochum Hbf and was not part of the daily generation at 05:30.\n\nNo value is to be typed by hand. With the re-publication, every channel is expected to be aligned after {{V2.sync}} minutes."
             } },

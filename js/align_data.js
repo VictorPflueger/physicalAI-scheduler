@@ -127,15 +127,19 @@ function syncFacts(model, trainId, point) {
   return facts;
 }
 
-/** The operational change behind the train's current source version, in one line. */
+/**
+ * The operational change behind the train's current source version, in one line: when and by whom.
+ * The change's id (OPS-05) stays out of the line, which a customer reads; it is kept in `id` for the
+ * tooltip and the timetables.
+ */
 export function changeLine(model, trainId) {
   const t = model.trains.get(trainId);
   const list = changesOf(model, trainId);
   const last = list[list.length - 1];
-  if (last) return { id: last.id, at: minuteLabel(last.at), by: last.source || "", text: `Changed ${minuteLabel(last.at)} · ${last.id}${last.source ? ` · ${last.source}` : ""}` };
+  if (last) return { id: last.id, at: minuteLabel(last.at), by: last.source || "", text: `Changed ${minuteLabel(last.at)}${last.source ? ` · ${last.source}` : ""}` };
   if (t?.created_by && model.changes.has(t.created_by)) {
     const c = model.changes.get(t.created_by);
-    return { id: c.id, at: minuteLabel(c.at), by: c.source || "", text: `Created ${minuteLabel(c.at)} · ${c.id}` };
+    return { id: c.id, at: minuteLabel(c.at), by: c.source || "", text: `Created ${minuteLabel(c.at)}${c.source ? ` · ${c.source}` : ""}` };
   }
   return { id: null, at: null, by: "", text: "No change today: base timetable" };
 }

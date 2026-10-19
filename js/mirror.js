@@ -500,14 +500,15 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     for (const n of Object.keys(CALL_DOING)) if (names.includes(n)) return CALL_DOING[n];
     if (st.ended) {
       // A train the finished run never looked at (another scenario chosen afterwards) waits for its own run.
-      if (!st.results.has(id) && !st.chRead.get(id)?.size) return "Waiting for a lead: start the agent";
-      if (st.ended === "done" || st.ended === "no_findings") return st.ended === "no_findings" ? "Done: nothing contradicts the source" : "Done: every figure from the source";
+      if (!st.results.has(id) && !st.chRead.get(id)?.size) return "Waiting for a lead";
+      if (st.ended === "done" || st.ended === "no_findings") return st.ended === "no_findings" ? "Done: nothing contradicts the source" : "Done";
       return st.ended === "aborted" ? "Stopped by you" : "Stopped";
     }
-    if (!st.running) return "Waiting for a lead: start the agent";
+    if (!st.running) return "Waiting for a lead";
+    // What the AI has done, in a few words; the decision card beside it says what is yours to do.
     const pendingDrafts = [...st.drafts.values()].filter((v) => v === "pending").length;
-    if (pendingDrafts) return `${pendingDrafts} ${pendingDrafts === 1 ? "draft is" : "drafts are"} ready for your approval`;
-    if (st.options && !st.decisions.size && !optionsDecided()) return `${(st.options.options || []).length} responses proposed next to doing nothing`;
+    if (pendingDrafts) return `${pendingDrafts} ${pendingDrafts === 1 ? "draft" : "drafts"} ready`;
+    if (st.options && !st.decisions.size && !optionsDecided()) return `${(st.options.options || []).length} options proposed`;
     return STATE_DOING[st.runState] || "Working on the lead";
   }
   const optionsDecided = () => [...st.decisions.values()].some(Boolean);
@@ -522,12 +523,12 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     if (d) {
       const head = d.letter ? `Option ${d.letter} approved` : "Option approved";
       if (pending) return { state: "yours", text: `${head}: approve ${pending} ${pending === 1 ? "draft" : "drafts"} in the Outbox` };
-      if (drafts.length) return { state: "approved", text: `${head} · ${approved} of ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"} approved` };
+      if (drafts.length) return { state: "approved", text: approved === drafts.length ? `${head} · ${drafts.length === 1 ? "draft" : "drafts"} approved` : `${head} · ${approved} of ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"} approved` };
       return { state: "approved", text: head };
     }
     if (st.options && (st.options.train_ids || []).includes(id)) {
       if (st.ended) return { state: "idle", text: "No decision: the run ended" };
-      return { state: "yours", text: `Your decision: ${(st.options.options || []).length} responses` };
+      return { state: "yours", text: `Your decision: ${(st.options.options || []).length} options` };
     }
     return { state: "idle", text: "Nothing goes out without your approval" };
   }
@@ -540,7 +541,7 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     const t = model.trains.get(id);
     const rec = st.results.get(id) || null;
     const data = alignmentData(model, id, { result: rec?.result || null, basisKey: rec?.basisKey || null });
-    setCaption(`${t.number} · ${t.from} → ${t.to}`, "What every channel tells passengers, against the source", rec ? rec.basisKey : null);
+    setCaption(`${t.number} · ${t.from} → ${t.to}`, "", rec ? rec.basisKey : null);
 
     const kinds = checksOf(id);
     const reading = { source: false, physical: false, calculating: false, channels: new Set() };
@@ -576,6 +577,7 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   function setCaption(title, sub, chipKey) {
     capTitle.textContent = title;
     capSub.textContent = sub;
+    capSub.hidden = !sub;
     const [label, tone] = chipKey ? BASIS_CHIP[chipKey] || [null, null] : [null, null];
     capChip.hidden = !label;
     capChip.textContent = label || "";

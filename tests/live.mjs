@@ -26,6 +26,17 @@ import { APP_ROOT, ONLY, outDir, wanted, launchBrowser, serveStatic, CORS, MOCK_
 
 const ROOT = APP_ROOT;
 const OUT = await outDir("live");
+/** The console's last line as read with its run facts opened (they sit in a closed disclosure). */
+const lastLineWithFacts = () => {
+  const e = [...document.querySelectorAll("#console .entry")].slice(-1)[0];
+  if (!e) return "";
+  const d = e.querySelector("details.run-facts");
+  if (d) d.open = true;
+  const text = e.innerText.replace(/\s+/g, " ").slice(0, 300);
+  if (d) d.open = false;
+  return text;
+};
+
 const { base: BASE, close } = await serveStatic(ROOT, 8767);
 const browser = await launchBrowser();
 const { REF, SCEN } = await loadData();
@@ -243,7 +254,8 @@ if (run("full")) {
     await page.waitForSelector(".alert-card", { timeout: 20000 });
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, "L1-live-alert.png") });
-    checks.alert = await page.$eval(".alert-card", (e) => `${e.dataset.basis}|${e.innerText.replace(/\s+/g, " ").slice(0, 900)}`);
+    // textContent: the sources and checks sit under a closed disclosure.
+    checks.alert = await page.$eval(".alert-card", (e) => `${e.dataset.basis}|${e.textContent.replace(/\s+/g, " ").slice(0, 900)}`);
     await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 30000 });
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, "L2-live-options.png") });
@@ -284,8 +296,8 @@ if (run("full")) {
     checks.retryNotice = await consoleHas(page, /Retrying in/);
     checks.reasoning = await page.$$eval(".reasoning-text", (els) => els.map((e) => e.textContent).join(" | ").slice(0, 120));
     checks.consoleWatermarkHidden = !(await page.isVisible(".sim-watermark"));
-    checks.runFacts = await page.evaluate(() => [...document.querySelectorAll("#console .entry")].map((e) => e.innerText).slice(-1)[0]?.replace(/\s+/g, " ").slice(0, 300));
-    checks.reportFooter = await page.$eval(".report-card", (e) => /Live agent run/.test(e.innerText));
+    checks.runFacts = await page.evaluate(lastLineWithFacts);
+    checks.reportFooter = await page.$eval(".report-card", (e) => /Live agent run/.test(e.textContent));
     await page.click("#tab-audit");
     const [download] = await Promise.all([page.waitForEvent("download"), page.click('button:has-text("Export JSON")')]);
     const file = path.join(OUT, download.suggestedFilename());
@@ -341,7 +353,8 @@ if (run("full")) {
     await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 60000 });
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, "L8-replay-done.png") });
-    checks.replayReport = await page.$eval(".report-card", (e) => e.innerText.split("\n").filter(Boolean).slice(-2).join(" | "));
+    // The full summary sits under "Read it here" in the console; read it there.
+    checks.replayReport = await page.$eval(".report-card .report-full", (e) => { e.open = true; const t = e.innerText.split("\n").filter(Boolean).slice(-2).join(" | "); e.open = false; return t; });
     checks.replayCost = (await page.textContent("#kpi-cost-sub")).trim();
     await page.click("#tab-audit").catch(() => {});
     const [rdl] = await Promise.all([page.waitForEvent("download"), page.click('button:has-text("Export JSON")')]);
@@ -466,7 +479,7 @@ if (run("guards")) {
     checks.drafts = await page.$$eval(".action-card", (els) => els.map((e) => e.querySelector(".action-meta span")?.textContent));
     await page.click('.action-card[data-status="pending"] .btn-approve');
     await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 30000 });
-    checks.runFacts = await page.evaluate(() => [...document.querySelectorAll("#console .entry")].map((e) => e.innerText).slice(-1)[0]?.replace(/\s+/g, " ").slice(0, 300));
+    checks.runFacts = await page.evaluate(lastLineWithFacts);
     checks.guardLines = await page.$$eval("#console .entry[data-guard]", (els) => els.map((e) => e.dataset.guard));
     await page.screenshot({ path: path.join(OUT, "L9-guards.png") });
   } catch (e) { checks.FAILED = String(e.message).split("\n")[0]; await page.screenshot({ path: path.join(OUT, "L-guards-fail.png") }).catch(() => {}); }
@@ -605,7 +618,7 @@ if (run("scan")) {
   try {
     await startLive(t.page, { scan: true });
     await t.page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 20000 });
-    checks.endLine = await t.page.evaluate(() => [...document.querySelectorAll("#console .entry")].map((e) => e.innerText).slice(-1)[0]?.replace(/\s+/g, " "));
+    checks.endLine = await t.page.evaluate(lastLineWithFacts);
     checks.monitor = await t.page.evaluate(() => ({
       view: document.getElementById("mirror").dataset.view,
       caption: document.querySelector("#mirror .cap-sub")?.textContent || "",
@@ -636,7 +649,7 @@ const EXPECT = {
     [/1 guardrail refusal/.test(c.runFacts || ""), `run facts count the refusal (got ${c.runFacts})`],
     [JSON.stringify(c.drafts) === JSON.stringify(["Re-publication order (mock)", "Passenger message"]) && c.draftFooter, `two drafts, each with the approval footer and the source reference (got ${JSON.stringify(c.drafts)})`],
     [c.status === "Done" && c.retryNotice, "run ends Done after a visible retry"],
-    [/Run facts:/.test(c.runFacts || "") && c.reportFooter, "run facts on the last console line; the summary says it is a live run"],
+    [/Run facts/.test(c.runFacts || "") && c.reportFooter, "run facts on the last console line; the summary says it is a live run"],
     [c.auditMode === "live" && c.auditNoKey && c.auditNoSignature && c.auditFirstHasSystem, "audit export: live, no key, no signatures, system prompt logged"],
     [c.costMatches, `cost meter equals the usage maths (got ${c.auditCostEur}, expected ${c.expectedCostEur})`],
     [c.simNoKey && c.simHasRecordedSource && c.simReportRewritten && c.simNoRefusedDraft && c.simLookups === 4, `recording is valid, re-runs the four lookups, carries no secrets and no refused draft (lookups ${c.simLookups})`],
@@ -659,7 +672,7 @@ const EXPECT = {
   ],
   "live: key rejected (401)": (c) => [[c.keyForgotten && /401/.test(c.message || ""), "key removed and 401 explained"]],
   "live: sweep with no findings": (c) => [
-    [/no material finding/i.test(c.endLine || "") && /Run facts:/.test(c.endLine || ""), `honest end with run facts (got ${c.endLine})`],
+    [/no material finding/i.test(c.endLine || "") && /Run facts/.test(c.endLine || "") && /tool calls/.test(c.endLine || ""), `honest end with run facts (got ${c.endLine})`],
     [c.monitor?.view === "monitor" && /^Live sweep: 3 of 34 checked/.test(c.monitor?.caption || "") && c.monitor?.inSync?.join(",") === "RE 10106,ICE 614,RE 10107", `the monitor shows the sweep (got ${JSON.stringify(c.monitor)})`]
   ],
   "live: guardrails (broken-off response, alerts, options, stale decision, drafts, outcome)": (c) => [

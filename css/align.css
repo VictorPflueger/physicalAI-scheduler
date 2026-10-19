@@ -37,6 +37,9 @@
   font-size: 0.82rem; font-weight: 800;
 }
 .al-head-sub { font-family: var(--font-ui); font-weight: 500; font-size: var(--fs-xs); color: var(--text-faint); flex: 1 1 auto; }
+/* the channels' common publication time, at the column's right edge where each card used to carry it */
+.al-head-asof { margin-left: auto; flex: none; font-family: var(--font-ui); font-weight: 500; font-size: 0.76rem; color: var(--text-faint); }
+.al-head-asof[hidden] { display: none; }
 
 /* ---- cards ------------------------------------------------------------------------------------------ */
 .al-card {
@@ -73,8 +76,8 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 /* in a narrow column the German name and the tag move under the title rather than out of the card */
 .al-source .al-card-top { flex-wrap: wrap; row-gap: 3px; }
 .al-source:hover { border-color: var(--brand); }
-.al-train { font-family: var(--font-figures); font-weight: 700; font-size: 1.06rem; line-height: 1.2; }
-.al-stop { color: var(--text-muted); }
+/* the stop is the card's first line: the train is the caption above the view */
+.al-stop { color: var(--text); font-weight: 600; }
 .al-facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0; }
 .al-fact {
   font-family: var(--font-figures); font-weight: 800; font-size: 1.3rem; line-height: 1.15;
@@ -95,9 +98,8 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 .al-ai-status { margin: 0; min-height: 2.6em; font-weight: 600; color: var(--violet-text); line-height: 1.3; }
 .al-ai[data-busy="true"] .al-ai-status::after { content: ""; display: inline-block; width: 1.4em; text-align: left; animation: alDots 1.2s steps(4, end) infinite; overflow: hidden; vertical-align: bottom; }
 @keyframes alDots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
-.al-rules { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 2px; font-size: var(--fs-xs); color: var(--text-muted); }
-.al-rules li { display: flex; align-items: center; gap: 5px; }
-.al-rules .icon { color: var(--violet-line); }
+.al-rule { display: flex; align-items: center; gap: 5px; margin: 2px 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.al-rule .icon { color: var(--violet-line); flex: none; }
 .al-down { align-self: center; width: 2px; height: 16px; background: var(--brand-line); position: relative; flex: none; }
 .al-down::after { content: ""; position: absolute; left: -4px; bottom: -2px; border: 5px solid transparent; border-top-color: var(--brand-line); border-bottom-width: 0; }
 
@@ -179,11 +181,9 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 .al-impact[data-tone="what-if"] { border-color: var(--violet-mid); border-style: dashed; background: var(--violet-fill); color: var(--violet-text); }
 
 /* ---- smaller mirrors: the same story, condensed (js/mirror.js sizes the view by its own height) -------- */
-/* mid (a laptop screen): no sub-heads, one sensor reading, one rule; a channel's value and verdict share a
-   line while they fit, and a verdict that does not fit moves under its value whole, never cut */
+/* mid (a laptop screen): no sub-heads; a channel's value and verdict share a line while they fit, and a
+   verdict that does not fit moves under its value whole, never cut */
 .align[data-size="mid"] .al-head-sub { display: none; }
-.align[data-size="mid"] .al-obs li + li { display: none; }
-.align[data-size="mid"] .al-rules li + li { display: none; }
 .align[data-size="mid"] { gap: 10px; --link-y: 86px; }
 .align[data-size="mid"] .al-fact { font-size: 1.16rem; }
 .align[data-size="mid"] .al-col { gap: 6px; }
@@ -196,9 +196,9 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 .align[data-size="mid"] .al-ch-status, .align[data-size="short"] .al-ch-status { flex: 0 1 auto; max-width: 100%; }
 .align[data-size="mid"] .al-ch-value { font-size: 1.12rem; }
 
-/* short (the drawer is open on a large screen): heads, rules and sensors give way; channels two by two */
+/* short (the drawer is open on a large screen): heads, the AI's rule and the sensors give way; channels two by two */
 .align[data-size="short"] .al-head, .align[data-size="tiny"] .al-head,
-.align[data-size="short"] .al-rules, .align[data-size="tiny"] .al-rules,
+.align[data-size="short"] .al-rule, .align[data-size="tiny"] .al-rule,
 .align[data-size="short"] .al-change, .align[data-size="tiny"] .al-change,
 .align[data-size="short"] .al-down, .align[data-size="tiny"] .al-down,
 .align[data-size="short"] .al-sensors, .align[data-size="tiny"] .al-sensors,
@@ -214,7 +214,6 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 .align[data-size="short"] .al-impact { min-height: 40px; padding: 4px 12px; }
 .align[data-size="short"] .al-impact-num { font-size: 1.5rem; }
 .align[data-size="short"] .al-fact, .align[data-size="short"] .al-ch-value { font-size: 1.04rem; }
-.align[data-size="short"] .al-train { font-size: 0.95rem; }
 .align[data-size="short"] .al-source .al-tag-text, .align[data-size="tiny"] .al-source .al-tag-text { display: none; }
 .align[data-size="short"] .al-tag, .align[data-size="tiny"] .al-tag { padding: 0 4px; }
 
@@ -228,7 +227,6 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 .align[data-size="tiny"] .al-channel .al-card-top .icon { display: none; }
 .align[data-size="tiny"] .al-ch-status > span:not(.icon) { display: none; }
 .align[data-size="tiny"] .al-ch-value s, .align[data-size="tiny"] .al-ch-value .al-arrow { display: none; }
-.align[data-size="tiny"] .al-train { display: none; }
 .align[data-size="tiny"] .al-ch-status .icon { width: 18px; height: 18px; }
 /* one row is all there is: the values stand one under the other, so the source's values and each
    channel's value are read whole; a value longer than its card wraps inside it */
@@ -236,7 +234,6 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 .align[data-size="tiny"] .al-ch-values, .align[data-size="tiny"] .al-facts { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 2px; min-width: 0; }
 .align[data-size="tiny"] .al-fact { padding: 0 6px; }
 .align[data-size="tiny"] .al-facts { margin: 0; }
-.align[data-size="tiny"] .al-train { font-size: 0.9rem; }
 .align[data-size="tiny"] .al-impact { min-height: 0; padding: 3px 12px; font-size: var(--fs-xs); }
 .align[data-size="tiny"] .al-impact-num { font-size: 1.2rem; }
 .align[data-size="tiny"] .al-impact > .icon { display: none; }
@@ -256,11 +253,41 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
   .al-card[data-reading="true"], .al-link[data-flow="reading"], .al-ai[data-busy="true"] .al-ai-status::after { animation: none; }
 }
 
-/* ---- the console: a plain sentence above each tool call, for the audience; the tool's own name and
- *      arguments stay below it, smaller, for those who want them ---------------------------------- */
-.entry .tool-plain { font-weight: 600; color: var(--text); line-height: 1.35; margin-bottom: 2px; }
-.entry .tool-plain + .tool-line .tool-name { font-weight: 500; color: var(--text-muted); font-size: 0.84em; }
-.entry .tool-plain + .tool-line .tool-args { font-size: 0.8em; color: var(--text-faint); }
+/* ---- the console: a tool call reads as one plain sentence for the audience; the tool's own name,
+ *      arguments and result wait one click away under Details (js/console.js) ---------------------- */
+.entry .tool-plain { font-weight: 600; color: var(--text); line-height: 1.35; }
+.entry[data-plain="true"] .entry-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: start; }
+.entry[data-plain="true"] .tool-plain { padding-top: 9px; }
+.entry[data-plain="true"] .result { display: contents; }
+.entry[data-plain="true"] .result-toggle { margin-left: 0; color: var(--text-faint); font-size: var(--fs-xs); }
+.entry[data-plain="true"] .tool-detail, .entry[data-plain="true"] .result-body { grid-column: 1 / -1; }
+.entry[data-plain="true"] .tool-detail { display: none; padding: 0 0 4px; }
+.entry[data-plain="true"] .result[data-open="true"] .tool-detail { display: grid; gap: 2px; }
+.entry[data-plain="true"] .tool-detail .tool-name { font-weight: 500; color: var(--text-muted); font-size: 0.84em; }
+.entry[data-plain="true"] .tool-detail .tool-args { font-size: 0.8em; color: var(--text-faint); }
+.entry[data-plain="true"] .tool-detail .result-summary { font-size: var(--fs-sm); color: var(--text-muted); }
+.entry[data-plain="true"][data-failed="true"] .tool-plain { color: var(--danger-text); }
+
+/* an alert's sources and checks, the full summary and the run's facts, one click away, like a
+   reasoning summary */
+.alert-more, .report-full { margin-top: 2px; }
+details.run-facts { margin-top: 0; }
+.alert-more > summary, .report-full > summary, .run-facts > summary {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 40px; cursor: pointer; list-style: none;
+  color: var(--text-faint); font-size: var(--fs-sm);
+}
+.alert-more > summary::-webkit-details-marker, .report-full > summary::-webkit-details-marker, .run-facts > summary::-webkit-details-marker { display: none; }
+.alert-more > summary:hover, .report-full > summary:hover, .run-facts > summary:hover { color: var(--text-muted); }
+.alert-more[open] > summary .icon, .report-full[open] > summary .icon, .run-facts[open] > summary .icon { transform: rotate(90deg); }
+.alert-more ul { margin: 0 0 4px; }
+.run-facts > p { margin: 0 0 4px; }
+.report-card .report-head { margin: 0 0 4px; padding-right: 52px; font-size: var(--fs-lg); line-height: 1.25; }
+
+/* ---- the outbox: a draft shows its kind, recipient and subject line; its text opens on request
+ *      (js/outbox.js), so the audience reads what is approved, not every word of it ------------------ */
+.action-card[data-folded="true"]:not([data-expanded="true"]) .action-body { display: none; }
+.action-card[data-folded="true"] .action-subject { margin-bottom: 2px; }
 
 /* ---- the intro window: the problem in one example (js/intro.js), the source above what passengers
  *      are told, then who acts on it ---------------------------------------------------------------- */
@@ -283,11 +310,13 @@ button.al-card:focus-visible { box-shadow: var(--focus), var(--shadow-soft); }
 .ip-impact { margin: 2px 4px 0; color: var(--text-muted); line-height: 1.45; }
 .ip-impact strong { color: var(--danger-text); }
 .intro-lead { margin: 0 0 10px; color: var(--text-muted); }
+/* The short texts under the steps and outcomes break into even lines, never one word left alone. */
+.intro-modal :is(.intro-step-text, .intro-value span) { text-wrap: balance; }
 
 /* A short window (a laptop): the intro's steps put their number beside the title, so the window
    keeps the sister apps' sections without scrolling. */
 @media (max-height: 820px) and (min-width: 721px) {
-  .intro-modal .intro-step { padding-top: 0; display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; }
+  .intro-modal .intro-step { padding-top: 0; display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; align-content: start; }
   .intro-modal .intro-step::before { display: none; }
   .intro-modal .intro-num { position: static; width: 32px; height: 32px; font-size: 0.95rem; grid-row: 1; }
   .intro-modal .intro-step-title { grid-column: 2; font-size: 1.1rem; }

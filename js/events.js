@@ -24,7 +24,7 @@
 //   option_decision  { option_id, option_label, options_seq, decision: "approved"|"rejected", by: "user", note? }
 //   action_draft     { action_id, type: "passenger_message"|"republish_order"|"override_request"|"staff_brief"|"hold_request"|"memo",
 //                      recipient, subject, body, status: "pending", unchecked?: [fact] }
-//   action_decision  { action_id, decision: "approved"|"rejected", by: "user", label? }
+//   action_decision  { action_id, decision: "approved"|"rejected", by: "user", kind?, label? }
 //   report           { markdown, outcome? }
 //   cost_update      { eur, usd, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, web_searches, simulated }
 //   notice           { level: "info"|"warn"|"error", text }

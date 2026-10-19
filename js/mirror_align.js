@@ -1,11 +1,12 @@
 // The alignment view: the Timetable Translator's story in one picture, and the mirror's first view.
 //   1  the source the AI reads: the operational timetable (Betriebsfahrplan) at one stop of one train,
-//      and the sensors of the physical layer that confirm what the trains will really do;
+//      when and by whom it changed, and the one sensor reading that bears most on the train;
 //   2  the AI translator between the two timetables, which keeps no timetable of its own, and the
 //      person who decides before anything goes out;
 //   3  what passengers are told on every customer channel (Kundenfahrplan), with the agent's verdict.
 // Below them, what the agent's engine result says that means for passengers, and after the human
-// decision what is left. It follows the same run events as the timetable view (js/mirror.js passes the
+// decision what is left. Each card says one thing in a few words; the details are in its tooltip and
+// in the timetables. It follows the same run events as the timetable view (js/mirror.js passes the
 // state in), so a simulated and a live run look the same. Every value comes from js/align_data.js.
 
 import { h } from "./dom.js";
@@ -45,33 +46,39 @@ export function channelStatus(ch, { reading = false, read = false, decision = nu
   }
 }
 
-/** The line under the three columns: what the agent's result means for passengers, then what is left. Returns { tone, num, text }. */
+/** The line under the three columns: what the agent's result means for passengers, then what is left. Returns { tone, num, text, hint? }. */
 export function impactLine(data, decision) {
   const imp = data?.impact;
-  if (!imp) return { tone: "muted", num: null, text: "Passenger impact: not calculated yet. The sync engine calculates it once the AI has read the source and the channels." };
-  const first = imp.minutes !== null && imp.minutes !== undefined ? `the first in ${int(imp.minutes)} min${imp.where ? ` (${imp.where})` : ""}` : "none within the planning window";
+  if (!imp) return { tone: "muted", num: null, text: "Passenger impact: not calculated yet.", hint: "The sync engine calculates it once the AI has read the source and the channels" };
+  // When the first passenger acts on it; where (train and stop) is in the tooltip, the caption and the KPI tile.
+  const first = imp.minutes !== null && imp.minutes !== undefined ? `the first in ${int(imp.minutes)} min` : "none within the planning window";
+  const where = imp.where && imp.minutes !== null && imp.minutes !== undefined ? `The first passenger acts on it at ${imp.where}` : "";
   const who = imp.trains > 1 ? `passengers on ${int(imp.trains)} trains` : "passengers";
   if (decision?.state === "accepted") return { tone: "affected", num: int(imp.pax), text: `${who} act on wrong information: risk accepted, nothing changes` };
   if (decision && typeof decision.residual === "number") {
-    const right = decision.fromMin !== null && decision.fromMin !== undefined ? `right information after ${fmt(decision.fromMin)} min` : null;
+    // Two clauses: who is still misinformed, and whether the data is aligned. When the right information
+    // reaches passengers is in the tooltip (and on the second KPI tile).
+    const right = decision.fromMin !== null && decision.fromMin !== undefined ? `The right information reaches passengers after ${fmt(decision.fromMin)} min` : "";
     const data2 = decision.state === "resolved"
       ? (decision.syncMin !== null && decision.syncMin !== undefined ? `every channel aligned after ${fmt(decision.syncMin)} min` : "every channel re-published")
       : `data not aligned${decision.overrides ? `, ${int(decision.overrides)} ${decision.overrides === 1 ? "value" : "values"} kept by hand` : ""}`;
     return {
       tone: decision.state === "resolved" ? "resolved" : "at-risk",
       num: int(decision.residual),
-      text: [`still misinformed with option ${decision.letter}${typeof decision.before === "number" ? ` (was ${int(decision.before)})` : ""}`, right, data2].filter(Boolean).join(" · ")
+      text: [`still misinformed with option ${decision.letter}${typeof decision.before === "number" ? ` (was ${int(decision.before)})` : ""}`, data2].join(" · "),
+      hint: right
     };
   }
   if (!imp.pax && !imp.contradictions) return { tone: "resolved", num: "0", text: "passengers act on wrong information: every channel matches the source" };
-  if (imp.stage === "what_if") return { tone: "what-if", num: int(imp.pax), text: `${who} would act on wrong information under the what-if · ${first}` };
+  if (imp.stage === "what_if") return { tone: "what-if", num: int(imp.pax), text: `${who} would act on wrong information under the what-if · ${first}`, hint: where };
   // A first estimate says what it looked at ("journey planner & app only"), so its smaller figure is
   // read as a partial count, not as a second answer next to the verified one.
   const estimate = imp.stage === "estimate" ? ` (first estimate${imp.covered ? `: ${imp.covered}` : ""})` : "";
   return {
     tone: imp.stage === "estimate" ? "at-risk" : "affected",
     num: int(imp.pax),
-    text: `${who} would act on wrong information${estimate} · ${first}`
+    text: `${who} would act on wrong information${estimate} · ${first}`,
+    hint: where
   };
 }
 
@@ -80,13 +87,13 @@ const fmt = (x) => `${Math.round(Number(x) * 10) / 10}`;
 export function createAlign({ onChannel, onSource } = {}) {
   // ---- column 1: the source and the sensors ------------------------------------------------------------
   const srcTag = h("span", { class: "al-tag" });
-  const srcTrain = h("span", { class: "al-train" });
   const srcStop = h("span", { class: "al-stop" });
   const srcFacts = h("span", { class: "al-facts" });
   const srcChange = h("span", { class: "al-change" });
+  // The train is the view's caption; the card names the stop, the source's values and the change.
   const source = h("button", { class: "al-card al-source", type: "button", title: "Open the timetables: the source beside what each channel publishes" },
     h("span", { class: "al-card-top" }, icon("timetable", 18), h("span", { class: "al-title" }, "Operational timetable"), h("span", { class: "al-de" }, "Betriebsfahrplan"), srcTag),
-    srcTrain, srcStop, srcFacts, srcChange);
+    srcStop, srcFacts, srcChange);
   source.addEventListener("click", () => onSource?.());
 
   const senTag = h("span", { class: "al-tag" });
@@ -97,29 +104,31 @@ export function createAlign({ onChannel, onSource } = {}) {
     senEmpty, senList);
 
   const colSrc = h("section", { class: "al-col", dataset: { col: "src" }, "aria-label": "1: the source the AI reads" },
-    h("h3", { class: "al-head" }, h("span", { class: "al-num", "aria-hidden": "true" }, "1"), h("span", {}, "The source"), h("span", { class: "al-head-sub" }, "what the trains will do")),
+    h("h3", { class: "al-head" }, h("span", { class: "al-num", "aria-hidden": "true" }, "1"), h("span", {}, "The source")),
     source, sensors);
 
   // ---- column 2: the AI and the human decision -------------------------------------------------------
   const aiStatus = h("p", { class: "al-ai-status", role: "status" });
-  const ai = h("div", { class: "al-card al-ai" },
+  // What the AI is doing now, and the customer's own condition: it keeps no timetable of its own (that
+  // every fact is traced to the source is in the tooltip).
+  const ai = h("div", { class: "al-card al-ai", title: "The AI translator keeps no timetable of its own; every fact it uses is traced to the source" },
     h("span", { class: "al-card-top" }, icon("spark", 18), h("span", { class: "al-title" }, "AI translator")),
     aiStatus,
-    h("ul", { class: "al-rules" },
-      h("li", {}, icon("check", 14), "Keeps no timetable of its own"),
-      h("li", {}, icon("check", 14), "Every fact traced to the source")));
+    h("p", { class: "al-rule" }, icon("check", 14), "Keeps no timetable of its own"));
   const gateText = h("p", { class: "al-gate-text" });
   const gate = h("div", { class: "al-card al-gate" },
     h("span", { class: "al-card-top" }, icon("user", 18), h("span", { class: "al-title" }, "You decide")),
     gateText);
   const colAi = h("section", { class: "al-col", dataset: { col: "ai" }, "aria-label": "2: the AI translator and your decision" },
-    h("h3", { class: "al-head" }, h("span", { class: "al-num", "aria-hidden": "true" }, "2"), h("span", {}, "The translator"), h("span", { class: "al-head-sub" }, "compares and drafts")),
+    h("h3", { class: "al-head" }, h("span", { class: "al-num", "aria-hidden": "true" }, "2"), h("span", {}, "The translator")),
     ai, h("span", { class: "al-down", "aria-hidden": "true" }), gate);
 
   // ---- column 3: the channels ------------------------------------------------------------------------
   const chList = h("ul", { class: "al-channels" });
+  // When every channel was generated at the same time, the time stands once above them, not on each card.
+  const chAsOf = h("span", { class: "al-head-asof", hidden: true });
   const colCh = h("section", { class: "al-col", dataset: { col: "ch" }, "aria-label": "3: what passengers are told" },
-    h("h3", { class: "al-head" }, h("span", { class: "al-num", "aria-hidden": "true" }, "3"), h("span", {}, "What passengers are told"), h("span", { class: "al-head-sub" }, "Kundenfahrplan")),
+    h("h3", { class: "al-head" }, h("span", { class: "al-num", "aria-hidden": "true" }, "3"), h("span", {}, "What passengers are told"), h("span", { class: "al-head-sub" }, "Kundenfahrplan"), chAsOf),
     chList);
   const cards = new Map();
 
@@ -164,11 +173,11 @@ export function createAlign({ onChannel, onSource } = {}) {
     const { read = {}, reading = {}, decision = null } = ctx;
 
     // Column 1
-    srcTrain.textContent = `${data.train.number} → ${data.train.to}`;
     srcStop.textContent = data.stop?.text || "";
     srcFacts.replaceChildren(...data.facts.map((f) => h("span", { class: "al-fact", dataset: { type: f.type }, title: `${f.label}: ${f.sourceFull}` }, f.source)));
     const sourceOf = new Map(data.facts.map((f) => [f.id, f.source]));
     srcChange.textContent = data.change?.text || "";
+    srcChange.title = data.change?.id ? `Operational change ${data.change.id}` : "";
     source.dataset.read = String(!!read.source);
     source.dataset.reading = String(!!reading.source);
     setTag(srcTag, reading.source ? ["checking", "Reading…"] : read.source ? ["read", "Read by the AI"] : null);
@@ -179,7 +188,9 @@ export function createAlign({ onChannel, onSource } = {}) {
     sensors.dataset.reading = String(!!reading.physical);
     senEmpty.hidden = obs.length > 0;
     senEmpty.textContent = reading.physical ? "Reading the sensors…" : read.physical ? "No reading bears on this train" : "Not read yet";
-    senList.replaceChildren(...obs.slice(0, 2).map((o) => h("li", { title: `${o.source}: ${o.full}` }, o.time ? h("span", { class: "al-time num" }, o.time) : null, o.time ? " " : null, h("span", {}, o.text))));
+    // One reading, the one that bears most on the train; the others are in its tooltip and the timetables.
+    const more = obs.slice(1).map((o) => `\n${o.time ? `${o.time} ` : ""}${o.source}: ${o.full}`).join("");
+    senList.replaceChildren(...obs.slice(0, 1).map((o) => h("li", { title: `${o.source}: ${o.full}${more}` }, o.time ? h("span", { class: "al-time num" }, o.time) : null, o.time ? " " : null, h("span", {}, o.text))));
     senList.hidden = !obs.length;
     setTag(senTag, reading.physical ? ["checking", "Reading…"] : obs.length ? ["ok", "Confirms the source"] : null);
 
@@ -190,6 +201,11 @@ export function createAlign({ onChannel, onSource } = {}) {
     gateText.textContent = ctx.gate?.text || "Nothing goes out without your approval";
 
     // Column 3
+    const times = new Set(data.channels.map((c) => c.asOf || ""));
+    const sharedAsOf = times.size === 1 && !times.has("") ? data.channels[0].asOf : null;
+    chAsOf.hidden = !sharedAsOf;
+    chAsOf.textContent = sharedAsOf ? `as of ${sharedAsOf}` : "";
+    chAsOf.title = sharedAsOf ? `Every channel was generated at ${sharedAsOf}` : "";
     const keep = new Set(data.channels.map((c) => c.channel));
     for (const [ch, c] of cards) if (!keep.has(ch)) { c.li.remove(); cards.delete(ch); }
     data.channels.forEach((ch, i) => {
@@ -198,8 +214,8 @@ export function createAlign({ onChannel, onSource } = {}) {
       const st = channelStatus(ch, { reading: isReading, read: !!read.channels?.has?.(ch.channel), decision });
       c.name.textContent = ch.label;
       c.name.title = ch.de;
-      c.asOf.textContent = ch.asOf ? `as of ${ch.asOf}` : "";
-      c.asOf.title = ch.asOf ? `Generated at ${ch.asOf}, before the source changed` : "";
+      c.asOf.textContent = ch.asOf && !sharedAsOf ? `as of ${ch.asOf}` : "";
+      c.asOf.title = ch.asOf && !sharedAsOf ? `Generated at ${ch.asOf}` : "";
       // After an approved re-publication, a wrong value shows what it becomes: the source's value.
       const fixed = (v) => st.tone === "resolved" && !v.ok && sourceOf.get(v.id);
       c.values.replaceChildren(...(ch.values.length
@@ -226,6 +242,7 @@ export function createAlign({ onChannel, onSource } = {}) {
     impNum.hidden = imp.num === null;
     impNum.textContent = imp.num ?? "";
     impText.textContent = imp.text;
+    impact.title = imp.hint || "";
     if (data.more) impText.append(h("span", { class: "al-more" }, ` · ${data.more} more ${data.more === 1 ? "stop" : "stops"} in the timetables`));
   }
 

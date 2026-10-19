@@ -4,11 +4,12 @@
 
 import { findPoint, findTrain } from "./world.js";
 
+// Each channel with its verb ("the station displays tell", "the coach order tells").
 const CHANNEL_WORDS = {
-  planner: "the journey planner and app",
-  displays: "the station displays",
-  announcements: "the announcements",
-  coach: "the coach order"
+  planner: ["the journey planner and app", "tell"],
+  displays: ["the station displays", "tell"],
+  announcements: ["the announcements", "tell"],
+  coach: ["the coach order", "tells"]
 };
 
 /** The sentence for one tool call, or null for a tool without one (the console then shows the name only). */
@@ -36,7 +37,7 @@ export function toolPlain(name, input = {}, model = null) {
     case "kfp_get_published": {
       const who = train(i.train) || "the train";
       return i.channel && CHANNEL_WORDS[i.channel]
-        ? `Reads what ${CHANNEL_WORDS[i.channel]} tells passengers about ${who}`
+        ? `Reads what ${CHANNEL_WORDS[i.channel][0]} ${CHANNEL_WORDS[i.channel][1]} passengers about ${who}`
         : `Reads what every channel tells passengers about ${who}`;
     }
     case "phys_observe":

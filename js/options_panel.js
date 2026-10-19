@@ -1,9 +1,10 @@
 // Options tab: three costed options plus the do-nothing baseline, a comparison, and the approval
 // gate. Card state follows option_decision events, so live and simulated runs behave alike. Each card
-// carries one big figure, the passengers still misinformed (fewer is better), and three plain rows:
-// when every channel is aligned with the source again, how many values would be kept by hand (a second
-// truth the source does not know) and the staff effort. When the right information reaches passengers
-// is nearly the same for every option, so the comparison says it once, next to the bars.
+// carries its title, when every channel is aligned with the source again, the values it would keep by
+// hand (a second truth the source does not know; the row only when there are any), a held connection
+// when it has one, one big figure, the passengers still misinformed (fewer is better), and one line on
+// who they are (the residual risk), which a room reads off a projector. What the option does in full,
+// the staff effort and when the right information reaches passengers are in the card's tooltip.
 
 import { bus } from "./events.js";
 import { h, clear } from "./dom.js";
@@ -27,6 +28,8 @@ export function rightInfoClause(options) {
   return `the right information reaches them after ${[...groups].map(([k, letters]) => `${k} (${letters.join(", ")})`).join(" or ")}`;
 }
 const after = (x, H) => (x === null || x === undefined ? `not within ${H} min` : `after ${Math.round(Number(x) * 10) / 10} min`);
+/** Markdown emphasis out of a tooltip, which shows plain text. */
+const plain = (x) => String(x || "").replace(/\*\*|__|`/g, "").trim();
 
 export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
   let current = null;           // last options payload
@@ -58,7 +61,7 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
       h("div", { class: "options-summary-head" },
         h("h3", {}, pending ? "Decide how to respond" : locked ? "Decision taken" : ended ? "Run ended before a decision" : "Options"),
         aiLabel("options")),
-      h("p", {}, `Passengers who would still act on wrong information within ${H} minutes, per option; ${rightInfoClause(options)}. All figures come from the deterministic sync engine.`),
+      h("p", { title: `Passengers who would still act on wrong information within ${H} minutes, per option; ${rightInfoClause(options)}. All figures come from the deterministic sync engine.` }, "Who would still act on wrong information, per option. Figures from the sync engine."),
       h("div", { class: "compare", role: "img", "aria-label": `Passengers still misinformed per option compared with doing nothing: ${rows.map((r) => `${r.name} ${int(r.res)}`).join("; ")}` },
         rows.map((r) => h("div", { class: "compare-row", dataset: { recommended: String(!!r.recommended) }, title: r.name },
           h("span", { class: "compare-key", "aria-hidden": "true" }, r.key),
@@ -89,40 +92,40 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
 
   function optionCard(o, H) {
     const st = status.get(o.id) || (locked ? "not_selected" : ended ? "expired" : "");
-    const card = h("article", { class: "option-card", dataset: { recommended: String(!!o.recommended), status: st, kind: "option" }, "aria-label": `Option ${o.letter}: ${o.title}` },
+    // What the option does, the staff effort and when the right information arrives are in the card's
+    // tooltip; who is still misinformed, and why, stays on its face.
+    const tip = [
+      plain(o.description),
+      `Staff effort ${int(o.effort_min)} min; the right information reaches passengers after ${plus(o.correct_info_from_min)}.`
+    ].filter(Boolean).join("\n");
+    const card = h("article", { class: "option-card", dataset: { recommended: String(!!o.recommended), status: st, kind: "option" }, "aria-label": `Option ${o.letter}: ${o.title}`, title: tip },
       h("div", { class: "option-top" },
         h("span", { class: "option-letter", "aria-hidden": "true" }, o.letter),
         h("h4", { class: "option-title" }, o.title),
         o.recommended ? h("span", { class: "chip", dataset: { tone: "recommended" } }, "Recommended") : null),
-      o.description ? renderInline(o.description, h("p", { class: "option-desc" })) : null,
       h("dl", { class: "option-figures" },
         h("dt", {}, "All channels aligned"), h("dd", { title: "When every channel shows what the source says again" }, after(o.time_to_sync_min, H)),
-        h("dt", {}, "Kept by hand"), h("dd", { title: "Manual overrides: values kept by hand on displays or announcements, a second truth the source does not know" }, o.manual_overrides ? `${int(o.manual_overrides)} ${o.manual_overrides === 1 ? "value" : "values"} (second truth)` : "none"),
-        h("dt", {}, "Staff effort"), h("dd", {}, `${int(o.effort_min)} min`),
+        ...(o.manual_overrides ? [h("dt", {}, "Kept by hand"), h("dd", { title: "Manual overrides: values kept by hand on displays or announcements, a second truth the source does not know" }, `${int(o.manual_overrides)} ${o.manual_overrides === 1 ? "value" : "values"} (second truth)`)] : []),
         ...(o.hold ? [h("dt", {}, "Connection held"), h("dd", { title: `${o.hold.train} waits ${int(o.hold.wait_min)} min if dispatch agrees: ${int(o.held_pax)} passengers keep the connection, ${int(o.hold.delayed_pax)} on ${o.hold.train} are delayed. ${o.hold.note || ""}`.trim() }, `${int(o.held_pax)} keep it, ${o.hold.train} +${int(o.hold.wait_min)} min`)] : [])),
       h("div", { class: "option-total", title: `${int(o.protected_pax)} passengers protected; the right information reaches them after ${plus(o.correct_info_from_min)}` },
         h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value num" }, int(o.misinformed_pax))),
-      o.residual_risk ? h("p", { class: "option-risk" }, h("strong", {}, "Residual risk: "), o.residual_risk) : null,
+      o.residual_risk ? renderInline(o.residual_risk, h("p", { class: "option-risk", title: "Residual risk: who is still misinformed with this option, and why" })) : null,
       actionsFor(o, st));
     return card;
   }
 
   function baselineCard(b, H) {
     const st = status.get("baseline") || (locked ? "not_selected" : ended ? "expired" : "");
-    const first = b?.first_event_min === null || b?.first_event_min === undefined
-      ? `none within ${H} min`
-      : `in ${int(b.first_event_min)} min${b.first_event_label ? `, ${b.first_event_label}` : ""}`;
-    return h("article", { class: "option-card", dataset: { kind: "baseline", status: st }, "aria-label": "Do nothing" },
+    // When, on the card; where (the train and stop) in its tooltip, as the KPI tile above shows it too.
+    const first = b?.first_event_min === null || b?.first_event_min === undefined ? `none within ${H} min` : `in ${int(b.first_event_min)} min`;
+    return h("article", { class: "option-card", dataset: { kind: "baseline", status: st }, "aria-label": "Do nothing", title: plain(b?.description) || "Publish nothing and wait for the publication cycles." },
       h("div", { class: "option-top" },
         h("span", { class: "option-letter", "aria-hidden": "true" }, "–"),
         h("h4", { class: "option-title" }, "Do nothing")),
-      h("p", { class: "option-desc" }, b?.description || "Publish nothing and wait for the publication cycles."),
-      h("dl", { class: "option-figures" },
-        // Everyone who relies on a wrong fact; "Still misinformed" below is who would act on it.
-        h("dt", {}, "Relying on wrong facts"), h("dd", {}, `${int(b?.affected_pax)} passengers`),
-        h("dt", {}, "First affected"), h("dd", {}, first),
-        h("dt", {}, "All channels aligned"), h("dd", {}, after(b?.time_to_sync_min, H)),
-        // The next publication cycle, and whether it puts this right (a short-notice change it does not take).
+      // Two rows: when the first passenger acts, and whether the next publication cycle puts it right
+      // (a short-notice change it does not take). Everyone relying on a wrong fact is in the tooltip.
+      h("dl", { class: "option-figures", title: `${int(b?.affected_pax)} passengers rely on a wrong fact; every channel aligned ${after(b?.time_to_sync_min, H)}` },
+        h("dt", {}, "First affected"), h("dd", b?.first_event_label ? { title: b.first_event_label } : {}, first),
         h("dt", {}, "Next cycle"), h("dd", b?.next_cycle_note ? { title: b.next_cycle_note } : {}, b?.next_cycle_label ? `${b.next_cycle_label}${b.time_to_sync_min === null || b.time_to_sync_min === undefined ? ", does not fix it" : ""}` : "—")),
       h("div", { class: "option-total" }, h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value num" }, int(b?.misinformed_pax))),
       actionsFor({ id: "baseline", letter: "–", title: "Do nothing" }, st, true));

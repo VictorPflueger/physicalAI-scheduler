@@ -1,6 +1,7 @@
 // Outbox tab: drafted passenger messages, re-publication orders, override and hold requests, staff
 // briefings and internal memos. Every item is a draft that needs explicit approval; approval only
-// changes its status here — nothing is ever published or sent.
+// changes its status here — nothing is ever published or sent. A draft shows what it is, for whom and
+// its subject line; its full text opens with "Show draft".
 
 import { bus } from "./events.js";
 import { h, clear } from "./dom.js";
@@ -30,7 +31,7 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
     clear(panel);
     const pending = [...actions.values()].filter((a) => a.status === "pending");
     panel.appendChild(h("div", { class: "outbox-head" },
-      h("span", { class: "outbox-safety" }, icon("shield", 18), "Drafts only. The Timetable Translator is connected to no passenger information, timetable or dispatch system; approving marks a draft as cleared for publication."),
+      h("span", { class: "outbox-safety", title: "The Timetable Translator is connected to no passenger information, timetable or dispatch system; approving marks a draft as cleared for publication." }, icon("shield", 18), "Drafts only: connected to no system, nothing is sent."),
       pending.length > 1
         ? h("button", { class: "btn btn-approve btn-brand-outline btn-sm", type: "button", on: { click: () => pending.forEach((a) => decide(a.draft, "approved")) } }, icon("check", 16), `Approve all ${pending.length} pending`)
         : null));
@@ -61,8 +62,8 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
       : status === "approved" ? "Approved — draft, not published"
         : status === "expired" ? "Not decided: the run ended" : "Rejected";
     const bodyText = d.body || (d.payload ? JSON.stringify(d.payload, null, 2) : "");
-    const clipped = bodyText.split("\n").length > 6 || bodyText.length > 480;
-    const el = h("article", { class: "action-card", dataset: { status, expanded: "false", clipped: String(clipped) } },
+    // The text stays closed until asked for: the subject line says what the draft does.
+    const el = h("article", { class: "action-card", dataset: { status, expanded: "false", folded: "true" } },
       h("span", { class: "action-type", "aria-hidden": "true" }, icon(t.icon, 20)),
       h("div", {},
         h("div", { class: "action-meta" },
@@ -74,13 +75,14 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
             : null,
           aiLabel("draft")),
         h("div", { class: "action-subject" }, d.subject),
-        h("pre", { class: "action-body" }, bodyText),
-        clipped
-          ? h("button", { class: "btn btn-ghost btn-sm action-more", type: "button", on: { click: (e) => {
+        h("pre", { class: "action-body", id: `draft-${d.action_id}-body` }, bodyText),
+        bodyText
+          ? h("button", { class: "btn btn-ghost btn-sm action-more", type: "button", "aria-expanded": "false", "aria-controls": `draft-${d.action_id}-body`, on: { click: (e) => {
             const open = el.dataset.expanded !== "true";
             el.dataset.expanded = String(open);
-            e.currentTarget.textContent = open ? "Show less" : "Show full draft";
-          } } }, "Show full draft")
+            e.currentTarget.setAttribute("aria-expanded", String(open));
+            e.currentTarget.textContent = open ? "Hide draft" : "Show draft";
+          } } }, "Show draft")
           : null),
       status === "pending"
         ? h("div", { class: "action-buttons" },
@@ -94,7 +96,8 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
     const a = actions.get(d.action_id);
     if (!a || a.status !== "pending") return;
     refocus = panel.contains(document.activeElement);
-    onDecision?.({ action_id: d.action_id, decision, label: `${(TYPE[d.type] || TYPE.memo).label.toLowerCase()} “${d.subject}”` });
+    const kind = (TYPE[d.type] || TYPE.memo).label;
+    onDecision?.({ action_id: d.action_id, decision, kind, label: `${kind.toLowerCase()} “${d.subject}”` });
   }
 
   bus.on("action_draft", (ev) => {

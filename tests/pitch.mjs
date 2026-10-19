@@ -3,12 +3,13 @@
 // page:
 //   idle       the alignment view is the mirror's first view: the pitch train's source values beside
 //              what each channel tells passengers, every channel "Not checked yet", no verdict, no
-//              impact; the timetables and all-trains views are one click away and back
+//              impact, a change line without internal ids and a caption of one line; the timetables
+//              and all-trains views are one click away and back
 //   run        during the run the view shows what the AI reads (source, channels, sensors), a channel it
 //              has read waits as "Read, not compared yet", the first estimate judges the journey planner
 //              only, and the verified result marks every channel
-//              that contradicts the source, the sensors confirm it, and the impact line carries the
-//              engine's figure with the first affected moment; the decision card waits for you
+//              that contradicts the source, one sensor reading confirms it, and the impact line carries
+//              the engine's figure with the first affected moment; the decision card waits for you
 //   decisions  after each decision the view shows what is left: re-publishing aligns every channel
 //              (the old value struck, the source's value after it), messages leave the data wrong,
 //              overrides are a second truth, an accepted risk turns amber with the hand while the
@@ -17,10 +18,14 @@
 //              narration paragraphs of at most 240 characters before it
 //   captions   every tool call in the console carries a plain sentence of what it reads or calculates
 //   intro      the first visit's window says what it does (the engine's example), how the AI aligns
-//              the information (five steps) and what it achieves (three outcomes), without scrolling
-//              at 1280×720, 1600×900 and 1920×1080
-//   cards      option cards carry one big figure (still misinformed) and three plain rows; the KPI
-//              tiles speak of alignment after the decision; the passenger message is the first draft
+//              the information (five steps) and what it achieves (three outcomes) in at most 150
+//              words, without scrolling at 1280×720, 1600×900 and 1920×1080
+//   cards      option cards carry one big figure (still misinformed) with one short line on who that is,
+//              a row on when every channel is aligned and one on values kept by hand only where there
+//              are any, what the option does in the tooltip; the do-nothing card two rows; the panel's
+//              lead one short sentence; the KPI tiles speak of alignment after the decision; the
+//              passenger message is the first draft; the outbox's safety line is short and each draft
+//              is folded to its subject line until Show draft opens it
 // Usage: node tests/pitch.mjs [case…]
 import fs from "node:fs";
 import path from "node:path";
@@ -93,6 +98,8 @@ const alignState = (page) => page.evaluate(() => ({
     status: c.querySelector(".al-ch-status").textContent.trim()
   })),
   sensors: [...document.querySelectorAll("#mirror .al-sensors .al-obs li")].map((li) => li.textContent.replace(/\s+/g, " ").trim()),
+  change: document.querySelector("#mirror .al-change")?.textContent.trim() || "",
+  capSub: [...document.querySelectorAll("#mirror .cap-sub")].filter((e) => e.getClientRects().length).map((e) => e.textContent.trim()).join(""),
   sensorTag: document.querySelector("#mirror .al-sensors .al-tag:not([hidden])")?.textContent.trim() || "",
   impact: { tone: document.querySelector("#mirror .al-impact").dataset.tone, text: document.querySelector("#mirror .al-impact").textContent.replace(/\s+/g, " ").trim() },
   gate: { state: document.querySelector("#mirror .al-gate").dataset.state, text: document.querySelector("#mirror .al-gate-text").textContent.trim() },
@@ -142,6 +149,9 @@ if (run("idle")) {
     if (s.impact.tone !== "muted" || !/not calculated yet/.test(s.impact.text)) problems.push(`impact before the run: ${JSON.stringify(s.impact)}`);
     if (s.gate.state !== "idle" || !/Nothing goes out without your approval/.test(s.gate.text)) problems.push(`decision card: ${JSON.stringify(s.gate)}`);
     if (!/Waiting for a lead/.test(s.ai)) problems.push(`AI card: ${s.ai}`);
+    // Less to read: the change line says when and by whom (no internal id), the caption only the train.
+    if (s.change !== idle.change.text || /\bOPS-\d/.test(s.change)) problems.push(`change line "${s.change}" (the engine: "${idle.change.text}", without its id)`);
+    if (s.capSub) problems.push(`the caption carries a second line: "${s.capSub}"`);
     await page.screenshot({ path: path.join(OUT, "idle-1600.png") });
     // One click to the timetables and to all trains, and back.
     await page.click('#mirror .mirror-tools button:has-text("Timetables")');
@@ -187,8 +197,9 @@ if (run("run")) {
     for (const ch of wrongChannels) if (tone[ch] !== "affected") problems.push(`${ch} is ${tone[ch]}, the engine finds it wrong`);
     for (const c of s.channels) if (!wrongChannels.includes(c.channel) && c.tone === "affected") problems.push(`${c.channel} is red, the engine finds it right`);
     for (const c of s.channels.filter((x) => x.tone === "affected")) if (c.status !== "Contradicts the source") problems.push(`${c.channel} says "${c.status}"`);
-    const wantSensors = SENSORS.slice(0, 2);
-    if (!wantSensors.every((t) => s.sensors.some((x) => x.includes(t)))) problems.push(`sensors ${JSON.stringify(s.sensors)} (expected ${JSON.stringify(wantSensors)})`);
+    // One sensor reading, the one that bears most on the train; the rest are in its tooltip.
+    const wantSensors = SENSORS.slice(0, 1);
+    if (s.sensors.length !== 1 || !s.sensors[0].includes(wantSensors[0])) problems.push(`sensors ${JSON.stringify(s.sensors)} (expected ${JSON.stringify(wantSensors)})`);
     if (s.sensorTag !== "Confirms the source") problems.push(`sensor tag "${s.sensorTag}"`);
     if (s.impact.tone !== "affected" || !s.impact.text.startsWith(`${BASE_PAX} passengers would act on wrong information`) || !s.impact.text.includes(`the first in ${FIRST_MIN} min`)) problems.push(`impact ${JSON.stringify(s.impact)} (the engine: ${BASE_PAX}, first in ${FIRST_MIN} min)`);
     if (s.gate.state !== "yours" || !/Your decision/.test(s.gate.text)) problems.push(`decision card ${JSON.stringify(s.gate)}`);
@@ -266,12 +277,36 @@ if (run("timing") || run("captions")) {
     // captions
     const tools = await page.$$eval('#console .entry[data-type="tool_call"]', (els) => els.map((e) => ({ name: e.querySelector(".tool-name")?.textContent.trim(), plain: e.querySelector(".tool-plain")?.textContent.trim() || "" })));
     checks.toolCalls = tools.map((t) => `${t.name}: ${t.plain}`);
-    const RULE = { ops_list_changes: /^Reads the operations log/, ops_get_timetable: /^Reads the operational timetable/, kfp_get_published: /^Reads what (every channel|the journey planner and app|the station displays|the announcements|the coach order) tells passengers/, phys_observe: /^Reads the sensors at /, ops_get_passengers: /^Reads today's passenger counts/, sim_sync: /^Calculates /, ops_find_alternatives: /^Looks for other connections/, ops_get_overview: /^Reads every train/ };
+    const RULE = { ops_list_changes: /^Reads the operations log/, ops_get_timetable: /^Reads the operational timetable/, kfp_get_published: /^Reads what (every channel tells|the journey planner and app tell|the station displays tell|the announcements tell|the coach order tells) passengers/, phys_observe: /^Reads the sensors at /, ops_get_passengers: /^Reads today's passenger counts/, sim_sync: /^Calculates /, ops_find_alternatives: /^Looks for other connections/, ops_get_overview: /^Reads every train/ };
     if (tools.length < 8) capProblems.push(`only ${tools.length} tool calls`);
     for (const t of tools) if (!t.plain || !(RULE[t.name] || /./).test(t.plain)) capProblems.push(`${t.name} has no fitting plain sentence ("${t.plain}")`);
+    // The audience reads the sentence; the tool's name, arguments and result wait, closed, under Details.
+    const plain = await page.$$eval('#console .entry[data-type="tool_call"]', (els) => els.map((e) => ({
+      plain: e.dataset.plain === "true",
+      toggle: e.querySelector(".result-toggle")?.textContent.trim() || "",
+      shown: !!e.querySelector(".tool-detail") && getComputedStyle(e.querySelector(".tool-detail")).display !== "none",
+      summary: !!e.querySelector(".tool-detail .result-summary")
+    })));
+    checks.plainEntries = plain.filter((x) => x.plain && x.toggle === "Details" && !x.shown && x.summary).length;
+    if (checks.plainEntries !== plain.length) capProblems.push(`${plain.length - checks.plainEntries} of ${plain.length} tool calls show more than their sentence, or lack Details with the result inside`);
+    // One click opens the details: the tool's own name and its result appear.
+    const first = await page.$('#console .entry[data-type="tool_call"] .result-toggle');
+    if (first) {
+      await first.click();
+      const opened = await page.$eval('#console .entry[data-type="tool_call"] .tool-detail', (d) => getComputedStyle(d).display !== "none" && /\S/.test(d.querySelector(".tool-name")?.textContent || "") && /\S/.test(d.querySelector(".result-summary")?.textContent || ""));
+      if (!opened) capProblems.push("Details does not show the tool's name and result");
+      await first.click();
+    }
+    // The only phase lines are the hand-overs to the person (the decision's comes once the agent waits).
+    await page.waitForFunction(() => document.querySelector(".status-pill .text")?.textContent.trim() === "Awaiting your decision", null, { timeout: 30000 });
+    checks.phases = await page.$$eval("#console .phase", (els) => els.map((e) => e.textContent.trim()));
+    if (checks.phases.join("|") !== "Phase: Awaiting your decision") capProblems.push(`phase lines before the decision: ${JSON.stringify(checks.phases)}`);
+    // The alert keeps its sources and checks one click away.
+    checks.alertMore = await page.$eval("#console .alert-card", (c) => { const d = c.querySelector("details.alert-more"); return d ? (d.open ? "open" : "closed") : "none"; });
+    if (checks.alertMore !== "closed") capProblems.push(`the alert's sources and checks are ${checks.alertMore}, not closed under a disclosure`);
   } catch (e) { problems.push(`exception: ${String(e.message).split("\n")[0]}`); }
   if (run("timing")) finish("timing", { secondsToDecision: checks.secondsToDecision, paragraphs: checks.paragraphs, longest: checks.longest }, problems, errors);
-  if (run("captions")) finish("captions", { toolCalls: checks.toolCalls }, [...capProblems, ...problems.filter((p) => p.startsWith("exception"))], errors);
+  if (run("captions")) finish("captions", { toolCalls: checks.toolCalls, plainEntries: checks.plainEntries, phases: checks.phases, alertMore: checks.alertMore }, [...capProblems, ...problems.filter((p) => p.startsWith("exception"))], errors);
   await context.close();
 }
 
@@ -295,6 +330,18 @@ if (run("intro")) {
           steps: body.querySelectorAll(".intro-step").length,
           values: body.querySelectorAll(".intro-value li").length,
           lead: document.querySelector(".intro-modal .modal-head p")?.textContent || "",
+          words: (() => {
+            // Words a visitor can read in the window: visible text, not aria-hidden (the step numbers).
+            let n = 0;
+            const dialog = document.querySelector(".intro-modal");
+            const walker = document.createTreeWalker(dialog, NodeFilter.SHOW_TEXT);
+            for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+              const el = t.parentElement;
+              if (!t.textContent.trim() || !el || el.closest("[aria-hidden='true'], svg") || !el.getClientRects().length) continue;
+              n += t.textContent.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+            }
+            return n;
+          })(),
           scroll: body.scrollHeight, client: body.clientHeight
         };
       });
@@ -309,6 +356,7 @@ if (run("intro")) {
       if (m.steps !== 5 || m.values !== 3) problems.push(`${w}: ${m.steps} steps and ${m.values} outcomes`);
       if (!/keeps no timetable of its own/i.test(m.lead)) problems.push(`${w}: the lead does not say it keeps no timetable of its own`);
       if (m.scroll > m.client + 1) problems.push(`${w}×${hgt}: the intro scrolls (${m.scroll} > ${m.client})`);
+      if (m.words > 150) problems.push(`${w}: the intro has ${m.words} words to read (at most 150)`);
       await page.screenshot({ path: path.join(OUT, `intro-${w}.png`) });
     } catch (e) { problems.push(`${w}: exception: ${String(e.message).split("\n")[0]}`); }
     errorsAll.push(...errors);
@@ -330,6 +378,9 @@ if (run("cards")) {
       kind: e.dataset.kind, letter: e.querySelector(".option-letter")?.textContent.trim(),
       total: `${e.querySelector(".option-total .label")?.textContent.trim()}=${e.querySelector(".option-total .value")?.textContent.trim()}`,
       rows: [...e.querySelectorAll(".option-figures dt")].map((d) => d.textContent.trim()),
+      desc: !!e.querySelector(".option-desc"),
+      risk: e.querySelector(".option-risk")?.textContent.trim() || "",
+      tip: e.getAttribute("title") || "",
       text: e.textContent
     })));
     for (const c of checks.cards) {
@@ -337,10 +388,21 @@ if (run("cards")) {
       const want = `Still misinformed=${c.kind === "option" ? v.misinformed_pax : BASE_PAX}`;
       if (c.total !== want) problems.push(`card ${c.letter}: big figure ${c.total} (the engine: ${want})`);
       if (/Protected passengers|Hand-kept|Back in sync/.test(c.text)) problems.push(`card ${c.letter} still uses an internal word`);
-      if (c.kind === "option" && c.rows.join("|") !== "All channels aligned|Kept by hand|Staff effort") problems.push(`card ${c.letter}: rows ${c.rows.join(", ")}`);
+      // Plain rows per option: when every channel is aligned, and the values kept by hand only where the
+      // engine counts any (a held connection adds its own row); two on the do-nothing card.
+      const wantRows = c.kind === "option" ? ["All channels aligned", ...(v.manual_overrides ? ["Kept by hand"] : [])].join("|") : "First affected|Next cycle";
+      if (c.rows.filter((r) => r !== "Connection held").join("|") !== wantRows) problems.push(`card ${c.letter}: rows ${c.rows.join(", ")} (expected ${wantRows})`);
+      // Who is still misinformed, and why, in one short line under the figure; what the option does in the tooltip.
+      if (c.desc) problems.push(`card ${c.letter} still shows its description on its face`);
+      if (c.kind === "option" && (!c.risk || c.risk.split(/\s+/).length > 12)) problems.push(`card ${c.letter}: the line under its figure is "${c.risk}" (one short line expected)`);
+      if (c.kind === "option" && !c.tip.trim()) problems.push(`card ${c.letter}: no tooltip with what the option does`);
     }
+    // The panel's lead is one short sentence.
+    checks.lead = await page.$eval(".options-summary > p", (p) => p.textContent.trim());
+    if (checks.lead.split(/\s+/).length > 14 || (checks.lead.match(/[.;]/g) || []).length > 2) problems.push(`the options lead is long: "${checks.lead}"`);
     await page.click('.option-card[data-recommended="true"] .btn-approve');
     await page.waitForSelector(".action-card[data-status='pending']", { timeout: 60000 });
+    await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 60000 });
     await page.waitForTimeout(800);
     checks.kpi = await page.$$eval(".kpi", (els) => els.slice(0, 2).map((e) => e.querySelector(".kpi-sub").textContent.trim()));
     const v1 = variant.V1;
@@ -348,6 +410,15 @@ if (run("cards")) {
     if (checks.kpi[1] !== `info in ${v1.correct_info_from_min} min, aligned in ${v1.time_to_sync_min} min`) problems.push(`second tile: ${checks.kpi[1]} (the engine: info in ${v1.correct_info_from_min} min, aligned in ${v1.time_to_sync_min} min)`);
     checks.drafts = await page.$$eval(".action-card", (els) => els.map((e) => e.querySelector(".action-meta span")?.textContent.trim()));
     if (!/^Passenger message/.test(checks.drafts[0] || "")) problems.push(`the first draft is "${checks.drafts[0]}", not the passenger message`);
+    // The outbox says in one short line that nothing is sent.
+    checks.safety = await page.$eval(".outbox-safety", (e) => e.textContent.trim());
+    if (checks.safety.split(/\s+/).length > 10 || !/nothing is sent/i.test(checks.safety)) problems.push(`the outbox's safety line: "${checks.safety}"`);
+    // A draft shows what it is, for whom and its subject line; its text opens with Show draft.
+    checks.folded = await page.$$eval(".action-card", (els) => els.map((e) => ({ open: !!e.querySelector(".action-body")?.getClientRects().length, more: e.querySelector(".action-more")?.textContent.trim() || "" })));
+    if (checks.folded.length < 2 || checks.folded.some((f) => f.open || f.more !== "Show draft")) problems.push(`the drafts are not folded to their subject line: ${JSON.stringify(checks.folded)}`);
+    await page.click(".action-card .action-more");
+    checks.unfolded = await page.$eval(".action-card", (e) => ({ open: !!e.querySelector(".action-body")?.getClientRects().length, more: e.querySelector(".action-more")?.textContent.trim() || "", expanded: e.querySelector(".action-more")?.getAttribute("aria-expanded") }));
+    if (!checks.unfolded.open || checks.unfolded.more !== "Hide draft" || checks.unfolded.expanded !== "true") problems.push(`Show draft does not open the draft's text: ${JSON.stringify(checks.unfolded)}`);
     await page.screenshot({ path: path.join(OUT, "cards-outbox.png") });
   } catch (e) { problems.push(`exception: ${String(e.message).split("\n")[0]}`); }
   finish("cards", checks, problems, errors);

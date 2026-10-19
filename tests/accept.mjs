@@ -195,7 +195,7 @@ if (run("key")) {
     await page.waitForSelector("#api-key-input", { state: "detached", timeout: 8000 });
     await waitStatus(page, /Done/);
     checks.runEnd = await lastEntry(page);
-    expect(/Run facts:/.test(checks.runEnd), "live run should end with a Run facts line");
+    expect(/Run facts/.test(checks.runEnd), "live run should end with a Run facts line");
     checks.keyInSession = await page.evaluate(([name, k]) => sessionStorage.getItem(name) === k, [KEYS.apiKey, KEY]);
     checks.keyLikeInLocal = await page.evaluate(() => { const out = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/sk-ant-/.test(localStorage.getItem(k) || "")) out.push(k); } return out; });
     expect(checks.keyInSession, "key should be in session storage during the session");
@@ -392,7 +392,7 @@ if (run("abort")) {
     await page.click('button:has-text("Approve all")');
     await waitStatus(page, /Done/, 90000);
     checks["S3:end"] = await lastEntry(page);
-    expect(/Replay facts:/.test(checks["S3:end"]), "S3: a finished simulation should end with Replay facts");
+    expect(/Replay facts/.test(checks["S3:end"]), "S3: a finished simulation should end with Replay facts");
     const simAudit = await exportAudit(page);
     checks["S3:runFacts"] = simAudit.run_facts ? `${simAudit.run_facts.tool_calls} tools, ${simAudit.run_facts.verification_steps} checks, ${JSON.stringify(simAudit.run_facts.checks)}` : null;
     expect(simAudit.run_facts?.checks?.at_least_8_tool_calls && simAudit.run_facts?.checks?.verification_visible, "S3: simulation run facts should meet the 8-tools and verification checks");
@@ -530,7 +530,7 @@ if (run("offline")) {
     await waitStatus(page, /Done/, 90000);
     await marks("done");
     checks.end = await lastEntry(page);
-    expect(/Replay facts:/.test(checks.end), "offline replay should end with Replay facts");
+    expect(/Replay facts/.test(checks.end), "offline replay should end with Replay facts");
     checks.decisions = await page.$$eval(".action-card", (els) => els.map((e) => e.dataset.status).join(","));
     expect(/approved/.test(checks.decisions) && /rejected/.test(checks.decisions), "both draft approval and rejection should play");
     checks.mirror = await page.evaluate(() => ({

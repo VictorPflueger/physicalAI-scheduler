@@ -544,6 +544,8 @@ const GOLDEN = {
     assert.equal(d.impact.pax, res.baseline.misinformed_pax, `${sc.id}: impact`);
     assert.equal(d.impact.minutes, res.baseline.first_event_min, `${sc.id}: first moment`);
     assert.equal(d.more, new Set(mine.filter((c) => c.point !== key.point).map((c) => c.point)).size, `${sc.id}: more stops`);
+    // The change line says when and by whom; the change's id stays out of what a customer reads.
+    assert.ok(!/\bOPS-\d/.test(d.change.text), `${sc.id}: the change line shows an internal id (${d.change.text})`);
     // Before any result: the same values, no verdict and no impact.
     const idle = alignmentData(model, tid);
     assert.equal(idle.stop.point, key.point, `${sc.id}: idle stop`);
@@ -566,7 +568,8 @@ const GOLDEN = {
   const pitch = alignmentData(model, "T-618", { result: compactForModel(simulateSync(model, structuredClone(REF["SC-PLATFORM"].finding))), basisKey: "verified" });
   assert.deepEqual(pitch.facts.map((f) => f.source), ["Platform 7", "1st class F–G"]);
   assert.deepEqual(pitch.channels.map((c) => `${c.channel}:${c.values.map((v) => v.text).join("+")}:${c.verdict}`), ["planner:Platform 5:wrong", "displays:Platform 5:wrong", "announcements:Platform 5:wrong", "coach:1st class G–H:wrong"]);
-  assert.equal(pitch.change.text, "Changed 07:21 · OPS-05 · Fahrdienstleiter Köln Hbf");
+  assert.equal(pitch.change.text, "Changed 07:21 · Fahrdienstleiter Köln Hbf");
+  assert.equal(pitch.change.id, "OPS-05");
   // A what-if is violet, never wrong.
   const wi = compactForModel(simulateSync(model, { train_ids: ["RE 10109"], what_if: { changes: [{ train: "RE 10109", op: "skip", point: "KLMI" }] } }));
   const w = alignmentData(model, "T-10109", { result: wi, basisKey: "what_if" });
@@ -580,7 +583,7 @@ const GOLDEN = {
   assert.deepEqual(sensorReadings(model, "T-618", ["EDO"]), [], "no reading where the agent did not look");
   // The plain sentence of each tool call.
   assert.equal(toolPlain("ops_list_changes", { train: "ICE 618" }, model), "Reads the operations log for ICE 618: the source");
-  assert.equal(toolPlain("kfp_get_published", { train: "ICE 618", channel: "planner" }, model), "Reads what the journey planner and app tells passengers about ICE 618");
+  assert.equal(toolPlain("kfp_get_published", { train: "ICE 618", channel: "planner" }, model), "Reads what the journey planner and app tell passengers about ICE 618");
   assert.equal(toolPlain("kfp_get_published", { train: "T-618" }, model), "Reads what every channel tells passengers about ICE 618");
   assert.equal(toolPlain("phys_observe", { point: "KK" }, model), "Reads the sensors at Köln Hbf: the physical layer");
   assert.match(toolPlain("sim_sync", { train_ids: ["ICE 618"] }, model), /^Calculates who would act on wrong information/);

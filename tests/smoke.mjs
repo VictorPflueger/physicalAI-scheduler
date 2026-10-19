@@ -141,7 +141,11 @@ if (wanted("sim")) {
       const box = log.getBoundingClientRect();
       return last.bottom <= box.bottom + 2 && last.top >= box.top - 2;
     });
-    checks.replayFacts = await page.$$eval("#console .entry", (els) => /Replay facts:/.test(els.slice(-1)[0]?.textContent || ""));
+    // The run's facts close the console, one click away: a closed "Replay facts" with the facts inside.
+    checks.replayFacts = await page.$$eval("#console .entry", (els) => {
+      const d = els.slice(-1)[0]?.querySelector("details.run-facts");
+      return !!d && !d.open && d.querySelector("summary")?.textContent.trim() === "Replay facts" && /tool calls/.test(d.querySelector("p")?.textContent || "");
+    });
     await shot(page, "05-done.png");
     await page.click('button:has-text("Open management summary")');
     await page.waitForSelector(".report-modal", { timeout: 5000 });
@@ -181,7 +185,7 @@ if (wanted("sim")) {
       `the approval's payoff on the tiles, the alignment view and the timetables (${JSON.stringify(checks.payoff)})`],
     [checks.drafts > 0, "approval must produce drafts"],
     [checks.statusEnd === "Done" && checks.startLabel === "New run", "run ends Done"],
-    [checks.lastEntryInView && checks.replayFacts, "console ends on the Replay facts line"],
+    [checks.lastEntryInView && checks.replayFacts, "console ends on the Replay facts line (closed, the facts inside)"],
     [checks.reportHasSimNote, "summary marked as simulated"],
     [checks.auditMode === "simulation" && checks.auditRunFacts && checks.auditNoKey && /^run-\d{8}-\d{4}-\w+-SIMULATION-audit\.json$/.test(checks.auditFile || ""), `audit export: simulation mode, run facts, no key (${checks.auditFile})`]
   ]);

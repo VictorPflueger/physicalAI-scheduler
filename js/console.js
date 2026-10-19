@@ -2,6 +2,9 @@
 // Narration paragraphs that start with a label (Hypothesis:, Check:, Confirmed:, Not confirmed:,
 // Revised:, Finding:, Recommendation:) get distinct styling; "Revised: old → new" is rendered as an
 // amended entry with the superseded part struck through.
+// Written for an audience: a tool call reads as one plain sentence, with the tool's name, arguments
+// and result one click away under "Details"; the only phase lines are the hand-overs to the person;
+// an alert keeps its sources and a summary its full text one click away.
 
 import { bus } from "./events.js";
 import { h, clear, prefersReducedMotion } from "./dom.js";
@@ -19,7 +22,8 @@ import { DRAFT_LABEL } from "./drafts.js";
 import { toolPlain } from "./tool_plain.js";
 import { getModel } from "./world.js";
 
-const PHASES = new Set(["diagnosing", "verifying", "simulating", "options", "awaiting_approval", "executing"]);
+// The rail and the status pill show the agent's step; the log only marks when it is the person's turn.
+const PHASES = new Set(["awaiting_approval"]);
 const TEXT_SIZE_KEY = STORAGE.consoleText;
 
 export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport, onSaveSimulation } = {}) {
@@ -91,8 +95,7 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     clear(log);
     log.appendChild(h("div", { class: "log-empty" },
       h("h3", {}, "Pick a scenario, then start the agent"),
-      h("p", {}, "The five steps above are the agent's plan. It spots an operational change and finds the trains it touches, checks the source timetable against what passengers are told and against the physical layer, works out who would act on wrong information and when, then proposes three costed responses."),
-      h("p", {}, "When it needs you, the step turns burgundy. Nothing is sent without your approval. You choose between a free simulation and the live agent on your own API key.")));
+      h("p", {}, "The five steps above are its plan.")));
     count.textContent = "";
   }
 
@@ -138,9 +141,12 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
   bus.on("state_change", (ev) => {
     const s = ev.payload.state;
     rail.update(s);
-    if (!PHASES.has(s) || s === lastPhase) return;
-    lastPhase = s;
-    add(entry("phase", ev.t, null, h("span", { class: "phase" }, `Phase: ${runStateLabel(s)}`)));
+    if (!PHASES.has(s)) return;
+    // Awaiting your decision, then later awaiting your approval: the same state, two hand-overs.
+    const label = runStateLabel(s);
+    if (label === lastPhase) return;
+    lastPhase = label;
+    add(entry("phase", ev.t, null, h("span", { class: "phase" }, `Phase: ${label}`)));
   });
 
   bus.on("narration", (ev) => {
@@ -181,8 +187,21 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     // What the call does in one plain sentence, above the tool's own name: for the audience.
     let plainText = null;
     try { plainText = toolPlain(p.name, p.input || {}, getModel()); } catch { plainText = null; }
-    const plain = plainText ? h("div", { class: "tool-plain" }, plainText) : null;
-    const el = add(entry("tool_call", ev.t, p.server ? "globe" : "gear", plain ? [plain, line] : line, { server: String(!!p.server) }));
+    if (!plainText) {
+      byCall.set(p.call_id, add(entry("tool_call", ev.t, p.server ? "globe" : "gear", line, { server: String(!!p.server) })));
+      return;
+    }
+    // The audience reads the sentence; the tool's own name, arguments and result wait under Details.
+    const result = h("div", { class: "result", dataset: { open: "false" } });
+    const toggle = h("button", { class: "result-toggle", type: "button", "aria-expanded": "false", title: `Show the tool call (${p.name}) and its result` },
+      icon("chevronRight", 14), h("span", { class: "result-label" }, "Details"));
+    toggle.addEventListener("click", () => {
+      const open = result.dataset.open !== "true";
+      result.dataset.open = String(open);
+      toggle.setAttribute("aria-expanded", String(open));
+    });
+    result.append(toggle, h("div", { class: "tool-detail" }, line));
+    const el = add(entry("tool_call", ev.t, p.server ? "globe" : "gear", [h("div", { class: "tool-plain" }, plainText), result], { server: String(!!p.server), plain: "true" }));
     byCall.set(p.call_id, el);
   });
 
@@ -199,6 +218,14 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     }
     let el = byCall.get(p.call_id);
     if (!el) el = add(entry("tool_call", ev.t, p.server ? "globe" : "gear", h("div", { class: "tool-line" }, h("span", { class: "tool-name" }, p.name))));
+    if (el.dataset.plain === "true") {
+      const detail = el.querySelector(".tool-detail");
+      detail.append(h("div", { class: "result-summary", dataset: { ok: String(p.ok !== false) } }, p.summary || (p.ok === false ? "Tool error" : "Result")));
+      if (p.ok === false) el.dataset.failed = "true";
+      el.querySelector(".result").append(h("pre", { class: "result-body" }, formatJson(p.result)));
+      pin();
+      return;
+    }
     const body = el.querySelector(".entry-body");
     const result = h("div", { class: "result", dataset: { open: "false" } });
     const toggle = h("button", { class: "result-toggle", type: "button", "aria-expanded": "false" },
@@ -227,16 +254,19 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     const p = ev.payload;
     const sev = String(p.severity || "high").toLowerCase();
     const whatIf = p.basis === "what_if";
+    const sources = Array.isArray(p.sources) && p.sources.length
+      ? h("ul", {}, p.sources.slice(0, 6).map((s) => h("li", {}, s.url ? h("a", { href: safeUrl(s.url), target: "_blank", rel: "noopener noreferrer" }, s.title || s.url) : (s.title || String(s)))))
+      : null;
+    // What the run actually checked, from the tool results (the sources above are the agent's words).
+    const evidence = Array.isArray(p.evidence) && p.evidence.length
+      ? h("p", { class: "alert-evidence" }, h("strong", {}, "Checked in this run: "), p.evidence.join("; "), ".")
+      : null;
     const card = h("div", { class: "alert-card", dataset: { severity: sev, basis: whatIf ? "what_if" : "verified" } },
       h("div", { class: "alert-sev" }, whatIf ? `What-if exercise (not a verified finding), severity ${sev}` : `Alert, severity ${sev}`),
       h("h3", {}, p.title || "Customer information alert"),
       p.summary ? renderInline(p.summary, h("div")) : null,
-      Array.isArray(p.sources) && p.sources.length
-        ? h("ul", {}, p.sources.slice(0, 6).map((s) => h("li", {}, s.url ? h("a", { href: safeUrl(s.url), target: "_blank", rel: "noopener noreferrer" }, s.title || s.url) : (s.title || String(s)))))
-        : null,
-      // What the run actually checked, from the tool results (the sources above are the agent's words).
-      Array.isArray(p.evidence) && p.evidence.length
-        ? h("p", { class: "alert-evidence" }, h("strong", {}, "Checked in this run: "), p.evidence.join("; "), ".")
+      sources || evidence
+        ? h("details", { class: "alert-more" }, h("summary", {}, icon("chevronRight", 14), "Sources and checks"), sources, evidence)
         : null);
     add(entry("alert", ev.t, "alert", card));
   });
@@ -273,28 +303,33 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     { decision: p.decision }));
   });
 
+  // A draft in one line: what it is and its subject (the recipient is on the draft in the Outbox; the
+  // hand-over line after the last draft says it waits for your approval).
   bus.on("action_draft", (ev) => {
     const p = ev.payload;
-    const verb = `Drafted ${(DRAFT_LABEL[p.type] || "draft").toLowerCase()}`;
     add(entry("narration", ev.t, DRAFT_ICON[p.type] || "memo", h("div", {},
-      h("p", {}, `${verb} for ${p.recipient}: “${p.subject}”. Waiting for your approval in the Outbox.`),
+      h("p", { title: `For ${p.recipient}` }, `Drafted the ${(DRAFT_LABEL[p.type] || "draft").toLowerCase()}: “${p.subject}”.`),
       h("button", { class: "btn btn-sm", type: "button", on: { click: () => onOpenOutbox?.() } }, "Open outbox"))));
   });
 
   bus.on("action_decision", (ev) => {
     const p = ev.payload;
-    add(entry("decision", ev.t, "user", h("p", {},
+    const what = p.kind ? `the ${p.kind.toLowerCase()}` : p.label || p.action_id;
+    add(entry("decision", ev.t, "user", h("p", { title: p.kind && p.label ? p.label : null },
       h("strong", {}, p.decision === "approved" ? "You approved " : "You rejected "),
-      p.label || p.action_id, p.decision === "approved" ? " (draft only; nothing was published or sent)." : "."), { decision: p.decision }));
+      what, p.decision === "approved" ? ". Nothing was sent." : "."), { decision: p.decision }));
   });
 
   bus.on("report", (ev) => {
     sawReport = true;
+    const md = String(ev.payload.markdown || "");
+    const heading = (md.match(/^#{1,3}\s+(.+)$/m) || [])[1] || "Management summary";
     const card = h("div", { class: "report-card" },
       aiLabel("report"),
-      renderMarkdown(ev.payload.markdown),
+      h("h3", { class: "report-head" }, heading),
       h("div", { class: "report-actions" },
-        h("button", { class: "btn btn-sm btn-primary", type: "button", on: { click: () => onOpenReport?.(ev.payload.markdown) } }, icon("external", 16), "Open management summary")));
+        h("button", { class: "btn btn-sm btn-primary", type: "button", on: { click: () => onOpenReport?.(ev.payload.markdown) } }, icon("external", 16), "Open management summary")),
+      h("details", { class: "report-full" }, h("summary", {}, icon("chevronRight", 14), "Read it here"), renderMarkdown(md)));
     add(entry("report", ev.t, "check", card));
   });
 
@@ -321,7 +356,8 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     }
     add(entry("notice", ev.t, status === "done" || status === "no_findings" ? "check" : "stop", h("div", {},
       h("span", {}, h("strong", {}, text), reason ? ` ${reason}` : ""),
-      facts ? h("div", { class: "run-facts" }, h("strong", {}, runMeta?.mode === "simulation" ? "Replay facts: " : "Run facts: "), facts) : null,
+      // The run's facts (tool calls, checks, cost) are one click away: the audience reads "Run complete".
+      facts ? h("details", { class: "run-facts" }, h("summary", {}, icon("chevronRight", 14), runMeta?.mode === "simulation" ? "Replay facts" : "Run facts"), h("p", {}, facts)) : null,
       canSave ? h("div", { class: "entry-actions" },
         h("button", { class: "btn btn-sm", type: "button", title: "Download this run as a simulation script that can replace the scripted replay of this scenario", on: { click: () => onSaveSimulation?.() } }, icon("download", 16), "Save run as simulation")) : null),
     { level: status === "error" ? "error" : "info" }));

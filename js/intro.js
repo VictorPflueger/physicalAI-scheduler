@@ -1,9 +1,9 @@
 // Intro window: what the Timetable Translator does, how the AI aligns the information and what it
-// achieves, readable in about a minute. It opens with the problem in one example (the source says one
-// platform, every channel another, and how many passengers that misleads), worked out by the sync
-// engine when the window opens, so the figures are the engine's and never typed by hand. It opens by
-// itself on a visitor's first visit (remembered in this browser's local storage) and any time from the
-// "How it works" button in the header.
+// achieves, in at most 150 words (tests/pitch.mjs counts them). It opens with the problem in one
+// example (the source says one platform, every channel another, and how many passengers that
+// misleads), worked out by the sync engine when the window opens, so the figures are the engine's and
+// never typed by hand. It opens by itself on a visitor's first visit (remembered in this browser's
+// local storage) and any time from the "How it works" button in the header.
 
 import { h } from "./dom.js";
 import { icon } from "./icons.js";
@@ -18,17 +18,17 @@ import { int } from "./format.js";
 // colours the app uses for the same moments: red for a finding, blue for verification, amber
 // for risk, burgundy for your decision, green for a resolved state.
 const STEPS = [
-  { tone: "spot", title: "Spot", text: "Notices a change in the operational timetable." },
-  { tone: "check", title: "Check", text: "Compares every channel with the source and the sensors." },
-  { tone: "calculate", title: "Calculate", text: "Counts who would act on wrong information, and when." },
-  { tone: "propose", title: "Propose", text: "Three responses next to doing nothing. You decide." },
-  { tone: "prepare", title: "Prepare", text: "Drafts the message and the re-publication. You approve." }
+  { tone: "spot", title: "Spot", text: "Notices a timetable change." },
+  { tone: "check", title: "Check", text: "Compares every channel with source and sensors." },
+  { tone: "calculate", title: "Calculate", text: "Counts who is misinformed, and when." },
+  { tone: "propose", title: "Propose", text: "Three options. You decide." },
+  { tone: "prepare", title: "Prepare", text: "Drafts the fix. You approve." }
 ];
 
 const VALUE = [
-  { title: "Passengers told in time", text: "Contradictions answered before the train leaves, not at the next cycle." },
-  { title: "One truth", text: "No timetable of its own: channels are re-published from the source." },
-  { title: "People in charge", text: "Nothing goes out without your approval; every figure traced to the source." }
+  { title: "Passengers told in time", text: "Before the train leaves." },
+  { title: "One truth", text: "Channels re-published from the source." },
+  { title: "People in charge", text: "Nothing goes out without your approval." }
 ];
 
 /** The pitch scenario as the engine sees it: the source's platform, the channels' platform and who it misleads. */
@@ -46,10 +46,12 @@ export function pitchExample(model = getModel(), refs = globalThis.REFERENCE_CAS
     if (!fact || !told) return null;
     return {
       train: `${d.train.number} to ${d.train.to}`,
+      number: d.train.number,
       stop: d.stop?.text || "",
       source: fact.source,
       told: told.text,
       channels: wrong.map((c) => c.label),
+      channelIds: wrong.map((c) => c.channel),
       asOf: wrong[0]?.asOf || null,
       pax: res.baseline.misinformed_pax,
       minutes: res.baseline.first_event_min,
@@ -69,15 +71,21 @@ function markIntroSeen() {
   try { localStorage.setItem(STORAGE.introSeen, "1"); } catch { /* storage blocked: it opens again next time */ }
 }
 
+// The channels in the example, in a word each: the window names them, the alignment view details them.
+const SHORT_CHANNEL = { planner: "app", displays: "displays", announcements: "announcements", coach: "coach order" };
+
 /** The problem in one example: the source's platform above what the channels say, and who acts on it. */
 function problemExample(ex) {
   if (!ex) return null;
-  const names = ex.channels.map((c, i) => (i ? c.charAt(0).toLowerCase() + c.slice(1) : c));
+  const names = ex.channels.map((c, i) => {
+    const name = SHORT_CHANNEL[ex.channelIds?.[i]] || (i ? c.charAt(0).toLowerCase() + c.slice(1) : c);
+    return i ? name : name.charAt(0).toUpperCase() + name.slice(1);
+  });
   const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
   return h("div", { class: "intro-problem", role: "group", "aria-label": "Example from the demonstration" },
     h("div", { class: "ip-row", dataset: { kind: "source" } },
       icon("timetable", 18),
-      h("span", { class: "ip-label" }, "Operational timetable", h("span", { class: "ip-sub" }, `${ex.train} · ${ex.stop}`)),
+      h("span", { class: "ip-label" }, "Operational timetable", h("span", { class: "ip-sub" }, `${ex.number} · ${ex.stop}`)),
       h("span", { class: "ip-val" }, ex.source)),
     h("div", { class: "ip-row", dataset: { kind: "told" } },
       icon("users", 18),
@@ -86,7 +94,7 @@ function problemExample(ex) {
     h("p", { class: "ip-impact" },
       ex.now ? `It is ${ex.now}: ` : "",
       h("strong", {}, `${int(ex.pax)} passengers`),
-      ` would act on the wrong information${ex.minutes !== null && ex.minutes !== undefined ? `, the first in ${int(ex.minutes)} minutes` : ""}. The translator finds it and prepares the fix.`));
+      ` would act on wrong information${ex.minutes !== null && ex.minutes !== undefined ? `, the first in ${int(ex.minutes)} minutes` : ""}.`));
 }
 
 /**
@@ -107,7 +115,7 @@ export function openIntro({ startLabel = "Start agent", onStart = null } = {}) {
 
     const footer = onStart
       ? [
-        h("span", { class: "left" }, "To watch a run, press ", h("strong", {}, startLabel), " and choose ", h("strong", {}, "Simulation"), ". No key needed."),
+        h("span", { class: "left" }),
         h("button", { class: "btn btn-ghost", type: "button", on: { click: () => modal.close(null) } }, "Close"),
         h("button", { class: "btn btn-primary", type: "button", autofocus: true, on: { click: () => modal.close("start") } }, icon("play", 18), startLabel)
       ]
@@ -124,7 +132,7 @@ export function openIntro({ startLabel = "Start agent", onStart = null } = {}) {
         steps,
         h("h3", {}, "What it achieves"),
         value,
-        h("p", { class: "intro-note" }, "Stations, Ril 100 codes and lines are real; trains, times, passenger figures, operational changes and sensor readings are fictional.")
+        h("p", { class: "intro-note" }, "Real stations; fictional trains, times and figures.")
       ],
       footer,
       onClose: (result) => {
