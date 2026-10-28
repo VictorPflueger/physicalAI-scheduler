@@ -30,13 +30,17 @@
 }
 .al-head > span:not(.al-num) { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .al-head > span:nth-child(2) { flex: none; }
+/* A column's number: a hexagon on the surface with an ink ring (::after). Ink: the numbers order the
+   story; merlot stays with the person who decides. */
 .al-num {
+  position: relative;
   display: inline-grid; place-items: center; flex: none; align-self: center;
-  width: 24px; height: 24px; border-radius: 50%;
-  /* ink: the numbers order the story; merlot stays with the person who decides */
-  border: 2px solid var(--vc-text); color: var(--vc-text); background: var(--vc-surface);
+  width: calc(24px * 1.1547); height: 24px;
+  clip-path: var(--vc-hex);
+  color: var(--vc-text); background: var(--vc-surface);
   font-family: var(--vc-font-text); font-size: 0.82rem; font-weight: 700; letter-spacing: 0;
 }
+.al-num::after { content: ""; position: absolute; inset: 0; --_t: 2px; background: var(--vc-text); clip-path: polygon(evenodd, 25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%, calc(25% + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(25% + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(75% - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(75% - 0.57735 * var(--_t)) var(--_t), calc(25% + 0.57735 * var(--_t)) var(--_t)); }
 .al-head-sub { font-family: var(--vc-font-text); font-weight: 500; font-size: var(--fs-xs); letter-spacing: 0; color: var(--vc-text-subtle); flex: 1 1 auto; }
 /* the channels' common publication time, at the column's right edge where each card used to carry it */
 .al-head-asof { margin-left: auto; flex: none; font-family: var(--vc-font-text); font-weight: 500; font-size: 0.76rem; letter-spacing: 0; color: var(--vc-text-subtle); }
@@ -92,7 +96,7 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .al-ai[data-busy="true"] .al-ai-status::after { content: ""; display: inline-block; width: 1.4em; text-align: left; animation: alDots 1.2s steps(4, end) infinite; overflow: hidden; vertical-align: bottom; }
 @keyframes alDots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
 .al-rule { display: flex; align-items: center; gap: 5px; margin: 2px 0 0; font-size: var(--fs-xs); color: var(--vc-text-muted); }
-.al-rule .icon { color: var(--vc-feature-solid); flex: none; }
+.al-rule .vc-icon { color: var(--vc-feature-solid); flex: none; }
 .al-down { align-self: center; width: 2px; height: 16px; background: var(--vc-border-strong); position: relative; flex: none; }
 .al-down::after { content: ""; position: absolute; left: -4px; bottom: -2px; border: 5px solid transparent; border-top-color: var(--vc-border-strong); border-bottom-width: 0; }
 
@@ -139,7 +143,7 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .al-ch-status { display: flex; align-items: center; gap: 5px; font-size: var(--fs-xs); font-weight: 600; line-height: 1.25; color: var(--vc-text-subtle); min-width: 0; }
 /* a verdict is read whole: in a narrow card it wraps rather than ending in an ellipsis */
 .al-ch-status span { min-width: 0; overflow-wrap: break-word; }
-.al-ch-status .icon { flex: none; }
+.al-ch-status .vc-icon { flex: none; }
 .al-channel[data-tone="affected"] { border-color: var(--vc-danger-border); border-left-color: var(--vc-danger-solid); background: var(--vc-danger-bg); }
 .al-channel[data-tone="affected"] .al-ch-value[data-ok="false"] { color: var(--vc-danger-text); }
 .al-channel[data-tone="affected"] .al-ch-status { color: var(--vc-danger-text); }
@@ -158,20 +162,20 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .al-impact {
   display: flex; align-items: center; gap: 10px; min-width: 0;
   padding: 8px 14px; min-height: 52px;
-  border: 1px solid var(--vc-border); border-radius: var(--vc-radius-xl);
+  border: 1px solid var(--vc-border); border-radius: var(--vc-radius-lg);
   background: var(--vc-surface); box-shadow: var(--vc-shadow-md);
   color: var(--vc-text-muted);
 }
-.al-impact > .icon { color: var(--vc-text-subtle); }
+.al-impact > .vc-icon { color: var(--vc-text-subtle); }
 .al-impact-num { font-family: var(--vc-font-text); font-weight: 700; font-size: 1.9rem; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--vc-text); }
 .al-impact-text { line-height: 1.3; min-width: 0; }
 .al-more { color: var(--vc-text-subtle); }
 .al-impact[data-tone="affected"] { border-color: var(--vc-danger-border); background: var(--vc-danger-bg); color: var(--vc-danger-text); }
-.al-impact[data-tone="affected"] .al-impact-num, .al-impact[data-tone="affected"] > .icon { color: var(--vc-danger-text); }
+.al-impact[data-tone="affected"] .al-impact-num, .al-impact[data-tone="affected"] > .vc-icon { color: var(--vc-danger-text); }
 .al-impact[data-tone="at-risk"] { border-color: var(--vc-warning-border); background: var(--vc-warning-bg); color: var(--vc-warning-text); }
-.al-impact[data-tone="at-risk"] .al-impact-num, .al-impact[data-tone="at-risk"] > .icon { color: var(--vc-warning-text); }
+.al-impact[data-tone="at-risk"] .al-impact-num, .al-impact[data-tone="at-risk"] > .vc-icon { color: var(--vc-warning-text); }
 .al-impact[data-tone="resolved"] { border-color: var(--vc-success-border); background: var(--vc-success-bg); color: var(--vc-success-text); }
-.al-impact[data-tone="resolved"] .al-impact-num, .al-impact[data-tone="resolved"] > .icon { color: var(--vc-success-text); }
+.al-impact[data-tone="resolved"] .al-impact-num, .al-impact[data-tone="resolved"] > .vc-icon { color: var(--vc-success-text); }
 .al-impact[data-tone="what-if"] { border-color: var(--vc-feature-border); border-style: dashed; background: var(--vc-feature-bg); color: var(--vc-feature-text); }
 
 /* ---- smaller mirrors: the same story, condensed (js/mirror.js sizes the view by its own height) -------- */
@@ -222,10 +226,10 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="tiny"] .al-channel { position: relative; grid-template-columns: minmax(0, 1fr); align-items: center; padding: 5px 8px; }
 .align[data-size="tiny"] .al-channel .al-card-top { grid-column: 1 / -1; font-size: var(--fs-xs); padding-right: 18px; }
 .align[data-size="tiny"] .al-ch-status { position: absolute; top: 5px; right: 6px; }
-.align[data-size="tiny"] .al-channel .al-card-top .icon { display: none; }
-.align[data-size="tiny"] .al-ch-status > span:not(.icon) { display: none; }
+.align[data-size="tiny"] .al-channel .al-card-top .vc-icon { display: none; }
+.align[data-size="tiny"] .al-ch-status > span:not(.vc-icon) { display: none; }
 .align[data-size="tiny"] .al-ch-value s, .align[data-size="tiny"] .al-ch-value .al-arrow { display: none; }
-.align[data-size="tiny"] .al-ch-status .icon { width: 18px; height: 18px; }
+.align[data-size="tiny"] .al-ch-status .vc-icon { --vc-icon-size: 18px; }
 /* one row is all there is: the values stand one under the other, so the source's values and each
    channel's value are read whole; a value longer than its card wraps inside it */
 .align[data-size="tiny"] .al-fact, .align[data-size="tiny"] .al-ch-value { font-size: 0.9rem; line-height: 1.15; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
@@ -234,7 +238,7 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="tiny"] .al-facts { margin: 0; }
 .align[data-size="tiny"] .al-impact { min-height: 0; padding: 3px 12px; font-size: var(--fs-xs); }
 .align[data-size="tiny"] .al-impact-num { font-size: 1.2rem; }
-.align[data-size="tiny"] .al-impact > .icon { display: none; }
+.align[data-size="tiny"] .al-impact > .vc-icon { display: none; }
 
 /* a narrow mirror (a laptop): the source card keeps its marks, the German names give way */
 #mirror[data-w="narrow"] .al-source .al-tag-text, #mirror[data-w="narrow"] .al-source .al-de { display: none; }
@@ -277,7 +281,7 @@ details.run-facts { margin-top: 0; }
 }
 .alert-more > summary::-webkit-details-marker, .report-full > summary::-webkit-details-marker, .run-facts > summary::-webkit-details-marker { display: none; }
 .alert-more > summary:hover, .report-full > summary:hover, .run-facts > summary:hover { color: var(--vc-text-muted); }
-.alert-more[open] > summary .icon, .report-full[open] > summary .icon, .run-facts[open] > summary .icon { transform: rotate(90deg); }
+.alert-more[open] > summary .vc-icon, .report-full[open] > summary .vc-icon, .run-facts[open] > summary .vc-icon { transform: rotate(90deg); }
 .alert-more ul { margin: 0 0 4px; }
 .run-facts > p { margin: 0 0 4px; }
 .report-card .report-head { margin: 0 0 4px; padding-right: 52px; font-size: var(--fs-lg); line-height: 1.25; }
@@ -297,10 +301,10 @@ details.run-facts { margin-top: 0; }
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
   padding: 6px 14px; border-radius: var(--vc-radius-lg); background: var(--vc-surface); border: 1px solid var(--vc-border);
 }
-.ip-row > .icon { color: var(--vc-text-muted); }
+.ip-row > .vc-icon { color: var(--vc-text-muted); }
 .ip-row[data-kind="source"] { border: 2px solid var(--vc-text); }
 .ip-row[data-kind="told"] { border-color: var(--vc-danger-border); background: var(--vc-danger-bg); }
-.ip-row[data-kind="told"] > .icon { color: var(--vc-danger-text); }
+.ip-row[data-kind="told"] > .vc-icon { color: var(--vc-danger-text); }
 .ip-label { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; font-weight: 700; color: var(--vc-text); min-width: 0; }
 .ip-sub { font-weight: 500; font-size: var(--vc-font-size-sm); color: var(--vc-text-muted); }
 .ip-val { display: inline-flex; align-items: center; gap: 6px; font-family: var(--vc-font-text); font-weight: 700; font-size: 1.45rem; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -328,4 +332,14 @@ details.run-facts { margin-top: 0; }
   .intro-modal .intro-problem { padding: 8px; gap: 4px; }
   .intro-modal .ip-val { font-size: 1.25rem; }
   .intro-modal .ip-impact { font-size: var(--vc-font-size-sm); }
+}
+
+/* Forced colours: the column numbers keep their hexagon ring, and the links between the columns and
+   down to the decision their line and head (drawn as backgrounds and borders, which the browser drops). */
+@media (forced-colors: active) {
+  .al-num { forced-color-adjust: none; background: Canvas; color: CanvasText; }
+  .al-num::after { forced-color-adjust: none; background: CanvasText; }
+  .al-link, .al-link[data-flow], .al-down { forced-color-adjust: none; background: CanvasText; animation: none; }
+  .al-link::after, .al-link[data-flow]::after { forced-color-adjust: none; border-color: transparent; border-left-color: CanvasText; }
+  .al-down::after { forced-color-adjust: none; border-color: transparent; border-top-color: CanvasText; }
 }

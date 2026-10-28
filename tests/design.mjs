@@ -73,7 +73,8 @@ function mirrorColours(page) {
       const want = colour(name);
       const rows = all(`#mirror .mrow[data-side="customer"][data-state="${st}"]`).map((e) => [`row ${e.dataset.point}`, first(getComputedStyle(e).boxShadow)]);
       const lines = all(`#mirror .mc-links .ml[data-state="${st}"]`).map((e) => ["line", getComputedStyle(e).stroke]);
-      const pills = all(`#mirror .ml-pill[data-state="${st}"]`).map((e) => ["line label", getComputedStyle(e).borderTopColor]);
+      // A line's label is outlined by a ring in its state's tone (its ::after).
+      const pills = all(`#mirror .ml-pill[data-state="${st}"]`).map((e) => ["line label", getComputedStyle(e, "::after").backgroundColor]);
       const rings = all(`#mirror .strip .node[data-state="${st}"] .node-ring`).map((e) => ["strip ring", getComputedStyle(e).stroke]);
       const mon = all(`#mirror .mon-row[data-state="${st}"]`).map((e) => ["monitor row", getComputedStyle(e).borderLeftColor]);
       // The alignment view's channel cards carry the state as their left bar (an accepted risk takes the warning tone, as at_risk).
@@ -86,7 +87,8 @@ function mirrorColours(page) {
     const rows = status ? [...status.querySelectorAll(".legend-row")] : [];
     for (const [label, name] of [["Contradicts the source", "--vc-danger-solid"], ["What-if, not the source", "--vc-feature-solid"], ["Informed, data still behind", "--vc-warning-text"], ["Risk accepted: nothing changed", "--vc-warning-text"], ["Re-publication approved", "--vc-success-solid"]]) {
       const row = rows.find((r) => r.textContent.trim() === label);
-      const got = row ? getComputedStyle(row.querySelector(".legend-swatch-dot")).borderTopColor : "missing";
+      // The swatch is a hexagon drawn in SVG: its outline is the state's tone.
+      const got = row ? getComputedStyle(row.querySelector(".legend-swatch-dot polygon")).stroke : "missing";
       if (got !== colour(name)) out.mismatches.push(`legend "${label}" ${got} ≠ ${colour(name)}`);
     }
     probe.remove();

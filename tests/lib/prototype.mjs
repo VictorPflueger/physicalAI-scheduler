@@ -80,3 +80,85 @@ export const SEPARATIONS = [
   ["A what-if (lilac) vs the network at rest (neutral)", "feature-solid", "neutral-solid"],
   ["The route today (ink) vs the route as published (neutral)", "text", "neutral-solid"]
 ];
+
+/**
+ * The hexagon test's tour of the app (tests/hexagon.mjs): the main states of a simulation run, and
+ * the dialogs and mirror views on the way. The page has just been opened, without SKIP_INTRO, so the
+ * intro opens by itself. visit(name, { settle }) checks the page as it is, settle ms (250) after the step.
+ */
+export async function hexagonTour(page, visit) {
+  const approve = '.option-card[data-recommended="true"] [data-action="approve"]';
+  const view = (name) => page.click(`#mirror .mirror-tools button:has-text("${name}")`);
+  await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
+  await page.waitForSelector(".intro-modal", { timeout: 10000 });
+  await visit("start screen with the intro");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".intro-modal", { state: "detached", timeout: 5000 });
+  await visit("idle alignment view");
+  // The legend opened (it opens from the view buttons and docks beside the views), then closed again.
+  const legendBtn = '#mirror .mirror-tools button[aria-controls="mirror-legend"]';
+  if ((await page.getAttribute(legendBtn, "aria-expanded")) !== "true") {
+    await page.click(legendBtn);
+    await page.waitForSelector("#mirror-legend:not([hidden])", { timeout: 5000 });
+    await visit("idle alignment view, legend open");
+    await page.click(legendBtn);
+  }
+  // The timetables with the corridor strip, and every train in the window.
+  await view("Timetables");
+  await page.waitForSelector('#mirror .mirror-view[data-view="train"]:not([hidden]) .mrow', { timeout: 5000 });
+  await visit("timetables");
+  await view("All trains");
+  await page.waitForSelector('#mirror .mirror-view[data-view="monitor"]:not([hidden]) .mon-row', { timeout: 5000 });
+  await visit("all trains");
+  // A station's details on the corridor strip.
+  await view("Timetables");
+  await page.waitForSelector('#mirror .mirror-view[data-view="train"]:not([hidden]) .strip-hit', { timeout: 5000 });
+  await page.click("#mirror .strip-hit");
+  await page.waitForSelector("#mirror .mirror-pop:not([hidden])", { timeout: 5000 });
+  await visit("a station's details on the corridor strip");
+  await page.keyboard.press("Escape");
+  await page.click("#btn-diagnostics");
+  await page.waitForSelector(".diag-table", { timeout: 5000 });
+  await visit("diagnostics");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".diag-table", { state: "detached", timeout: 5000 });
+  // The mode dialog, the key dialog behind the live card, then a simulation at ×1 with the timetables
+  // chosen before the start, until a station on the corridor strip pulses while the agent reads it
+  // (a reading stays open 0.7 s); then ×4.
+  await page.click('button[aria-label="Replay speed ×1"]');
+  await page.click("#btn-start");
+  await page.waitForSelector(".mode-card", { timeout: 5000 });
+  await visit("mode dialog");
+  await page.click('.mode-card[data-mode="live"] .mode-cta button');
+  await page.waitForSelector("#api-key-input", { timeout: 5000 });
+  await visit("key dialog");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#api-key-input", { state: "detached", timeout: 5000 });
+  if (!(await page.$(".mode-card"))) await page.click("#btn-start");
+  await page.waitForSelector(".mode-card", { timeout: 5000 });
+  await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
+  await page.waitForSelector('#mirror .strip .node[data-checking="true"]', { state: "attached", timeout: 90000 });
+  await visit("a station being read", { settle: 50 });
+  await page.click('button[aria-label="Replay speed ×4"]');
+  await page.waitForSelector(approve, { state: "visible", timeout: 180000 });
+  await page.waitForTimeout(800);
+  await visit("decision");
+  await page.click(approve);
+  await page.waitForSelector('button:has-text("Approve all")', { state: "visible", timeout: 120000 });
+  await page.waitForTimeout(800);
+  await visit("drafts");
+  await page.click('button:has-text("Approve all")');
+  await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 60000 });
+  await page.waitForTimeout(800);
+  await visit("finished");
+  await page.click("#tab-audit");
+  await visit("finished, audit");
+  // The drawer hidden: the whole mirror, the decision on it.
+  await page.click(".drawer-toggle");
+  await page.waitForTimeout(1500);
+  await visit("finished, drawer hidden");
+  await page.click('button:has-text("Open management summary")');
+  await page.waitForSelector(".report-modal", { timeout: 5000 });
+  await visit("management summary");
+  await page.keyboard.press("Escape");
+}

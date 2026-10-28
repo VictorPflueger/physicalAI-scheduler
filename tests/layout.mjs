@@ -188,7 +188,7 @@ async function measureAlign(page, { finding = false } = {}) {
     const cut = (el) => el.scrollWidth > el.clientWidth + 1;
     for (const f of view.querySelectorAll(".al-fact")) if (shown(f) && cut(f)) out.push(`the source value "${f.textContent.trim()}" is cut (${size})`);
     for (const v of view.querySelectorAll(".al-ch-value")) if (shown(v) && cut(v)) out.push(`the channel value "${v.textContent.trim()}" is cut (${size})`);
-    for (const s of view.querySelectorAll(".al-ch-status > span:not(.icon)")) if (shown(s) && cut(s)) out.push(`the verdict "${s.textContent.trim()}" is cut (${size})`);
+    for (const s of view.querySelectorAll(".al-ch-status > span:not(.vc-icon)")) if (shown(s) && cut(s)) out.push(`the verdict "${s.textContent.trim()}" is cut (${size})`);
     if (finding) {
       const red = [...view.querySelectorAll('.al-channel[data-tone="affected"], .al-channel[data-tone="resolved"], .al-channel[data-tone="at-risk"]')].filter(shown);
       if (!red.length) out.push("no finding on the alignment view");

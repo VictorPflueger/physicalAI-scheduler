@@ -24,7 +24,7 @@ import { sourceRows, channelRows, channelStates, stripData, monitorTrains, TAG_T
 import { alignmentData, sensorReadings } from "./align_data.js";
 import { createAlign } from "./mirror_align.js";
 import { createCard, worstState } from "./mirror_card.js";
-import { createStrip } from "./mirror_strip.js";
+import { createStrip, hexShape } from "./mirror_strip.js";
 import { createMonitor } from "./mirror_monitor.js";
 import { createPopover } from "./pop.js";
 import { sourceRowPopover, customerRowPopover, stationPopover } from "./popovers.js";
@@ -771,11 +771,11 @@ export function createMirror(container, { scenarios = [], initialScenario = null
       return btn;
     };
     const mark = (cls, label) => h("div", { class: "legend-row" }, h("span", { class: `legend-mark ${cls}` }), label);
-    // A state: its colour (css/mirror.css, by data-kind, as the mirror's own marks), and the mark the line
-    // labels carry, so it reads without the colour too.
+    // A state: a hexagon in its colour (css/mirror.css, by data-kind, as the corridor's rings), and the
+    // mark the line labels carry, so it reads without the colour too.
     const dot = (kind, label, mk = null) => h("div", { class: "legend-row" },
       h("span", { class: "legend-state", dataset: { kind } },
-        h("span", { class: "legend-swatch-dot" }),
+        h("span", { class: "legend-swatch-dot" }, hexShape()),
         mk ? h("span", { class: "legend-state-mark" }, icon(mk, 13)) : null),
       label);
     const line = (cls, label) => h("div", { class: "legend-row" }, h("span", { class: `legend-swatch-line ${cls}` }), label);

@@ -1,17 +1,18 @@
 /* Timetable Translator — the timetable mirror: the corridor strip, the mirror card (the source
  * timetable beside the published customer timetable, the translation between them as lines) and the
  * sync monitor of all trains. The mirror keeps the canvas and controls of the sister apps' map and
- * board: a sunken canvas, floating buttons and caption, the legend card, popovers with a tip, the
- * state colours with a second cue (a word, a mark, a line style), a flash on change. Every colour is
- * one of Vici's semantic tokens. */
+ * board: a sunken canvas with Vici's honeycomb, floating buttons and caption, the legend card,
+ * popovers with a tip, the state colours with a second cue (a word, a mark, a line style), a flash on
+ * change. Everything that would be round is a hexagon, everything pill-shaped a hex capsule (Vici's
+ * hexagon rule). Every colour is one of Vici's semantic tokens. */
 
 #mirror {
   position: absolute; inset: 0;
   overflow: hidden;
   background-color: var(--vc-bg-sunken);
-  /* A faint dot grid: the canvas reads as a work surface, not as an empty panel. */
-  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--vc-neutral-solid) 12%, transparent) 1px, transparent 1.4px);
-  background-size: 22px 22px;
+  /* Vici's honeycomb: the canvas reads as a work surface, not as an empty panel. */
+  background-image: var(--vc-honeycomb-pattern);
+  background-size: var(--vc-honeycomb-pattern-size);
   font-size: var(--vc-font-size-sm);
   --mid-w: 116px;
 }
@@ -72,11 +73,14 @@
 .strip[hidden] { display: none; }
 .strip-svg { position: absolute; inset: 0; overflow: visible; }
 .strip-hits { position: absolute; inset: 0; }
+/* A station's button: a hexagon 40 px high over its mark, a hexagonal fill on hover. */
 .strip-hit {
-  position: absolute; width: 40px; height: 40px; padding: 0;
-  border: 0; border-radius: 50%; background: transparent; cursor: pointer;
+  position: absolute; width: calc(40px * 1.1547); height: 40px; padding: 0;
+  border: 0; background: transparent; cursor: pointer;
 }
-.strip-hit:hover { background: color-mix(in srgb, var(--vc-surface-hover) 70%, transparent); }
+.strip-hit::before, .strip-hit::after { content: ""; position: absolute; pointer-events: none; }
+.strip-hit::before { inset: 0; clip-path: var(--vc-hex); }
+.strip-hit:hover::before { background: color-mix(in srgb, var(--vc-surface-hover) 70%, transparent); }
 .strip .net { stroke: var(--vc-neutral-solid); stroke-opacity: 0.32; stroke-width: 2; fill: none; stroke-linecap: round; }
 .strip .route-pub { stroke: var(--vc-neutral-solid); stroke-width: 2.6; stroke-dasharray: 7 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .strip .route-src { stroke: var(--vc-text); stroke-width: 3.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -97,8 +101,8 @@
 .strip .node-name { font: 600 11.5px var(--vc-font-text); fill: var(--vc-text-muted); }
 .strip .node-name[data-hub="true"] { font-weight: 700; fill: var(--vc-text); }
 .strip .node[data-role="stop"] .node-code, .strip .node[data-role="ops"] .node-code { fill: var(--vc-text); font-weight: 600; }
-.strip .train-pos circle { fill: var(--vc-text); }
-.strip .train-pos circle.waiting { fill: none; stroke: var(--vc-text); stroke-width: 2.4; }
+.strip .train-pos polygon { fill: var(--vc-text); }
+.strip .train-pos polygon.waiting { fill: none; stroke: var(--vc-text); stroke-width: 2.4; }
 .strip .train-pos .arrow { fill: var(--vc-surface); }
 .strip .train-pos[data-state="waiting"] .arrow, .strip .train-pos[data-state="arrived"] .arrow { fill: var(--vc-text); }
 
@@ -131,29 +135,44 @@
 @keyframes midCheck { from { opacity: 1; } to { opacity: 0.45; } }
 
 .mc-channels { display: flex; gap: 6px; flex-wrap: wrap; }
+/* A channel's chip: a hex capsule that the mirror owns (aria-pressed): its fill (::before), its edge
+   (.ch-edge, a ring in the capsule's shape) and Vici's hexagonal focus ring (::after). */
 .ch-chip {
+  --_h: 40px;
+  --_p: calc(var(--_h) * 0.28868);
+  --_t: 1px;
+  --edge: var(--vc-border);
+  position: relative; isolation: isolate;
   display: inline-flex; align-items: center; gap: 6px;
-  min-height: 40px; padding: 0 10px;
-  border: 1px solid var(--vc-border); border-radius: 999px;
-  background: var(--vc-surface); color: var(--vc-text);
+  min-height: var(--_h); padding: 0 calc(var(--_p) + 3px);
+  border: 0; background: none; color: var(--vc-text);
   font: 600 var(--fs-xs) / 1 var(--vc-font-text); cursor: pointer; white-space: nowrap;
 }
-.ch-chip:hover { background: var(--vc-surface-hover); }
+.ch-chip::before, .ch-chip::after { content: ""; position: absolute; pointer-events: none; }
+.ch-chip::before { inset: 0; z-index: -2; background: var(--vc-surface); clip-path: polygon(var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%); }
+.ch-chip:hover::before { background: var(--vc-surface-hover); }
+.ch-edge { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--edge); clip-path: polygon(evenodd, var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%, var(--_p) 0%, calc(var(--_p) + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(var(--_p) + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - var(--_p) - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(100% - var(--_p) - 0.57735 * var(--_t)) var(--_t), calc(var(--_p) + 0.57735 * var(--_t)) var(--_t)); }
 /* Generated from an older source version (or with a conversion fault): a dashed edge. A fact, not a finding. */
-.ch-chip[data-behind="true"] { border-style: dashed; border-color: var(--vc-border-strong); }
-/* The channel shown: a 2 px ink frame (a selection on the mirror is ink, never merlot). */
-.ch-chip[aria-pressed="true"] { border-color: var(--vc-text); color: var(--vc-text); box-shadow: inset 0 0 0 1px var(--vc-text); }
+.ch-chip[data-behind="true"] { --edge: var(--vc-border-strong); }
+.ch-chip[data-behind="true"] .ch-edge { background: repeating-linear-gradient(90deg, var(--edge) 0 5px, transparent 5px 9px); }
+/* The channel shown: a 2 px ink edge (a selection on the mirror is ink, never merlot). */
+.ch-chip[aria-pressed="true"] { --edge: var(--vc-text); --_t: 2px; }
 .ch-v { font: 500 0.78rem / 1 var(--vc-font-mono); color: var(--vc-text-muted); }
+/* The count: a hexagon (a hex capsule from two figures on). */
 .ch-n {
-  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  --_p: calc(20px * 0.28868);
+  min-width: calc(20px * 1.1547); height: 20px; padding: 0 7px;
+  clip-path: polygon(var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%);
   display: inline-flex; align-items: center; justify-content: center;
   font: 700 0.76rem / 1 var(--vc-font-text); font-variant-numeric: tabular-nums; color: var(--vc-danger-on-solid); background: var(--vc-danger-solid);
 }
 .ch-chip[data-state="at_risk"] .ch-n, .ch-chip[data-state="accepted"] .ch-n { color: var(--vc-warning-bg); background: var(--vc-warning-text); }
 .ch-chip[data-state="resolved"] .ch-n { color: var(--vc-success-on-solid); background: var(--vc-success-solid); }
 .ch-chip[data-state="what_if"] .ch-n { color: var(--vc-feature-on-solid); background: var(--vc-feature-solid); }
-.ch-chip[data-checking="true"] { animation: chipCheck 1.1s ease-out infinite; }
-@keyframes chipCheck { 0% { box-shadow: 0 0 0 0 var(--vc-info-solid); } 100% { box-shadow: 0 0 0 7px transparent; } }
+/* Being read by the agent: the edge pulses in fjord. */
+.ch-chip[data-checking="true"] { --_t: 2px; }
+.ch-chip[data-checking="true"] .ch-edge { animation: chipCheck 1.1s ease-in-out infinite alternate; }
+@keyframes chipCheck { from { background: var(--vc-info-border); } to { background: var(--vc-info-solid); } }
 
 .mc-cols { padding: 6px 14px 4px; border-bottom: 1px solid var(--vc-border-subtle); color: var(--vc-text-subtle); font-size: 0.74rem; font-weight: 600; }
 .mc-cols-side, .mrow { display: grid; align-items: center; column-gap: 6px; }
@@ -161,7 +180,10 @@
 .mc-cols-side[data-side="customer"], .mrow[data-side="customer"] { grid-template-columns: 18px 50px minmax(0, 1fr) 46px; }
 .mcard[data-channel="coach"] .mc-cols-side[data-side="customer"], .mcard[data-channel="coach"] .mrow[data-side="customer"] { grid-template-columns: 18px 50px minmax(0, 1fr) 70px; }
 .mc-cols-side { padding: 0 8px 0 4px; }
-.mc-cols-side .r { text-align: right; }
+/* A column head stays one word on one line: when it is wider than its column (Inter runs wider than the
+   former font), it reaches left into the empty head beside it. */
+.mc-cols-side > span { white-space: nowrap; }
+.mc-cols-side .r { justify-self: end; text-align: right; }
 
 .mc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 6px 14px 10px; }
 .mc-inner { position: relative; }
@@ -186,11 +208,15 @@
    is a shadow, so the ring sits beside it. */
 .mrow:focus-visible { outline-offset: -2px; }
 .spine { position: relative; height: 100%; display: flex; align-items: center; justify-content: center; }
-.spine i { display: block; width: 12px; height: 12px; border-radius: 50%; border: 2.5px solid var(--vc-text); background: var(--vc-surface); box-sizing: border-box; }
-.mrow[data-act="start"] .spine i, .mrow[data-act="end"] .spine i { width: 14px; height: 14px; background: var(--vc-text); }
-.mrow[data-act="ops_stop"] .spine i { border-radius: 2px; width: 12px; height: 12px; border-width: 2px; }
-.mrow[data-act="pass"] .spine i { width: 7px; height: 7px; border: 0; background: var(--vc-neutral-solid); }
-.mrow[data-status="cancelled"] .spine i { border-style: dashed; border-color: var(--vc-text-subtle); }
+/* A stop on the spine: a hexagon on the timetable's surface with an ink ring (::after); the first and
+   last stops solid ink, a passing point a small hexagon, an operational stop a square. */
+.spine i { position: relative; display: block; width: calc(12px * 1.1547); height: 12px; clip-path: var(--vc-hex); background: var(--vc-surface); }
+.spine i::after { content: ""; position: absolute; inset: 0; --_t: 2.5px; background: var(--vc-text); clip-path: polygon(evenodd, 25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%, calc(25% + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(25% + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(75% - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(75% - 0.57735 * var(--_t)) var(--_t), calc(25% + 0.57735 * var(--_t)) var(--_t)); }
+.mrow[data-act="start"] .spine i, .mrow[data-act="end"] .spine i { width: calc(14px * 1.1547); height: 14px; background: var(--vc-text); }
+.mrow[data-act="ops_stop"] .spine i { width: 12px; height: 12px; clip-path: none; border-radius: var(--vc-radius-xs); box-shadow: inset 0 0 0 2px var(--vc-text); }
+.mrow[data-act="ops_stop"] .spine i::after, .mrow[data-act="pass"] .spine i::after { display: none; }
+.mrow[data-act="pass"] .spine i { width: calc(7px * 1.1547); height: 7px; background: var(--vc-neutral-solid); }
+.mrow[data-status="cancelled"] .spine i::after { background: repeating-linear-gradient(90deg, var(--vc-text-subtle) 0 2px, transparent 2px 4px); }
 .mrow .t { display: grid; font: 500 0.84rem / 1.15 var(--vc-font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mrow .t .ta { color: var(--vc-text-muted); }
 .mrow .t[data-lines="1"] .ta, .mrow .t[data-lines="1"] .td { color: var(--vc-text); }
@@ -230,7 +256,7 @@
 .mc-links .ml { fill: none; stroke: var(--vc-neutral-solid); stroke-opacity: 0.5; stroke-width: 1.6; stroke-linecap: round; transition: stroke 0.5s ease, stroke-width 0.5s ease; }
 .mc-links .ml[data-kind="not_in_source"], .mc-links .ml[data-kind="missing"] { stroke-dasharray: 5 4; }
 .mc-links .ml[data-kind="cancelled"] { stroke-dasharray: 2 4; stroke-opacity: 0.4; }
-.mc-links .ml-end circle { fill: var(--vc-surface); stroke: var(--vc-neutral-solid); stroke-width: 1.6; }
+.mc-links .ml-end polygon { fill: var(--vc-surface); stroke: var(--vc-neutral-solid); stroke-width: 1.6; }
 .mc-links .ml-end path { stroke: var(--vc-neutral-solid); stroke-width: 1.8; stroke-linecap: round; }
 .mc-links .ml-end[data-kind="cancelled"] { opacity: 0.5; }
 .mc-links [data-state="affected"] { --ml: var(--vc-danger-solid); }
@@ -238,31 +264,40 @@
 .mc-links [data-state="resolved"] { --ml: var(--vc-success-solid); }
 .mc-links [data-state="what_if"] { --ml: var(--vc-feature-solid); }
 .mc-links .ml[data-state] { stroke: var(--ml); stroke-opacity: 1; stroke-width: 2.8; }
-.mc-links .ml-end[data-state] circle { stroke: var(--ml); stroke-width: 2.2; }
+.mc-links .ml-end[data-state] polygon { stroke: var(--ml); stroke-width: 2.2; }
 .mc-links .ml-end[data-state] path { stroke: var(--ml); }
 .mc-links[data-links="off"] .ml:not([data-state]), .mc-links[data-links="off"] .ml-end:not([data-state]) { display: none; }
 /* While the engine compares, the plain lines run fjord. */
 .mc-links[data-checking="true"] .ml:not([data-state]) { stroke: var(--vc-info-solid); stroke-opacity: 0.9; stroke-dasharray: 6 6; animation: lineRun 0.9s linear infinite; }
 @keyframes lineRun { to { stroke-dashoffset: -24; } }
 .mc-pills { position: absolute; inset: 0; pointer-events: none; }
+/* A line's label: a hex capsule on the line (::before), outlined in its state's tone (a ring, ::after,
+   dashed for a what-if), with the state's mark and the passengers behind it. */
 .ml-pill {
+  --_h: 22px;
+  --_p: calc(var(--_h) * 0.28868);
+  --_t: 1.5px;
+  --pill-line: var(--vc-danger-solid);
   position: absolute; left: 50%; transform: translate(-50%, -50%);
-  display: inline-flex; align-items: baseline; gap: 3px;
+  isolation: isolate;
+  display: inline-flex; align-items: center; gap: 3px;
   width: max-content; max-width: calc(var(--mid-w) - 2px);
-  height: 22px; padding: 0 7px; box-sizing: border-box; align-items: center;
-  border-radius: 999px;
-  background: var(--vc-surface); border: 1.5px solid var(--vc-danger-solid); color: var(--vc-danger-text);
-  box-shadow: var(--vc-shadow-sm);
+  height: var(--_h); padding: 0 calc(var(--_p) + 1px); box-sizing: border-box;
+  color: var(--vc-danger-text);
   white-space: nowrap;
 }
+.ml-pill::before, .ml-pill::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+.ml-pill::before { z-index: -2; background: var(--vc-surface); clip-path: polygon(var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%); }
+.ml-pill::after { z-index: -1; background: var(--pill-line); clip-path: polygon(evenodd, var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%, var(--_p) 0%, calc(var(--_p) + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(var(--_p) + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - var(--_p) - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(100% - var(--_p) - 0.57735 * var(--_t)) var(--_t), calc(var(--_p) + 0.57735 * var(--_t)) var(--_t)); }
 .ml-pill strong { font: 700 0.74rem / 1 var(--vc-font-text); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ml-pill .ml-mark { flex: none; margin-left: -2px; align-self: center; }
 .ml-pill span { font: 600 0.72rem / 1 var(--vc-font-text); color: var(--vc-text-muted); font-variant-numeric: tabular-nums; }
 .ml-pill .ml-pax { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; }
-.ml-pill .ml-pax .icon { flex: none; }
-.ml-pill[data-state="at_risk"], .ml-pill[data-state="accepted"] { border-color: var(--vc-warning-text); color: var(--vc-warning-text); }
-.ml-pill[data-state="resolved"] { border-color: var(--vc-success-solid); color: var(--vc-success-text); }
-.ml-pill[data-state="what_if"] { border-color: var(--vc-feature-solid); color: var(--vc-feature-text); border-style: dashed; }
+.ml-pill .ml-pax .vc-icon { flex: none; }
+.ml-pill[data-state="at_risk"], .ml-pill[data-state="accepted"] { --pill-line: var(--vc-warning-text); color: var(--vc-warning-text); }
+.ml-pill[data-state="resolved"] { --pill-line: var(--vc-success-solid); color: var(--vc-success-text); }
+.ml-pill[data-state="what_if"] { --pill-line: var(--vc-feature-solid); color: var(--vc-feature-text); }
+.ml-pill[data-state="what_if"]::after { -webkit-mask: repeating-linear-gradient(90deg, var(--vc-text) 0 4px, transparent 4px 7px); mask: repeating-linear-gradient(90deg, var(--vc-text) 0 4px, transparent 4px 7px); }
 
 /* ---- the sync monitor -------------------------------------------------------------------------------------- */
 .monitor {
@@ -340,49 +375,90 @@
 .legend-group[hidden], .legend-toggles[hidden] { display: none; }
 .legend-group h4 { margin: 0 0 2px; font-size: var(--fs-xs); font-weight: 600; color: var(--vc-text-subtle); }
 .legend-row { display: flex; align-items: center; gap: 10px; color: var(--vc-text-muted); }
-/* A state's swatch and mark take their colours from here (data-kind), as the mirror's own marks do. */
-.legend-swatch-dot { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid; flex: none; }
-.legend-state { display: inline-flex; align-items: center; gap: 3px; width: 32px; flex: none; }
+/* A state's swatch is a hexagon in the state's tone (as the corridor's rings), its mark beside it; both
+   take their colours from here (data-kind). */
+.legend-swatch-dot { display: inline-flex; flex: none; width: calc(14px * 1.1547); height: 14px; }
+.legend-swatch-dot > svg { width: 100%; height: 100%; overflow: visible; }
+.legend-swatch-dot polygon { vector-effect: non-scaling-stroke; stroke-width: 1.5px; stroke-linejoin: miter; }
+.legend-state { display: inline-flex; align-items: center; gap: 3px; width: 34px; flex: none; }
 .legend-state-mark { display: inline-flex; }
-.legend-state[data-kind="affected"] .legend-swatch-dot { background: var(--vc-danger-border); border-color: var(--vc-danger-solid); }
+.legend-state[data-kind="affected"] .legend-swatch-dot polygon { fill: var(--vc-danger-border); stroke: var(--vc-danger-solid); }
 .legend-state[data-kind="affected"] .legend-state-mark { color: var(--vc-danger-solid); }
-.legend-state[data-kind="what_if"] .legend-swatch-dot { background: var(--vc-feature-border); border-color: var(--vc-feature-solid); }
+.legend-state[data-kind="what_if"] .legend-swatch-dot polygon { fill: var(--vc-feature-border); stroke: var(--vc-feature-solid); }
 .legend-state[data-kind="what_if"] .legend-state-mark { color: var(--vc-feature-solid); }
-.legend-state:is([data-kind="at_risk"], [data-kind="accepted"]) .legend-swatch-dot { background: var(--vc-warning-border); border-color: var(--vc-warning-text); }
+.legend-state:is([data-kind="at_risk"], [data-kind="accepted"]) .legend-swatch-dot polygon { fill: var(--vc-warning-border); stroke: var(--vc-warning-text); }
 .legend-state:is([data-kind="at_risk"], [data-kind="accepted"]) .legend-state-mark { color: var(--vc-warning-text); }
-.legend-state[data-kind="resolved"] .legend-swatch-dot { background: var(--vc-success-border); border-color: var(--vc-success-solid); }
+.legend-state[data-kind="resolved"] .legend-swatch-dot polygon { fill: var(--vc-success-border); stroke: var(--vc-success-solid); }
 .legend-state[data-kind="resolved"] .legend-state-mark { color: var(--vc-success-solid); }
-.legend-state[data-kind="checking"] .legend-swatch-dot { border: 2.5px solid var(--vc-info-solid); background: var(--vc-surface); }
+.legend-state[data-kind="checking"] .legend-swatch-dot polygon { fill: var(--vc-surface); stroke: var(--vc-info-solid); stroke-width: 2.5px; }
 .legend-swatch-line { width: 28px; height: 0; border-top: 2px solid var(--vc-neutral-solid); flex: none; opacity: 0.8; }
 .legend-swatch-line.route { border-top: 3.5px solid var(--vc-text); opacity: 1; }
 .legend-swatch-line.route.dashed { border-top: 2.6px dashed var(--vc-neutral-solid); }
 .legend-mark { width: 28px; height: 14px; flex: none; position: relative; }
 .legend-mark::before { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); box-sizing: border-box; }
-.legend-mark.stop::before { width: 12px; height: 12px; border-radius: 50%; border: 2.5px solid var(--vc-text); background: var(--vc-surface); }
-.legend-mark.ops::before { width: 12px; height: 12px; border-radius: 2px; border: 2px solid var(--vc-text); background: var(--vc-surface); }
-.legend-mark.pass::before { width: 7px; height: 7px; border-radius: 50%; background: var(--vc-neutral-solid); }
-.legend-mark.x::before, .legend-mark.plus::before { width: 14px; height: 14px; border-radius: 50%; border: 1.6px solid var(--vc-neutral-solid); background: var(--vc-surface); }
+/* The marks of the timetables, as the spine and the lines draw them: hexagon rings, a small hexagon,
+   a square. */
+.legend-mark.stop::before { --_t: 2.5px; width: calc(12px * 1.1547); height: 12px; background: var(--vc-text); clip-path: polygon(evenodd, 25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%, calc(25% + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(25% + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(75% - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(75% - 0.57735 * var(--_t)) var(--_t), calc(25% + 0.57735 * var(--_t)) var(--_t)); }
+.legend-mark.ops::before { width: 12px; height: 12px; border-radius: var(--vc-radius-xs); border: 2px solid var(--vc-text); background: var(--vc-surface); }
+.legend-mark.pass::before { width: calc(7px * 1.1547); height: 7px; clip-path: var(--vc-hex); background: var(--vc-neutral-solid); }
+.legend-mark.x::before, .legend-mark.plus::before { --_t: 1.6px; width: calc(15px * 1.1547); height: 15px; background: var(--vc-neutral-solid); clip-path: polygon(evenodd, 25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%, calc(25% + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(25% + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(75% - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(75% - 0.57735 * var(--_t)) var(--_t), calc(25% + 0.57735 * var(--_t)) var(--_t)); }
 .legend-mark.x::after, .legend-mark.plus::after { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); font: 700 11px / 1 var(--vc-font-text); color: var(--vc-neutral-text); }
 .legend-mark.x::after { content: "×"; }
 .legend-mark.plus::after { content: "+"; }
 .legend-toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+/* The toggles: hex capsules on a quiet fill (the mirror owns them: aria-pressed), with Vici's
+   hexagonal focus ring, as the sister apps' legend toggles. */
 .legend-chip {
+  --_h: 40px;
+  --_p: calc(var(--_h) * 0.28868);
+  position: relative; isolation: isolate;
   display: inline-flex; align-items: center; gap: 7px;
-  min-height: 40px; padding: 0 10px 0 8px;
-  border: 1px solid var(--vc-border); border-radius: 999px;
-  background: var(--vc-surface); color: var(--vc-text);
+  min-height: var(--_h); padding: 0 calc(var(--_p) + 3px);
+  border: 0; background: none; color: var(--vc-text);
   font: 600 var(--fs-xs) / 1 var(--vc-font-text); cursor: pointer; white-space: nowrap;
 }
-.legend-chip:hover { background: var(--vc-surface-hover); }
+.legend-chip::before, .legend-chip::after { content: ""; position: absolute; pointer-events: none; }
+.legend-chip::before {
+  inset: 0; z-index: -1;
+  background: var(--vc-bg-subtle);
+  clip-path: polygon(var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%);
+}
+.legend-chip:hover::before { background: var(--vc-surface-hover); }
 .legend-chip .box {
   width: 16px; height: 16px; border-radius: var(--vc-radius-sm); border: 1.5px solid var(--vc-border-strong);
   display: inline-flex; align-items: center; justify-content: center; flex: none; color: var(--vc-surface);
   background: var(--vc-surface);
 }
-.legend-chip .box svg { opacity: 0; }
+.legend-chip .box .vc-icon { opacity: 0; }
 /* Ticked in ink: merlot stays out of the mirror's state colours. */
 .legend-chip[aria-pressed="true"] .box { background: var(--vc-text); border-color: var(--vc-text); }
-.legend-chip[aria-pressed="true"] .box svg { opacity: 1; }
+.legend-chip[aria-pressed="true"] .box .vc-icon { opacity: 1; }
+
+/* Vici's hexagonal focus ring on the mirror's hexagon and capsule buttons: 2 px of the focus colour,
+   2 px outside the shape. */
+.strip-hit::after {
+  inset: -4px -4.6188px;
+  background: var(--vc-focus);
+  opacity: 0;
+  clip-path: polygon(evenodd,
+    25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%,
+    calc(25% + 1.1547px) 2px, 2.3094px 50%, calc(25% + 1.1547px) calc(100% - 2px),
+    calc(75% - 1.1547px) calc(100% - 2px), calc(100% - 2.3094px) 50%,
+    calc(75% - 1.1547px) 2px, calc(25% + 1.1547px) 2px);
+}
+.ch-chip::after, .legend-chip::after {
+  --_q: calc((var(--_h) + 8px) * 0.28868);
+  inset: -4px -4.6188px;
+  background: var(--vc-focus);
+  opacity: 0;
+  clip-path: polygon(evenodd,
+    var(--_q) 0%, calc(100% - var(--_q)) 0%, 100% 50%, calc(100% - var(--_q)) 100%, var(--_q) 100%, 0% 50%, var(--_q) 0%,
+    calc(var(--_q) + 1.1547px) 2px, 2.3094px 50%, calc(var(--_q) + 1.1547px) calc(100% - 2px),
+    calc(100% - var(--_q) - 1.1547px) calc(100% - 2px), calc(100% - 2.3094px) 50%,
+    calc(100% - var(--_q) - 1.1547px) 2px, calc(var(--_q) + 1.1547px) 2px);
+}
+.strip-hit:focus-visible, .ch-chip:focus-visible, .legend-chip:focus-visible { outline: none; }
+.strip-hit:focus-visible::after, .ch-chip:focus-visible::after, .legend-chip:focus-visible::after { opacity: 1; }
 
 /* ---- popovers (the sister apps' map popups) ------------------------------------------------------------------- */
 .mirror-pop {
@@ -437,6 +513,9 @@
 #mirror[data-h="short"] .mc-head-col[data-side="customer"] .mc-title .mc-ver, #mirror[data-h="short"] .ch-v { display: none; }
 #mirror[data-h="short"] .mc-channels { gap: 4px; }
 #mirror[data-h="short"] .ch-chip { padding: 0 8px; gap: 5px; }
+/* Narrow (a laptop): the chips leave their versions to the caption, the tooltips and the labels, so
+   two of them still fit on a line. */
+#mirror[data-w="narrow"] .ch-v { display: none; }
 /* Tiny (the drawer open on a small screen): the timetable rows only, so the finding stays in view;
    the head comes back with the room. */
 #mirror[data-h="tiny"] :is(.mc-head, .mc-cols) { display: none; }
@@ -444,12 +523,14 @@
 #mirror[data-w="narrow"] .mc-cols-side[data-side="customer"], #mirror[data-w="narrow"] .mrow[data-side="customer"] { grid-template-columns: 16px 46px minmax(0, 1fr) 34px; }
 #mirror[data-w="narrow"] .mcard[data-channel="coach"] .mc-cols-side[data-side="customer"], #mirror[data-w="narrow"] .mcard[data-channel="coach"] .mrow[data-side="customer"] { grid-template-columns: 16px 46px minmax(0, 1fr) 62px; }
 #mirror[data-w="narrow"] .mrow .nm strong { font-size: 0.9rem; }
-#mirror[data-w="narrow"] .mc-head-mid .icon + .mc-mid-note { font-size: 0.66rem; }
+#mirror[data-w="narrow"] .mc-head-mid .vc-icon + .mc-mid-note { font-size: 0.66rem; }
 #mirror[data-w="narrow"] .mon-head, #mirror[data-w="narrow"] .mon-row { grid-template-columns: minmax(84px, 0.8fr) minmax(130px, 1.5fr) minmax(56px, 0.5fr) minmax(100px, 1.1fr) minmax(112px, 1fr); gap: 10px; }
 #mirror[data-w="narrow"] .mon-row { min-height: 48px; padding-top: 3px; padding-bottom: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .strip .node-pulse, .mc-head-col[data-checking="true"], .mc-head-mid[data-checking="true"], .ch-chip[data-checking="true"], .mc-links[data-checking="true"] .ml:not([data-state]), .mrow.flash { animation: none; }
+  .strip .node-pulse, .mc-head-col[data-checking="true"], .mc-head-mid[data-checking="true"], .ch-chip[data-checking="true"] .ch-edge, .mc-links[data-checking="true"] .ml:not([data-state]), .mrow.flash { animation: none; }
+  /* A station being read keeps a still fjord ring. */
+  .strip .node-pulse { transform: scale(1.25); }
 }
 #mirror[data-w="narrow"] .mc-side::before { left: 11px; }
 
@@ -465,4 +546,23 @@
   #mirror[data-w] .mrow .t { font-size: 0.78rem; }
   #mirror[data-w] .mc-head, #mirror[data-w] .mc-cols, #mirror[data-w] .mc-inner { grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr); }
   #mirror[data-w] .mc-inner { --mid-w: 92px; }
+}
+
+/* ---- forced colours (Windows contrast themes): the mirror's hexagons and capsules keep their outlines --- */
+/* The browser drops background colours and gradients: the rings, edges and capsules drawn as clipped
+   backgrounds are drawn again in system colours, the focus rings in Highlight (as Vici does for its own),
+   and the corridor's marks keep their outlines. */
+@media (forced-colors: active) {
+  .strip-hit::after, .ch-chip::after, .legend-chip::after { forced-color-adjust: none; background-color: Highlight; }
+  .ch-edge, .ml-pill::after, .spine i::after, .legend-mark.stop::before, .legend-mark.x::before, .legend-mark.plus::before { forced-color-adjust: none; background: CanvasText; }
+  .ch-chip::before, .ml-pill::before, .spine i, .legend-chip::before { forced-color-adjust: none; background: Canvas; }
+  .mrow[data-act="start"] .spine i, .mrow[data-act="end"] .spine i, .mrow[data-act="pass"] .spine i, .legend-mark.pass::before { forced-color-adjust: none; background: CanvasText; }
+  .ch-n { forced-color-adjust: none; background: CanvasText; color: Canvas; }
+  .legend-chip { outline: 1px solid CanvasText; outline-offset: -1px; }
+  .strip polygon, .strip rect, .mc-links polygon, .legend-swatch-dot polygon { forced-color-adjust: none; }
+  .strip .node-mark, .mc-links .ml-end polygon, .legend-swatch-dot polygon { fill: Canvas; stroke: CanvasText; }
+  .strip .node[data-role="pass"] .node-mark, .strip .node[data-role="off"] .node-mark, .strip .node-sensor, .strip .train-pos polygon:not(.waiting) { fill: CanvasText; }
+  .strip .node-ring, .strip .train-pos polygon.waiting { stroke: CanvasText; }
+  .strip .node-pulse { stroke: Highlight; }
+  .strip .train-pos .arrow { fill: Canvas; }
 }
