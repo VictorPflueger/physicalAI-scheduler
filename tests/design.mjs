@@ -1,7 +1,7 @@
 // Design checks and review captures (DESIGN.md §8):
 //   states   the colour grammar in the running app: the alignment view's channel cards, the timetable
-//            mirror's rows, lines, line labels, corridor rings and monitor rows use the state tokens (red: contradicts the source; amber:
-//            informed, data still behind; green: re-publication approved; violet: a what-if), so does
+//            mirror's rows, lines, line labels, corridor rings and monitor rows use the state tokens (danger: contradicts the source;
+//            warning: informed, data still behind; success: re-publication approved; lilac: a what-if), so does
 //            its legend; the status pill and the progress rail name the human step ("Your decision",
 //            then "Your approval"), the rail ends with every step done, and the AI labels open and close
 //   review   screenshots for a design review: the options at 1920×1080 as rendered and under a
@@ -17,7 +17,7 @@ const { base: BASE, close } = await serveStatic(APP_ROOT, 8770);
 const browser = await launchBrowser();
 const results = [];
 
-// Severity 1.0 (dichromacy). The same matrices as the palette check in tools/palette.mjs.
+// Severity 1.0 (dichromacy). The same matrices as the colour check in tests/tokens.mjs.
 const CVD = {
   "Normal vision": null,
   Protanopia: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]],
@@ -63,7 +63,8 @@ function mirrorColours(page) {
     document.body.append(probe);
     const colour = (name) => { probe.style.color = `var(${name})`; return getComputedStyle(probe).color; };
     const first = (shadow) => (/rgba?\([^)]*\)/.exec(shadow || "") || ["none"])[0];
-    const TOKEN = { affected: "--affected", at_risk: "--at-risk", accepted: "--at-risk", resolved: "--resolved", what_if: "--violet-line" };
+    // The state tokens (Vici): danger, warning, success and lilac (the AI's what-if), as lines and outlines.
+    const TOKEN = { affected: "--vc-danger-solid", at_risk: "--vc-warning-text", accepted: "--vc-warning-text", resolved: "--vc-success-solid", what_if: "--vc-feature-solid" };
     // Only what is on screen counts (a hidden strip or view keeps its last drawing until shown again).
     const shown = (e) => e.getClientRects().length > 0 && !e.closest("[hidden]");
     const all = (sel) => [...document.querySelectorAll(sel)].filter(shown);
@@ -75,7 +76,7 @@ function mirrorColours(page) {
       const pills = all(`#mirror .ml-pill[data-state="${st}"]`).map((e) => ["line label", getComputedStyle(e).borderTopColor]);
       const rings = all(`#mirror .strip .node[data-state="${st}"] .node-ring`).map((e) => ["strip ring", getComputedStyle(e).stroke]);
       const mon = all(`#mirror .mon-row[data-state="${st}"]`).map((e) => ["monitor row", getComputedStyle(e).borderLeftColor]);
-      // The alignment view's channel cards carry the state as their left bar (an accepted risk is amber, as at_risk).
+      // The alignment view's channel cards carry the state as their left bar (an accepted risk takes the warning tone, as at_risk).
       const tone = { affected: "affected", at_risk: "at-risk", resolved: "resolved", what_if: "what-if" }[st];
       const cards = tone ? all(`#mirror .al-channel[data-tone="${tone}"]`).map((e) => [`channel card ${e.dataset.channel}`, getComputedStyle(e).borderLeftColor]) : [];
       out.counted[st] = rows.length + lines.length + pills.length + rings.length + mon.length + cards.length;
@@ -83,7 +84,7 @@ function mirrorColours(page) {
     }
     const status = [...document.querySelectorAll("#mirror .legend-group")].find((g) => /Status/.test(g.querySelector("h4")?.textContent || ""));
     const rows = status ? [...status.querySelectorAll(".legend-row")] : [];
-    for (const [label, name] of [["Contradicts the source", "--affected"], ["What-if, not the source", "--violet-line"], ["Informed, data still behind", "--at-risk"], ["Re-publication approved", "--resolved"]]) {
+    for (const [label, name] of [["Contradicts the source", "--vc-danger-solid"], ["What-if, not the source", "--vc-feature-solid"], ["Informed, data still behind", "--vc-warning-text"], ["Risk accepted: nothing changed", "--vc-warning-text"], ["Re-publication approved", "--vc-success-solid"]]) {
       const row = rows.find((r) => r.textContent.trim() === label);
       const got = row ? getComputedStyle(row.querySelector(".legend-swatch-dot")).borderTopColor : "missing";
       if (got !== colour(name)) out.mismatches.push(`legend "${label}" ${got} ≠ ${colour(name)}`);
@@ -155,7 +156,7 @@ if (wanted("states")) {
     await page.waitForTimeout(1200);
     const after2 = await mirrorColours(page);
     problems.push(...after2.mismatches.map((m) => `after approval: ${m}`));
-    if (after2.counted.resolved < 4 || after2.counted.affected) problems.push(`the approval is not green on the mirror (${JSON.stringify(after2.counted)})`);
+    if (after2.counted.resolved < 4 || after2.counted.affected) problems.push(`the approval is not in the success tone on the mirror (${JSON.stringify(after2.counted)})`);
     await page.click('#mirror .mirror-tools button:has-text("All trains")');
     await page.waitForTimeout(400);
     const monitor = await mirrorColours(page);
@@ -165,7 +166,7 @@ if (wanted("states")) {
     await page.waitForTimeout(400);
     const timetables = await mirrorColours(page);
     problems.push(...timetables.mismatches.map((m) => `timetables: ${m}`));
-    if (timetables.counted.resolved < 4 || timetables.counted.affected) problems.push(`the approval is not green in the timetables (${JSON.stringify(timetables.counted)})`);
+    if (timetables.counted.resolved < 4 || timetables.counted.affected) problems.push(`the approval is not in the success tone in the timetables (${JSON.stringify(timetables.counted)})`);
     await page.click('#mirror .mirror-tools button:has-text("Alignment")');
     rail = await railNow(page);
     if (rail.states.some((s) => s !== "done")) problems.push(`done: rail states ${rail.states.join(", ")}`);
@@ -173,19 +174,19 @@ if (wanted("states")) {
     if (!(await page.$(".report-card .ai-label"))) problems.push("no AI label on the summary card");
     await page.screenshot({ path: path.join(OUT, "states-done.png") });
 
-    // An option that only informs leaves the data behind: amber.
+    // An option that only informs leaves the data behind: the warning tone.
     await page.click("#btn-reset");
     await page.click("#dd-scenario");
     await page.click('.menu-item[data-id="SC-OPSSTOP"]');
     await toOptions(page);
     await page.click('.option-card[aria-label^="Option B:"] .btn-approve');
     await page.waitForTimeout(800);
-    const amber = await mirrorColours(page);
-    problems.push(...amber.mismatches.map((m) => `informed only: ${m}`));
-    if (!amber.counted.at_risk || amber.counted.affected) problems.push(`option B is not amber on the mirror (${JSON.stringify(amber.counted)})`);
+    const warning = await mirrorColours(page);
+    problems.push(...warning.mismatches.map((m) => `informed only: ${m}`));
+    if (!warning.counted.at_risk || warning.counted.affected) problems.push(`option B is not in the warning tone on the mirror (${JSON.stringify(warning.counted)})`);
     await page.screenshot({ path: path.join(OUT, "states-at-risk.png") });
 
-    // A what-if (a hypothetical change the agent tests, not the source) is violet.
+    // A what-if (a hypothetical change the agent tests, not the source) is lilac.
     await page.click("#btn-abort").catch(() => {});
     await page.click("#btn-reset");
     await page.evaluate(async () => {
@@ -197,9 +198,9 @@ if (wanted("states")) {
       bus.emit("tool_result", { call_id: "design-what-if", name: "sim_sync", ok: true, result: compactForModel(simulateSync(getModel(), input)), server: false });
     });
     await page.waitForTimeout(500);
-    const violet = await mirrorColours(page);
-    problems.push(...violet.mismatches.map((m) => `what-if: ${m}`));
-    if (!violet.counted.what_if || violet.counted.affected) problems.push(`the what-if is not violet on the mirror (${JSON.stringify(violet.counted)})`);
+    const lilac = await mirrorColours(page);
+    problems.push(...lilac.mismatches.map((m) => `what-if: ${m}`));
+    if (!lilac.counted.what_if || lilac.counted.affected) problems.push(`the what-if is not lilac on the mirror (${JSON.stringify(lilac.counted)})`);
     const chip = await page.$eval("#mirror .cap-chip", (c) => `${c.textContent}|${c.dataset.tone}`);
     if (chip !== "What-if, not the source|ai") problems.push(`what-if chip reads ${chip}`);
     await page.screenshot({ path: path.join(OUT, "states-what-if.png") });

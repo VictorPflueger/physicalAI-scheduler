@@ -79,7 +79,7 @@ Status: **Same** — identical code or behaviour (the shared modules are charact
 
 ### Shared shell (identical apart from names and comments)
 
-`js/anthropic.js`, `js/clock.js`, `js/cost.js`, `js/dom.js`, `js/drawer.js`, `js/handover.js`, `js/keystore.js`, `js/labels.js`, `js/md.js`, `js/modal.js`, `js/progress.js`, `js/sse.js`, `css/components.css`, `css/console.css`, `css/drawer.css`, `css/fonts.css`; `css/modals.css` and `css/style.css` with the same rules; the colour tokens and the fonts. `tests/parity.mjs` compares them with a Rebate Hunter checkout on every push.
+`vici/` (Victor's design system Vici, copied unchanged: `vici/README.md`), `js/anthropic.js`, `js/clock.js`, `js/cost.js`, `js/dom.js`, `js/drawer.js`, `js/handover.js`, `js/keystore.js`, `js/labels.js`, `js/md.js`, `js/modal.js`, `js/progress.js`, `js/sse.js`, `css/components.css`, `css/console.css`; `css/drawer.css`, `css/modals.css` and `css/style.css` with the same rules; and the colour test `tests/tokens.mjs` (what only this prototype draws is in `tests/lib/prototype.mjs`). `css/fonts.css` and the colour tokens left with the move to Vici, which brings its own fonts and tokens. `tests/parity.mjs` compares them with a Rebate Hunter checkout on every push.
 
 ### Tests, tooling and documents
 

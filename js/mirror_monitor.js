@@ -70,6 +70,8 @@ export function createMonitor({ onRow }) {
       if (!state) delete b.dataset.state;
       b.dataset.checking = String(checking);
       b.dataset.focus = String(r.id === ctx.focus);
+      // The train in focus is the current one (its frame is ink: css/mirror.css).
+      if (r.id === ctx.focus) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current");
       b.setAttribute("aria-label", `${r.number}, ${r.run}; source version ${r.source_version}; ${lagging.length ? `behind: ${describe(lagging)}` : "all channels current"}${wrong.length ? `; wrong: ${describe(wrong)}` : ""}; ${check.textContent}`);
       if (list.children[i] !== b) list.insertBefore(b, list.children[i] || null);
     });

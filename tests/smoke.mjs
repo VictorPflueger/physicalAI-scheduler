@@ -58,8 +58,24 @@ async function finish(name, { context, page, log }, checks, expectations, allowC
 const shot = (page, file) => page.screenshot({ path: path.join(OUT, file) });
 const boot = async (page) => { await page.goto(BASE); await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 }); };
 const pickScenario = async (page, id) => { await page.click("#dd-scenario"); await page.click(`.menu-item[data-id="${id}"]`); await page.waitForTimeout(500); };
-/** The keyboard focus ring (the shared --focus shadow) on an element after a keyboard focus. */
-const RING = / 0px 0px 0px 4px/;
+/**
+ * Vici's keyboard focus ring on the element a selector names (the index-th match), focused first: an
+ * outline of 2 px or more in the focus colour (--vc-focus), or, on a hexagon, a hexagonal ring that its
+ * ::after draws. Runs in the page: page.evaluate(viciRing, [selector, index]). Returns "selector:true".
+ */
+function viciRing([sel, index = 0]) {
+  const el = document.querySelectorAll(sel)[index];
+  if (!el) return `${sel}:missing`;
+  el.focus();
+  const hex = getComputedStyle(document.documentElement).getPropertyValue("--vc-focus").trim();
+  const n = parseInt(hex.slice(1), 16);
+  const focus = `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+  const cs = getComputedStyle(el);
+  const ring = getComputedStyle(el, "::after");
+  const outline = cs.outlineStyle === "solid" && parseFloat(cs.outlineWidth) >= 2 && cs.outlineColor === focus;
+  const hexRing = ring.content !== "none" && ring.opacity === "1" && ring.backgroundColor === focus;
+  return `${sel}:${outline || hexRing}`;
+}
 
 // ---- sim: full simulation of ICE 618's platform change ---------------------------------------------------
 if (wanted("sim")) {
@@ -110,7 +126,8 @@ if (wanted("sim")) {
     }));
     // A flagged source row keeps its keyboard focus ring with its bar.
     await page.keyboard.press("Shift");
-    checks.flagRing = await page.evaluate(() => { const b = document.querySelector('#mirror .mrow[data-side="source"][data-flag]'); b.focus(); return getComputedStyle(b).boxShadow; });
+    checks.flagRing = await page.evaluate(viciRing, ['#mirror .mrow[data-side="source"][data-flag]']);
+    checks.flagBar = await page.evaluate(() => getComputedStyle(document.querySelector('#mirror .mrow[data-side="source"][data-flag]')).boxShadow);
     await page.click('#mirror .mirror-tools button:has-text("Alignment")');
     await page.click('.option-card[data-recommended="true"] .btn-approve');
     // The mirror follows the decision: the re-published channels turn green, the tiles show what is left.
@@ -180,7 +197,7 @@ if (wanted("sim")) {
       `the alignment view shows the verified finding (${JSON.stringify(checks.finding)})`],
     [checks.findingTimetables?.kk === "affected" && checks.findingTimetables?.flag === "affected" && /^Platform/.test(checks.findingTimetables?.pill || ""),
       `the timetables show the same finding (${JSON.stringify(checks.findingTimetables)})`],
-    [RING.test(checks.flagRing || ""), `a flagged source row shows the focus ring (${checks.flagRing})`],
+    [checks.flagRing?.endsWith(":true") && /inset/.test(checks.flagBar || ""), `a flagged source row shows the focus ring beside its bar (${checks.flagRing}; ${checks.flagBar})`],
     [checks.payoff?.pax === "7" && /was 312/.test(checks.payoff?.paxSub || "") && /^info in 2 min, aligned in 8 min$/.test(checks.payoff?.firstSub || "") && checks.payoff?.tones === "resolved,resolved,resolved,resolved" && checks.payoff?.pill === "resolved",
       `the approval's payoff on the tiles, the alignment view and the timetables (${JSON.stringify(checks.payoff)})`],
     [checks.drafts > 0, "approval must produce drafts"],
@@ -364,11 +381,8 @@ if (wanted("mirror")) {
     await pickScenario(page, "SC-DIVERSION");
     // The alignment view opens first; its cards are buttons with the focus ring, and a card opens the timetables.
     await page.keyboard.press("Shift");
-    checks.alignRings = await page.evaluate(() => ["#mirror .al-source", "#mirror .al-channel"].map((sel) => {
-      const el = document.querySelector(sel);
-      el.focus();
-      return `${sel}:${/ 0px 0px 0px 4px/.test(getComputedStyle(el).boxShadow)}`;
-    }));
+    checks.alignRings = [];
+    for (const sel of ["#mirror .al-source", "#mirror .al-channel"]) checks.alignRings.push(await page.evaluate(viciRing, [sel]));
     checks.alignView = `${await page.$eval("#mirror", (m) => m.dataset.view)}:${(await page.textContent("#mirror .mirror-caption strong")).trim()}`;
     await page.click('#mirror .mirror-tools button:has-text("Timetables")');
     await page.waitForSelector('#mirror .mrow[data-side="source"]', { timeout: 5000 });
@@ -446,13 +460,11 @@ if (wanted("mirror")) {
     await page.keyboard.press("Escape");
     await page.waitForTimeout(200);
     checks.focusBackAfterRedraw = await active();
-    // A visible focus ring on the mirror's own buttons (their shadows must not hide it).
+    // A visible focus ring on the mirror's own buttons: Vici's ring in the focus colour, an outline on
+    // rectangles and a hexagonal ring (::after) on hexagons; their shadows must not hide it.
     await page.keyboard.press("Shift");
-    checks.rings = await page.evaluate(() => ['#mirror .mirror-tools .btn', '#mirror .mrow[data-side="source"]', '#mirror .mrow[data-side="customer"]', "#mirror .ch-chip", "#mirror .strip-hit"].map((sel) => {
-      const el = document.querySelector(sel);
-      el.focus();
-      return `${sel}:${/ 0px 0px 0px 4px/.test(getComputedStyle(el).boxShadow)}`;
-    }));
+    checks.rings = [];
+    for (const sel of ["#mirror .mirror-tools button", '#mirror .mrow[data-side="source"]', '#mirror .mrow[data-side="customer"]', "#mirror .ch-chip", "#mirror .strip-hit"]) checks.rings.push(await page.evaluate(viciRing, [sel]));
     // The sync monitor: every train in the window, first departure first; a row opens its train and
     // the keyboard focus moves into the card.
     await page.click('#mirror .mirror-tools button:has-text("All trains")');
@@ -465,8 +477,7 @@ if (wanted("mirror")) {
     });
     await shot(page, "17-mirror-monitor.png");
     await page.keyboard.press("Shift");
-    const ring = await page.evaluate(() => { const b = [...document.querySelectorAll("#mirror .mon-row")][3]; b.focus(); return / 0px 0px 0px 4px/.test(getComputedStyle(b).boxShadow); });
-    checks.rings.push(`.mon-row:${ring}`);
+    checks.rings.push(await page.evaluate(viciRing, ["#mirror .mon-row", 3]));
     const row1026 = await page.evaluateHandle(() => [...document.querySelectorAll("#mirror .mon-row")].find((r) => r.querySelector(".mon-train strong")?.textContent === "ICE 1026"));
     await row1026.focus();
     await page.keyboard.press("Enter");

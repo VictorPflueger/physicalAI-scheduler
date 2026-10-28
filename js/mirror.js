@@ -739,7 +739,9 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   const sizeClass = () => {
     const wid = container.clientWidth;
     container.dataset.w = wid < 820 ? "narrow" : "wide";
-    container.dataset.tools = wid < 640 ? "icons" : "text";
+    // Below 900 px the view buttons keep their icons only, so the caption keeps the train's name (Inter
+    // and Bricolage run wider than the former fonts); their tooltips name them then.
+    container.dataset.tools = wid < 900 ? "icons" : "text";
     const docked = !legend.hidden && wid < 820 ? legend.offsetHeight + 12 : 0;
     const hgt = container.clientHeight - docked;
     container.dataset.h = hgt >= 600 ? "tall" : hgt >= 400 ? "mid" : hgt >= 300 ? "short" : "tiny";
@@ -761,11 +763,12 @@ export function createMirror(container, { scenarios = [], initialScenario = null
       return btn;
     };
     const mark = (cls, label) => h("div", { class: "legend-row" }, h("span", { class: `legend-mark ${cls}` }), label);
-    // A status: its colour, and the mark the line labels carry, so it reads without the colour too.
-    const dot = (fill, stroke, label, cls = "", mk = null) => h("div", { class: "legend-row" },
-      h("span", { class: "legend-state" },
-        h("span", { class: `legend-swatch-dot ${cls}`, style: { background: fill, borderColor: stroke } }),
-        mk ? h("span", { class: "legend-state-mark", style: { color: stroke } }, icon(mk, 13)) : null),
+    // A state: its colour (css/mirror.css, by data-kind, as the mirror's own marks), and the mark the line
+    // labels carry, so it reads without the colour too.
+    const dot = (kind, label, mk = null) => h("div", { class: "legend-row" },
+      h("span", { class: "legend-state", dataset: { kind } },
+        h("span", { class: "legend-swatch-dot" }),
+        mk ? h("span", { class: "legend-state-mark" }, icon(mk, 13)) : null),
       label);
     const line = (cls, label) => h("div", { class: "legend-row" }, h("span", { class: `legend-swatch-line ${cls}` }), label);
     const el = h("section", { class: "legend", id: "mirror-legend", "aria-label": "Mirror legend", tabindex: "-1", hidden: true });
@@ -794,12 +797,12 @@ export function createMirror(container, { scenarios = [], initialScenario = null
           h("div", { class: "legend-row" }, h("span", { class: "mon-chip" }, "2 channels behind"), "Generated from an older version (*: a conversion fault)"),
           h("div", { class: "legend-row" }, h("span", { class: "mon-chip", dataset: { wrong: "true" } }, "Planner wrong"), "Contradicts the source, as the agent's check found")),
         h("div", { class: "legend-group" }, h("h4", {}, "Status"),
-          dot("var(--affected-fill)", "var(--affected)", "Contradicts the source", "", "alert"),
-          dot("var(--violet-fill)", "var(--violet-line)", "What-if, not the source", "", "spark"),
-          dot("var(--at-risk-fill)", "var(--at-risk)", "Informed, data still behind", "", "clock"),
-          dot("var(--at-risk-fill)", "var(--at-risk)", "Risk accepted: nothing changed", "", "hand"),
-          dot("var(--resolved-fill)", "var(--resolved)", "Re-publication approved", "", "check"),
-          dot("", "", "Being checked by the agent", "pulse"))
+          dot("affected", "Contradicts the source", "alert"),
+          dot("what_if", "What-if, not the source", "spark"),
+          dot("at_risk", "Informed, data still behind", "clock"),
+          dot("accepted", "Risk accepted: nothing changed", "hand"),
+          dot("resolved", "Re-publication approved", "check"),
+          dot("checking", "Being checked by the agent"))
       )
     );
     return el;
