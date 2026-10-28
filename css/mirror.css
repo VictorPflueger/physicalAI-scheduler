@@ -18,13 +18,20 @@
 #mirror[data-w="narrow"] { --mid-w: 96px; }
 
 /* ---- floating caption and view buttons (as on the sister apps' map and board) --------------------- */
-.mirror-tools { position: absolute; top: 12px; right: 12px; z-index: 30; display: flex; gap: 8px; }
-.mirror-tools .btn { background: color-mix(in oklab, var(--vc-surface) 94%, transparent); box-shadow: var(--vc-shadow-md); }
-.mirror-tools .btn:hover { background: var(--vc-surface-hover); }
+/* The three views are one group of toggle buttons that mirror.js owns (aria-pressed), drawn like Vici's
+   segmented control (.segmented, css/components.css) and floating on the canvas; the legend's button
+   (aria-expanded) sits beside them, 44 px as the group. */
+.mirror-tools { position: absolute; top: 12px; right: 12px; z-index: 30; display: flex; align-items: flex-start; gap: 8px; }
+.mirror-tools .segmented { box-shadow: var(--vc-shadow-md); }
+.mirror-tools .segmented button { padding: 0 var(--vc-space-3); font-size: var(--vc-font-size-sm); }
+.mirror-tools .legend-btn { --_bg: var(--vc-surface); --_px: var(--vc-space-3); --_fs: var(--vc-font-size-sm); box-shadow: var(--vc-shadow-md); }
 /* The view shown and the open legend: a 2 px ink frame. A selection on the mirror is ink, never merlot,
    which sits too close to the danger tone of the mirror's states. */
-.mirror-tools .btn[aria-pressed="true"], .mirror-tools .btn[aria-expanded="true"] { background: var(--vc-surface); border-color: var(--vc-text); color: var(--vc-text); box-shadow: inset 0 0 0 1px var(--vc-text), var(--vc-shadow-md); }
+.mirror-tools .segmented button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--vc-text), var(--vc-shadow-sm); }
+.mirror-tools .legend-btn[aria-expanded="true"] { --_bd: var(--vc-text); box-shadow: inset 0 0 0 1px var(--vc-text), var(--vc-shadow-md); }
 #mirror[data-tools="icons"] .mirror-tools .btn-text { display: none; }
+/* Icons only: the tooltips name the views and the legend. */
+#mirror[data-tools="icons"] .mirror-tools { --words-tip: visible; }
 
 .mirror-caption {
   position: absolute; top: 12px; left: 12px; z-index: 30;
@@ -51,15 +58,8 @@
 #mirror[data-legend="open"][data-w="wide"] .mirror-view { right: 300px; }
 #mirror[data-legend="open"][data-w="narrow"] .mirror-view { bottom: calc(var(--legend-h, 0px) + 12px); }
 
-.chip[data-tone="ai"] { color: var(--vc-feature-text); border-color: var(--vc-feature-border); background: var(--vc-feature-bg); }
-.chip[data-tone="danger"] { color: var(--vc-danger-text); border-color: var(--vc-danger-border); background: var(--vc-danger-bg); }
-
-.check-tag {
-  display: inline-flex; align-items: center; gap: 3px;
-  height: 21px; padding: 0 7px; border-radius: 999px;
-  font-size: 0.74rem; font-weight: 600; white-space: nowrap;
-  color: var(--vc-info-text); background: var(--vc-info-bg); border: 1px solid var(--vc-info-border);
-}
+/* What the agent read on a timetable: fjord tags (Vici's), at today's size. */
+.check-tag.vc-tag { --_h: 21px; gap: 3px; font-size: 0.74rem; }
 
 /* ---- the corridor strip ------------------------------------------------------------------------------- */
 .strip {
@@ -306,12 +306,8 @@
 .mon-run > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mon-src strong { font: 600 0.9rem / 1.2 var(--vc-font-mono); }
 .mon-chans { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.mon-chip {
-  display: inline-flex; align-items: center; padding: 1px 7px;
-  border: 1px dashed var(--vc-border-strong); border-radius: 999px;
-  font: 600 0.72rem / 1.35 var(--vc-font-text); color: var(--vc-text-muted); background: var(--vc-surface); white-space: nowrap;
-}
-.mon-chip[data-wrong="true"] { border-style: solid; border-color: var(--vc-danger-solid); color: var(--vc-danger-text); background: var(--vc-danger-bg); }
+/* The channels behind the source (a plain tag: a fact), and the ones the check found wrong (danger). */
+.mon-chip.vc-tag { --_h: 20px; font-size: 0.72rem; }
 .mon-none { color: var(--vc-text-subtle); font-size: var(--fs-xs); }
 .mon-check { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; font-size: var(--fs-xs); min-width: 0; }
 .mon-check[data-tone="affected"] { color: var(--vc-danger-text); font-weight: 700; font-size: var(--vc-font-size-sm); }

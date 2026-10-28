@@ -59,15 +59,8 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .al-card-top { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--vc-text-muted); }
 .al-title { font-weight: 700; color: var(--vc-text); white-space: nowrap; }
 .al-de { font-size: var(--fs-xs); color: var(--vc-text-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.al-tag {
-  margin-left: auto; flex: none;
-  display: inline-flex; align-items: center; gap: 3px;
-  height: 21px; padding: 0 7px; border-radius: 999px;
-  font-size: 0.74rem; font-weight: 600; white-space: nowrap;
-  color: var(--vc-text-muted); background: var(--vc-bg-subtle); border: 1px solid var(--vc-border);
-}
-.al-tag[data-tone="read"], .al-tag[data-tone="checking"] { color: var(--vc-info-text); background: var(--vc-info-bg); border-color: var(--vc-info-border); }
-.al-tag[data-tone="ok"] { color: var(--vc-success-text); background: var(--vc-success-bg); border-color: var(--vc-success-border); }
+/* What the AI reads and what confirms the source: fjord tags (Vici's), at today's size. */
+.al-tag.vc-tag { margin-left: auto; flex: none; --_h: 21px; gap: 3px; font-size: 0.74rem; }
 .al-card[data-reading="true"] { border-color: var(--vc-info-solid); animation: alCheck 1.1s ease-in-out infinite alternate; }
 @keyframes alCheck { from { box-shadow: 0 0 0 0 transparent, var(--vc-shadow-md); } to { box-shadow: 0 0 0 4px color-mix(in oklab, var(--vc-info-solid) 22%, transparent), var(--vc-shadow-md); } }
 
@@ -216,7 +209,8 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="short"] .al-impact-num { font-size: 1.5rem; }
 .align[data-size="short"] .al-fact, .align[data-size="short"] .al-ch-value { font-size: 1.04rem; }
 .align[data-size="short"] .al-source .al-tag-text, .align[data-size="tiny"] .al-source .al-tag-text { display: none; }
-.align[data-size="short"] .al-tag, .align[data-size="tiny"] .al-tag { padding: 0 4px; }
+/* A tag that keeps only its tick keeps its pointed ends. */
+.align[data-size="short"] .al-tag, .align[data-size="tiny"] .al-tag { padding-inline: calc(var(--_h) * 0.28868 + 2px); }
 
 /* tiny (the drawer is open on a laptop): one row, the source and the four channels; the verdict as a mark
    in the card's corner, so the values have the card's whole width (Inter runs wider than the former
@@ -317,22 +311,21 @@ details.run-facts { margin-top: 0; }
 /* The short texts under the steps and outcomes break into even lines, never one word left alone. */
 .intro-modal :is(.intro-step-text, .intro-value span) { text-wrap: balance; }
 
-/* A short window (a laptop): the intro's steps put their number beside the title, so the window
-   keeps the sister apps' sections without scrolling. */
+/* A short window (a laptop): the intro's steps put their hexagon beside the title (Vici's stepper,
+   its track left out, which would cross the titles), so the window keeps the sister apps' sections
+   without scrolling. */
 @media (max-height: 820px) and (min-width: 721px) {
-  .intro-modal .intro-step { padding-top: 0; display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; align-content: start; }
-  .intro-modal .intro-step::before { display: none; }
-  .intro-modal .intro-num { position: static; width: 32px; height: 32px; font-size: 0.95rem; grid-row: 1; }
+  .intro-modal .intro-steps.vc-stepper { --_m: 30px; margin-bottom: 16px; }
+  .intro-modal .intro-steps .vc-step { display: grid; grid-template-columns: calc(var(--_m) * 1.1547) minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; align-content: start; }
+  .intro-modal .intro-steps .vc-step:not(:last-child)::after { display: none; }
+  .intro-modal .intro-num { grid-row: 1; font-size: 0.95rem; }
   .intro-modal .intro-step-title { grid-column: 2; font-size: 1.1rem; }
   .intro-modal .intro-step-text { grid-column: 1 / -1; font-size: var(--vc-font-size-sm); }
   .intro-modal .intro-value strong { font-size: 1.15rem; }
   .intro-modal .intro-value span { font-size: var(--vc-font-size-sm); }
   .intro-modal .intro-note { margin-top: 8px; font-size: var(--fs-xs); }
-  .intro-modal .modal-body h3 { margin: 2px 0 8px; font-size: 1.1rem; }
+  .intro-modal .vc-dialog__body h3 { margin: 2px 0 8px; font-size: 1.1rem; }
   .intro-modal .intro-problem { padding: 8px; gap: 4px; }
   .intro-modal .ip-val { font-size: 1.25rem; }
   .intro-modal .ip-impact { font-size: var(--vc-font-size-sm); }
 }
-
-/* ---- the scenario menu: the scenario the five-minute demonstration starts with ---------------------- */
-.chip[data-tone="start-here"] { color: var(--vc-accent-text); border-color: var(--vc-accent-soft-hover); background: var(--vc-accent-soft); font-weight: 600; }

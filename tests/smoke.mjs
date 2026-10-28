@@ -57,7 +57,7 @@ async function finish(name, { context, page, log }, checks, expectations, allowC
 
 const shot = (page, file) => page.screenshot({ path: path.join(OUT, file) });
 const boot = async (page) => { await page.goto(BASE); await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 }); };
-const pickScenario = async (page, id) => { await page.click("#dd-scenario"); await page.click(`.menu-item[data-id="${id}"]`); await page.waitForTimeout(500); };
+const pickScenario = async (page, id) => { await page.click("#dd-scenario"); await page.click(`.vc-menu__item[data-id="${id}"]`); await page.waitForTimeout(500); };
 /**
  * Vici's keyboard focus ring on the element a selector names (the index-th match), focused first: an
  * outline of 2 px or more in the focus colour (--vc-focus), or, on a hexagon, a hexagonal ring that its
@@ -99,13 +99,13 @@ if (wanted("sim")) {
     await page.waitForTimeout(2500);
     checks.badgeSim = (await page.textContent("#mode-badge")).trim();
     checks.watermarkVisible = await page.isVisible(".sim-watermark");
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 180000 });
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 180000 });
     await page.waitForTimeout(800);
     await shot(page, "03-options.png");
     checks.optionCards = await page.$$eval(".option-card", (els) => els.map((e) => `${e.dataset.kind}:${e.querySelector(".option-total .value")?.textContent}`));
     checks.approveButtonsVisibleWithoutScroll = await page.evaluate(() => {
       const body = document.querySelector(".drawer-body").getBoundingClientRect();
-      return [...document.querySelectorAll(".option-actions .btn")].every((b) => { const r = b.getBoundingClientRect(); return r.top >= body.top && r.bottom <= body.bottom; });
+      return [...document.querySelectorAll(".option-actions button")].every((b) => { const r = b.getBoundingClientRect(); return r.top >= body.top && r.bottom <= body.bottom; });
     });
     // The finding on the alignment view: every channel contradicts the source, the impact is the
     // verified figure, and the caption says the result was verified against the source.
@@ -129,7 +129,7 @@ if (wanted("sim")) {
     checks.flagRing = await page.evaluate(viciRing, ['#mirror .mrow[data-side="source"][data-flag]']);
     checks.flagBar = await page.evaluate(() => getComputedStyle(document.querySelector('#mirror .mrow[data-side="source"][data-flag]')).boxShadow);
     await page.click('#mirror .mirror-tools button:has-text("Alignment")');
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     // The mirror follows the decision: the re-published channels turn green, the tiles show what is left.
     await page.waitForSelector('#mirror .al-channel[data-tone="resolved"]', { timeout: 15000 });
     checks.payoff = await page.evaluate(() => ({
@@ -285,11 +285,11 @@ if (wanted("diag")) {
     await page.waitForFunction(() => document.querySelectorAll('.diag-status[data-s="pass"]').length >= 2, null, { timeout: 10000 });
     await shot(page, "12-diagnostics.png");
     checks.localRows = await page.$$eval(".diag-table tbody tr", (rows) => rows.map((r) => `${r.querySelector("strong")?.textContent}:${r.querySelector(".diag-status")?.dataset.s}`).filter((x) => /World|privacy/.test(x)));
-    checks.footer = await page.$eval(".modal-foot .left", (e) => e.textContent.trim());
+    checks.footer = await page.$eval(".vc-dialog__footer .dialog-note", (e) => e.textContent.trim());
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
     await page.click("#dd-scenario");
-    await page.click('.menu-item[data-id="custom"]');
+    await page.click('.vc-menu__item[data-id="custom"]');
     await page.waitForSelector("#custom-scenario");
     await page.fill("#custom-scenario", "Does RE 10109 still stop at Leverkusen Mitte this morning, as the journey planner says?");
     await page.click('button:has-text("Use this scenario")');
@@ -328,7 +328,7 @@ if (wanted("intro")) {
     await page.waitForTimeout(200);
     checks.focus = await page.evaluate(() => document.activeElement?.textContent?.trim());
     await shot(page, "20-intro.png");
-    await page.click('.intro-modal .modal-foot button:has-text("Close")');
+    await page.click('.intro-modal .vc-dialog__footer button:has-text("Close")');
     await page.waitForSelector(".intro-modal", { state: "detached", timeout: 3000 });
     checks.flag = await page.evaluate((k) => localStorage.getItem(k), KEYS.introSeen);
     await page.reload();
@@ -341,7 +341,7 @@ if (wanted("intro")) {
     await page.keyboard.press("Escape");
     await page.waitForSelector(".intro-modal", { state: "detached", timeout: 3000 });
     await page.click("#btn-about");
-    await page.click('.intro-modal .modal-foot button:has-text("Start agent")');
+    await page.click('.intro-modal .vc-dialog__footer button:has-text("Start agent")');
     await page.waitForSelector(".mode-card", { timeout: 5000 });
     checks.startOpensModeChoice = await page.$$eval(".mode-card", (els) => els.map((e) => e.dataset.mode).join(","));
     // During a run the window only explains: Close is its only button and the run carries on.
@@ -349,7 +349,7 @@ if (wanted("intro")) {
     await page.waitForTimeout(1200);
     await page.click("#btn-about");
     await page.waitForSelector(".intro-modal", { timeout: 3000 });
-    checks.duringRunButtons = await page.$$eval(".intro-modal .modal-foot button", (els) => els.map((e) => e.textContent.trim()));
+    checks.duringRunButtons = await page.$$eval(".intro-modal .vc-dialog__footer button", (els) => els.map((e) => e.textContent.trim()));
     await page.keyboard.press("Escape");
     checks.statusAfterClose = (await page.textContent(".status-pill .text")).trim();
     await page.click("#btn-abort");

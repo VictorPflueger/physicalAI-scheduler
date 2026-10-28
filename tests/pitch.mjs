@@ -90,7 +90,7 @@ async function newPage({ intro = false, viewport = { width: 1600, height: 900 } 
 
 const alignState = (page) => page.evaluate(() => ({
   view: document.getElementById("mirror").dataset.view,
-  pressed: [...document.querySelectorAll("#mirror .mirror-tools .btn[aria-pressed='true']")].map((b) => b.textContent.trim()),
+  pressed: [...document.querySelectorAll("#mirror .mirror-tools button[aria-pressed='true']")].map((b) => b.textContent.trim()),
   facts: [...document.querySelectorAll("#mirror .al-source .al-fact")].map((e) => e.textContent.trim()),
   channels: [...document.querySelectorAll("#mirror .al-channel")].map((c) => ({
     channel: c.dataset.channel, name: c.querySelector(".al-ch-name").textContent.trim(), tone: c.dataset.tone, verdict: c.dataset.verdict,
@@ -109,14 +109,14 @@ const alignState = (page) => page.evaluate(() => ({
 async function startSimulation(page, speed) {
   await page.click(`button[aria-label="Replay speed ×${speed}"]`);
   await page.click("#dd-scenario");
-  await page.click(`.menu-item[data-id="${SC.id}"]`);
+  await page.click(`.vc-menu__item[data-id="${SC.id}"]`);
   await page.click("#btn-start");
   await page.waitForSelector(".mode-card", { timeout: 5000 });
   const t0 = Date.now();
   await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
   return t0;
 }
-const waitOptions = (page, timeout = 120000) => page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout });
+const waitOptions = (page, timeout = 120000) => page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout });
 const letterOf = (v) => ({ V1: "A", V2: "B", V3: "C" }[v]);
 
 function finish(name, checks, problems, errors) {
@@ -219,8 +219,8 @@ if (run("decisions")) {
     try {
       await startSimulation(page, 4);
       await waitOptions(page);
-      if (choice === "baseline") await page.click('.option-card[data-kind="baseline"] .option-actions .btn');
-      else await page.click(`.option-card[aria-label^="Option ${letterOf(choice)}:"] .btn-approve`);
+      if (choice === "baseline") await page.click('.option-card[data-kind="baseline"] .option-actions button');
+      else await page.click(`.option-card[aria-label^="Option ${letterOf(choice)}:"] [data-action="approve"]`);
       await page.waitForSelector(".action-card[data-status='pending']", { timeout: 60000 });
       await page.waitForTimeout(600);
       const s = await alignState(page);
@@ -321,7 +321,7 @@ if (run("intro")) {
       await page.waitForSelector(".intro-modal", { timeout: 5000 });
       await page.waitForTimeout(400);
       const m = await page.evaluate(() => {
-        const body = document.querySelector(".intro-modal .modal-body");
+        const body = document.querySelector(".intro-modal .vc-dialog__body");
         return {
           heads: [...body.querySelectorAll("h3")].map((x) => x.textContent.trim()),
           example: body.querySelector(".intro-problem")?.textContent.replace(/\s+/g, " ").trim() || "",
@@ -329,7 +329,7 @@ if (run("intro")) {
           told: body.querySelector('.ip-row[data-kind="told"] .ip-val')?.textContent.trim() || "",
           steps: body.querySelectorAll(".intro-step").length,
           values: body.querySelectorAll(".intro-value li").length,
-          lead: document.querySelector(".intro-modal .modal-head p")?.textContent || "",
+          lead: document.querySelector(".intro-modal .vc-dialog__header .dialog-lead")?.textContent || "",
           words: (() => {
             // Words a visitor can read in the window: visible text, not aria-hidden (the step numbers).
             let n = 0;
@@ -400,7 +400,7 @@ if (run("cards")) {
     // The panel's lead is one short sentence.
     checks.lead = await page.$eval(".options-summary > p", (p) => p.textContent.trim());
     if (checks.lead.split(/\s+/).length > 14 || (checks.lead.match(/[.;]/g) || []).length > 2) problems.push(`the options lead is long: "${checks.lead}"`);
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     await page.waitForSelector(".action-card[data-status='pending']", { timeout: 60000 });
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 60000 });
     await page.waitForTimeout(800);

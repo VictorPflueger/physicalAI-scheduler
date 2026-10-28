@@ -27,10 +27,11 @@ const PHASES = new Set(["awaiting_approval"]);
 const TEXT_SIZE_KEY = STORAGE.consoleText;
 
 export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport, onSaveSimulation } = {}) {
-  const count = h("span", { class: "count num" }, "");
-  const jumpBtn = h("button", { class: "btn btn-sm", type: "button", hidden: true }, icon("chevronDown", 16), "Jump to latest");
+  const count = h("span", { class: "count vc-tabular" }, "");
+  const jumpBtn = h("button", { class: "vc-button vc-button--outline button-compact", type: "button", hidden: true }, icon("chevronDown", 16), "Jump to latest");
   // Larger text for projectors, remembered per browser (a convenience; storage may be unavailable).
-  const sizeBtn = h("button", { class: "btn btn-sm btn-ghost text-size", type: "button", "aria-pressed": "false", title: "Larger console text for projectors" }, "Larger text");
+  // A toggle the app owns (aria-pressed): Vici shows any pressed vc-button in its pressed look.
+  const sizeBtn = h("button", { class: "vc-button vc-button--ghost button-compact text-size", type: "button", "aria-pressed": "false", title: "Larger console text for projectors" }, "Larger text");
   const applySize = (large) => {
     panel.dataset.text = large ? "large" : "standard";
     sizeBtn.setAttribute("aria-pressed", String(large));
@@ -261,13 +262,16 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     const evidence = Array.isArray(p.evidence) && p.evidence.length
       ? h("p", { class: "alert-evidence" }, h("strong", {}, "Checked in this run: "), p.evidence.join("; "), ".")
       : null;
-    const card = h("div", { class: "alert-card", dataset: { severity: sev, basis: whatIf ? "what_if" : "verified" } },
+    // A Vici alert: danger for a verified finding of high severity, warning below that, lilac (the
+    // AI's tone) for a what-if exercise.
+    const tone = whatIf ? "vc-alert--feature" : sev === "medium" || sev === "low" ? "vc-alert--warning" : "vc-alert--danger";
+    const card = h("div", { class: ["vc-alert", tone, "alert-card"], dataset: { severity: sev, basis: whatIf ? "what_if" : "verified" } }, h("div", { class: "vc-alert__body" },
       h("div", { class: "alert-sev" }, whatIf ? `What-if exercise (not a verified finding), severity ${sev}` : `Alert, severity ${sev}`),
       h("h3", {}, p.title || "Customer information alert"),
       p.summary ? renderInline(p.summary, h("div")) : null,
       sources || evidence
         ? h("details", { class: "alert-more" }, h("summary", {}, icon("chevronRight", 14), "Sources and checks"), sources, evidence)
-        : null);
+        : null));
     add(entry("alert", ev.t, "alert", card));
   });
 
@@ -291,7 +295,7 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     const n = ev.payload.options?.length || 0;
     add(entry("narration", ev.t, "list", h("div", {},
       h("p", {}, `${n} costed options and the do-nothing baseline are ready for your decision.`),
-      h("button", { class: "btn btn-sm btn-primary", type: "button", on: { click: () => onOpenOptions?.() } }, "Review options"))));
+      h("button", { class: "vc-button button-compact", type: "button", on: { click: () => onOpenOptions?.() } }, "Review options"))));
   });
 
   bus.on("option_decision", (ev) => {
@@ -309,7 +313,7 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     const p = ev.payload;
     add(entry("narration", ev.t, DRAFT_ICON[p.type] || "memo", h("div", {},
       h("p", { title: `For ${p.recipient}` }, `Drafted the ${(DRAFT_LABEL[p.type] || "draft").toLowerCase()}: “${p.subject}”.`),
-      h("button", { class: "btn btn-sm", type: "button", on: { click: () => onOpenOutbox?.() } }, "Open outbox"))));
+      h("button", { class: "vc-button vc-button--outline button-compact", type: "button", on: { click: () => onOpenOutbox?.() } }, "Open outbox"))));
   });
 
   bus.on("action_decision", (ev) => {
@@ -324,11 +328,11 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     sawReport = true;
     const md = String(ev.payload.markdown || "");
     const heading = (md.match(/^#{1,3}\s+(.+)$/m) || [])[1] || "Management summary";
-    const card = h("div", { class: "report-card" },
+    const card = h("div", { class: "vc-card report-card" },
       aiLabel("report"),
       h("h3", { class: "report-head" }, heading),
       h("div", { class: "report-actions" },
-        h("button", { class: "btn btn-sm btn-primary", type: "button", on: { click: () => onOpenReport?.(ev.payload.markdown) } }, icon("external", 16), "Open management summary")),
+        h("button", { class: "vc-button button-compact", type: "button", on: { click: () => onOpenReport?.(ev.payload.markdown) } }, icon("external", 16), "Open management summary")),
       h("details", { class: "report-full" }, h("summary", {}, icon("chevronRight", 14), "Read it here"), renderMarkdown(md)));
     add(entry("report", ev.t, "check", card));
   });
@@ -359,7 +363,7 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
       // The run's facts (tool calls, checks, cost) are one click away: the audience reads "Run complete".
       facts ? h("details", { class: "run-facts" }, h("summary", {}, icon("chevronRight", 14), runMeta?.mode === "simulation" ? "Replay facts" : "Run facts"), h("p", {}, facts)) : null,
       canSave ? h("div", { class: "entry-actions" },
-        h("button", { class: "btn btn-sm", type: "button", title: "Download this run as a simulation script that can replace the scripted replay of this scenario", on: { click: () => onSaveSimulation?.() } }, icon("download", 16), "Save run as simulation")) : null),
+        h("button", { class: "vc-button vc-button--outline button-compact", type: "button", title: "Download this run as a simulation script that can replace the scripted replay of this scenario", on: { click: () => onSaveSimulation?.() } }, icon("download", 16), "Save run as simulation")) : null),
     { level: status === "error" ? "error" : "info" }));
     for (const el of byMsg.values()) { el.classList.remove("streaming"); el.removeAttribute("aria-busy"); }
   });

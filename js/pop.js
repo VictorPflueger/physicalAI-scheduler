@@ -1,4 +1,4 @@
-// Popovers on the timetable mirror: one at a time, with the same paper card as the sister apps' popups
+// Popovers on the timetable mirror: one at a time, in Vici's popover look as the sister apps' popups
 // and a tip pointing at what it explains. A row of either timetable or a station of the corridor strip
 // gets its popover beside it; with placement "below" it opens under a reference element, its tip at
 // the element it explains, and beside that element when the mirror is too short for it (the drawer
@@ -6,7 +6,7 @@
 // Opens with a click or Enter; closes with its button, Escape or a click elsewhere, and gives focus
 // back to what opened it, found again by its key when the mirror has redrawn it meanwhile.
 
-import { h } from "./dom.js";
+import { h, withTooltip } from "./dom.js";
 import { icon } from "./icons.js";
 
 const PAD = 12;   // distance to the mirror's edges
@@ -17,9 +17,9 @@ const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
 /** host: the mirror; resolve(key): the element that stands for a key now (after a redraw), or null. */
 export function createPopover(host, { resolve = null } = {}) {
-  const close = h("button", { class: "btn btn-ghost btn-icon pop-close", type: "button", "aria-label": "Close details" }, icon("x", 18));
+  const close = h("button", { class: "vc-icon-button pop-close", type: "button" }, icon("x", 18));
   const body = h("div", { class: "pop-body" });
-  const el = h("div", { class: "mirror-pop", hidden: true, role: "dialog", tabindex: "-1" }, close, body);
+  const el = h("div", { class: "mirror-pop", hidden: true, role: "dialog", tabindex: "-1" }, withTooltip(close, "Close details", { below: true }), body);
   host.appendChild(el);
   let trigger = null;
   let key = null;

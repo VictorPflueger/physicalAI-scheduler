@@ -76,8 +76,9 @@ export function createCard({ onSource, onCustomer, onChannel }) {
   let lastStates = new Map();
   let current = null;
 
+  // What the agent read: a Vici tag in fjord, the tone of checking.
   function checkTag(text, kind) {
-    return h("span", { class: "check-tag", dataset: { kind } }, icon("check", 12), text);
+    return h("span", { class: "vc-tag vc-tag--info check-tag", dataset: { kind } }, icon("check", 12), text);
   }
 
   function renderHead(view, ctx) {

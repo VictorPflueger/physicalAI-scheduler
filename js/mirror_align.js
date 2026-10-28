@@ -86,7 +86,7 @@ const fmt = (x) => `${Math.round(Number(x) * 10) / 10}`;
 
 export function createAlign({ onChannel, onSource } = {}) {
   // ---- column 1: the source and the sensors ------------------------------------------------------------
-  const srcTag = h("span", { class: "al-tag" });
+  const srcTag = h("span", { class: "vc-tag vc-tag--info al-tag" });
   const srcStop = h("span", { class: "al-stop" });
   const srcFacts = h("span", { class: "al-facts" });
   const srcChange = h("span", { class: "al-change" });
@@ -96,7 +96,7 @@ export function createAlign({ onChannel, onSource } = {}) {
     srcStop, srcFacts, srcChange);
   source.addEventListener("click", () => onSource?.());
 
-  const senTag = h("span", { class: "al-tag" });
+  const senTag = h("span", { class: "vc-tag vc-tag--info al-tag" });
   const senList = h("ul", { class: "al-obs" });
   const senEmpty = h("p", { class: "al-empty" }, "Not read yet");
   const sensors = h("div", { class: "al-card al-sensors" },
@@ -136,7 +136,7 @@ export function createAlign({ onChannel, onSource } = {}) {
   const linkOut = h("span", { class: "al-link", dataset: { link: "out" }, "aria-hidden": "true" });
 
   // ---- the impact line ---------------------------------------------------------------------------------
-  const impNum = h("span", { class: "al-impact-num num" });
+  const impNum = h("span", { class: "al-impact-num vc-tabular" });
   const impText = h("span", { class: "al-impact-text" });
   // The spaces between the parts are real text, so a screen reader and a copy read "312 passengers".
   const impact = h("div", { class: "al-impact", role: "status", "aria-live": "polite" }, icon("users", 20), impNum, " ", impText);
@@ -190,7 +190,7 @@ export function createAlign({ onChannel, onSource } = {}) {
     senEmpty.textContent = reading.physical ? "Reading the sensors…" : read.physical ? "No reading bears on this train" : "Not read yet";
     // One reading, the one that bears most on the train; the others are in its tooltip and the timetables.
     const more = obs.slice(1).map((o) => `\n${o.time ? `${o.time} ` : ""}${o.source}: ${o.full}`).join("");
-    senList.replaceChildren(...obs.slice(0, 1).map((o) => h("li", { title: `${o.source}: ${o.full}${more}` }, o.time ? h("span", { class: "al-time num" }, o.time) : null, o.time ? " " : null, h("span", {}, o.text))));
+    senList.replaceChildren(...obs.slice(0, 1).map((o) => h("li", { title: `${o.source}: ${o.full}${more}` }, o.time ? h("span", { class: "al-time vc-tabular" }, o.time) : null, o.time ? " " : null, h("span", {}, o.text))));
     senList.hidden = !obs.length;
     setTag(senTag, reading.physical ? ["checking", "Reading…"] : obs.length ? ["ok", "Confirms the source"] : null);
 
@@ -246,6 +246,7 @@ export function createAlign({ onChannel, onSource } = {}) {
     if (data.more) impText.append(h("span", { class: "al-more" }, ` · ${data.more} more ${data.more === 1 ? "stop" : "stops"} in the timetables`));
   }
 
+  // What the AI reads and what confirms the source: Vici tags in fjord, the tone of checking.
   function setTag(el, spec) {
     el.hidden = !spec;
     if (!spec) return;

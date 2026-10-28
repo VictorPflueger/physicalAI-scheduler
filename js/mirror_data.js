@@ -9,6 +9,9 @@ import {
 import { customerView } from "./sync.js";
 
 export const CHANNEL_SHORT = { planner: "Planner", displays: "Displays", announcements: "Announcements", coach: "Coach order" };
+// The tones of the mirror's tags, as Vici's tag modifiers: lilac for the agent's own figures, fjord for
+// what was read and checked, and the state tones.
+export const TAG_TONE = { ai: "vc-tag--feature", info: "vc-tag--info", risk: "vc-tag--warning", danger: "vc-tag--danger", approved: "vc-tag--success" };
 const PASSENGER = new Set(["start", "stop", "end"]);
 
 /** The source rows of a train with what changed against the base timetable. */

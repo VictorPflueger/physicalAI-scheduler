@@ -256,7 +256,7 @@ if (run("full")) {
     await page.screenshot({ path: path.join(OUT, "L1-live-alert.png") });
     // textContent: the sources and checks sit under a closed disclosure.
     checks.alert = await page.$eval(".alert-card", (e) => `${e.dataset.basis}|${e.textContent.replace(/\s+/g, " ").slice(0, 900)}`);
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 30000 });
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 30000 });
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, "L2-live-options.png") });
     checks.optionTotals = await page.$$eval(".option-card", (els) => els.map((e) => e.querySelector(".option-total .value")?.textContent));
@@ -264,10 +264,10 @@ if (run("full")) {
     checks.alignBefore = await alignTones(page);
     checks.mirrorBefore = `${await page.textContent("#mirror .mirror-caption strong")}|${await page.textContent("#mirror .cap-chip")}|${await mirrorRow(page, "customer", "KK")}|${await mirrorRow(page, "source", "KK")}`;
     // Reject option B first, then approve the recommended option A.
-    await page.click('.option-card[aria-label^="Option B:"] .btn-reject');
+    await page.click('.option-card[aria-label^="Option B:"] [data-action="reject"]');
     await page.waitForFunction(() => document.querySelector('.option-card[aria-label^="Option B:"]')?.dataset.status === "rejected", null, { timeout: 5000 });
     await page.waitForFunction(() => [...document.querySelectorAll("#console .entry")].some((e) => /Option B rejected/.test(e.textContent)), null, { timeout: 15000 });
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     await page.waitForTimeout(400);
     checks.payoffPax = await page.$eval("#kpi-pax-value", (e) => `${e.closest(".kpi").dataset.tone}|${e.textContent}|${e.nextElementSibling.textContent}`);
     checks.payoffFirst = await page.$eval("#kpi-first-value", (e) => `${e.closest(".kpi").dataset.tone}|${e.textContent}|${e.nextElementSibling.textContent}`);
@@ -281,10 +281,10 @@ if (run("full")) {
     checks.draftFooter = await page.$$eval(".action-body", (els) => els.length > 0 && els.every((e) => e.textContent.includes("Requires human approval before publishing") && /Source reference: ICE 618: source v2 \(OPS-05\)/.test(e.textContent)));
     checks.draftTypedTime = await page.$$eval(".action-body", (els) => els.some((e) => e.textContent.includes("07:44")));
     // Approve the first draft, reject the last.
-    const approveButtons = await page.$$(".action-card .action-buttons .btn-approve");
+    const approveButtons = await page.$$(".action-card .action-buttons [data-action='approve']");
     await approveButtons[0].click();
     await page.waitForTimeout(200);
-    const rejectButtons = await page.$$(".action-card .action-buttons .btn-reject");
+    const rejectButtons = await page.$$(".action-card .action-buttons [data-action='reject']");
     await rejectButtons[rejectButtons.length - 1].click();
     await page.waitForSelector('button:has-text("Open management summary")', { timeout: 30000 });
     await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 15000 });
@@ -339,14 +339,14 @@ if (run("full")) {
     await page.click("#btn-start");
     await page.waitForSelector(".mode-card");
     await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 60000 });
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 60000 });
     checks.replayWatermark = (await page.textContent(".sim-watermark")).replace(/\s+/g, " ").trim();
     checks.replayBadge = (await page.textContent("#mode-badge")).trim();
     checks.replayOptions = await page.$$eval(".option-card", (els) => els.map((e) => `${e.querySelector(".option-letter")?.textContent}:${e.querySelector(".option-title")?.textContent}:${e.querySelector(".option-total .value")?.textContent}`));
     checks.replayLookups = await page.$$eval("#console .result-summary", (els) => els.map((e) => e.textContent).filter((x) => /PHY-01|OPS-05|source v2/.test(x)).length);
     checks.replayMirror = await mirrorRow(page, "customer", "KK");
     await page.screenshot({ path: path.join(OUT, "L7-replay-options.png") });
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     await page.waitForSelector('button:has-text("Approve all")', { state: "visible", timeout: 60000 });
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 60000 });
     await page.click('button:has-text("Approve all")');
@@ -365,8 +365,8 @@ if (run("full")) {
     await page.click("#btn-start");
     await page.waitForSelector(".mode-card");
     await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 60000 });
-    await page.click('.option-card[aria-label^="Option C:"] .btn-approve');
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 60000 });
+    await page.click('.option-card[aria-label^="Option C:"] [data-action="approve"]');
     await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 60000 });
     checks.replayOtherPath = await page.evaluate(() => [...document.querySelectorAll("#console .entry")].map((e) => e.innerText).find((x) => /only the path recorded/.test(x))?.replace(/\s+/g, " ").slice(0, 120) || null);
   } catch (e) {
@@ -464,20 +464,20 @@ if (run("guards")) {
   const checks = {};
   try {
     await startLive(page);
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 30000 });
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 30000 });
     checks.discarded = await page.$$eval('#console .entry[data-discarded="true"]', (els) => els.length);
     checks.alert = await page.$eval(".alert-card", (e) => e.dataset.basis);
-    await page.click('.option-card[aria-label^="Option C:"] .btn-reject');
+    await page.click('.option-card[aria-label^="Option C:"] [data-action="reject"]');
     // The agent recalculates and proposes again (B recommended now); a click on the old set must not count.
     await page.waitForSelector('.option-card[data-recommended="true"][aria-label^="Option B:"]', { timeout: 20000 });
     await page.evaluate(async () => (await import("./js/events.js")).bus.emit("option_decision", { option_id: "V2", option_label: "Option B (old set)", decision: "approved", options_seq: 1, by: "user" }));
     await page.waitForTimeout(300);
     checks.staleIgnoredOnCards = await page.$$eval(".option-card", (els) => els.every((e) => !e.dataset.status));
-    await page.click('.option-card[aria-label^="Option A:"] .btn-approve');
-    await page.waitForSelector('.action-card[data-status="pending"] .btn-approve', { state: "visible", timeout: 30000 });
+    await page.click('.option-card[aria-label^="Option A:"] [data-action="approve"]');
+    await page.waitForSelector('.action-card[data-status="pending"] [data-action="approve"]', { state: "visible", timeout: 30000 });
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 30000 });
     checks.drafts = await page.$$eval(".action-card", (els) => els.map((e) => e.querySelector(".action-meta span")?.textContent));
-    await page.click('.action-card[data-status="pending"] .btn-approve');
+    await page.click('.action-card[data-status="pending"] [data-action="approve"]');
     await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill .text")?.textContent || ""), null, { timeout: 30000 });
     checks.runFacts = await page.evaluate(lastLineWithFacts);
     checks.guardLines = await page.$$eval("#console .entry[data-guard]", (els) => els.map((e) => e.dataset.guard));
@@ -525,10 +525,10 @@ if (run("race")) {
   const checks = {};
   try {
     await startLive(page);
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 20000 });
-    await page.click('.option-card[aria-label^="Option A:"] .btn-reject');
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 20000 });
+    await page.click('.option-card[aria-label^="Option A:"] [data-action="reject"]');
     await page.waitForTimeout(150);
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 20000 });
     checks.messageHasMockLine = await page.$$eval(".action-card .action-body", (els) => els.map((e) => e.textContent).some((x) => /Mock publication for demonstration; no passenger information system is connected\./.test(x)));
     checks.mirrorAfter = await mirrorRow(page, "customer", "KK");

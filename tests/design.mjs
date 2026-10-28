@@ -99,10 +99,10 @@ async function toOptions(page) {
   await page.click("#btn-start");
   await page.waitForSelector(".mode-card");
   await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
-  await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 120000 });
+  await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 120000 });
 }
 async function toDrafts(page) {
-  await page.click('.option-card[data-recommended="true"] .btn-approve');
+  await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
   await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 120000 });
 }
 async function toDone(page) {
@@ -136,7 +136,7 @@ if (wanted("states")) {
     if (!after.hidden || !after.focus) problems.push(`AI label after Escape: ${JSON.stringify(after)}`);
 
     // Approving the option hands the next step to the drafts.
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     await page.waitForFunction(() => document.querySelector(".status-pill .text")?.textContent.trim() !== "Awaiting your decision", null, { timeout: 5000 });
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 120000 });
     await waitPill(page, /^Awaiting your approval$/);
@@ -177,9 +177,9 @@ if (wanted("states")) {
     // An option that only informs leaves the data behind: the warning tone.
     await page.click("#btn-reset");
     await page.click("#dd-scenario");
-    await page.click('.menu-item[data-id="SC-OPSSTOP"]');
+    await page.click('.vc-menu__item[data-id="SC-OPSSTOP"]');
     await toOptions(page);
-    await page.click('.option-card[aria-label^="Option B:"] .btn-approve');
+    await page.click('.option-card[aria-label^="Option B:"] [data-action="approve"]');
     await page.waitForTimeout(800);
     const warning = await mirrorColours(page);
     problems.push(...warning.mismatches.map((m) => `informed only: ${m}`));
