@@ -10,6 +10,8 @@
 //                and of a station (Escape returns the focus), the channel chips, the legend and its
 //                toggles, focus kept across a redraw, all trains (a row opens its train and the focus
 //                follows); every control at least 40 px; nothing loads from outside
+//   byline       Vici's byline in the drawer bar: Built by, the portrait, LinkedIn's logo and the
+//                website as 44 px links in new tabs; no link to the source code anywhere in the app
 //   motion       reduced motion: a Simulation run shows the mirror's final state at once, no motion
 //   file         opened from file://: the page explains how to start a server
 //   missing-data a data file is missing: the boot screen names it
@@ -511,6 +513,52 @@ if (wanted("mirror")) {
     [checks.afterRow === "train:ICE 1026 · Berlin Hbf → Köln Hbf" && /mrow\|source\|/.test(checks.focusAfterRow || ""), `a monitor row opens its train and the focus follows (${checks.afterRow}; ${checks.focusAfterRow})`],
     [(checks.small || []).length === 0, `every mirror control is at least 40 px (${checks.small})`],
     [(checks.external || []).length === 0, `nothing loads from outside (${checks.external})`]
+  ]);
+}
+
+// ---- byline: Vici's byline in the drawer bar ---------------------------------------------------------
+if (wanted("byline")) {
+  const t = await newPage();
+  const { page } = t;
+  const checks = {};
+  try {
+    await boot(page);
+    await page.waitForFunction(() => [...document.querySelectorAll(".drawer-tabs .vc-byline img")].every((i) => i.complete), null, { timeout: 5000 });
+    checks.byline = await page.evaluate(() => {
+      const b = document.querySelector(".drawer-tabs .vc-byline");
+      if (!b) return null;
+      const img = (sel) => b.querySelector(sel);
+      return {
+        label: b.querySelector(".vc-byline__label")?.textContent,
+        name: b.querySelector(".vc-byline__person .vc-byline__name")?.textContent,
+        portrait: img(".vc-byline__person .vc-avatar.vc-avatar--xs > img")?.getAttribute("src"),
+        portraitShown: img(".vc-avatar > img")?.naturalWidth || 0,
+        mark: img(".vc-byline__links a .vc-platform-mark")?.getAttribute("src"),
+        markShown: img(".vc-byline__links a .vc-platform-mark")?.naturalWidth || 0,
+        globe: !!b.querySelector('.vc-byline__links a .vc-icon.vc-icon--globe-hex[aria-hidden="true"]'),
+        links: [...b.querySelectorAll("a")].map((a) => {
+          const r = a.getBoundingClientRect();
+          return { href: a.getAttribute("href"), target: a.target, rel: a.rel, label: a.getAttribute("aria-label"), w: Math.round(r.width), h: Math.round(r.height) };
+        })
+      };
+    });
+    // The app links to its author, never to its own source code.
+    checks.sourceLinks = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")).filter((href) => /github\.com/i.test(href)));
+    await shot(page, "22-byline.png");
+  } catch (err) {
+    checks.FAILED = String(err.message).split("\n")[0];
+    await shot(page, "byline-fail.png");
+  }
+  const b = checks.byline || {};
+  const links = b.links || [];
+  await finish("byline: Vici's byline in the drawer bar", t, checks, [
+    [b.label === "Built by" && b.name === "Victor Pflüger", "Built by, then Victor's name"],
+    [b.portrait === "vici/assets/brand/portrait-96.jpg" && b.portraitShown > 0, "his hexagon portrait, Vici's file"],
+    [b.mark === "vici/assets/marks/linkedin.png" && b.markShown > 0 && b.globe, "LinkedIn's own logo file and the website's globe"],
+    [links.length === 2 && links[0].href === "https://www.linkedin.com/in/victorpflueger" && links[1].href === "https://victorpflueger.github.io/VIP/index.html"
+      && links.every((l) => l.target === "_blank" && l.rel === "author noopener" && /\(opens in a new tab\)$/.test(l.label || "")), "LinkedIn and the website, each in a new tab and named for screen readers"],
+    [links.length === 2 && links.every((l) => l.w >= 44 && l.h >= 44), `both links are 44 px targets (${links.map((l) => `${l.w}×${l.h}`).join(", ")})`],
+    [Array.isArray(checks.sourceLinks) && !checks.sourceLinks.length, `no link to the source code in the app (${checks.sourceLinks})`]
   ]);
 }
 
