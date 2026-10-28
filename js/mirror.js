@@ -10,7 +10,7 @@
 //                 the agent's check found (the sync monitor).
 // The mirror listens to the run events itself: it focuses the train the agent works on, pulses what a
 // lookup reads (the source column, a channel, the station of a sensor reading), badges what a result
-// confirmed, colours the contradictions of the agent's sim_sync results (red, or violet for a
+// confirmed, colours the contradictions of the agent's sim_sync results (red, or the AI's lilac for a
 // what-if), follows what alerts and marks (ui_mark_mirror) say, and turns the contradictions an
 // approved option re-publishes green (amber where it only informs, or where the risk is accepted).
 // Both producers emit the same events, so a simulated and a live run look the same. Every figure
@@ -757,6 +757,9 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   if (typeof ResizeObserver === "function") {
     new ResizeObserver(() => { sizeClass(); render(); }).observe(container);
   }
+  // The mirror's colours come from Vici's tokens through its classes, so a new theme repaints it; it
+  // still redraws, so that anything drawn from a measured style follows the theme too.
+  document.addEventListener("vc:themechange", () => render());
 
   // ---- legend --------------------------------------------------------------------------------------------
   function buildLegend() {

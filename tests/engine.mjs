@@ -20,7 +20,7 @@
 //   texts       placeholders, journeys in German and English, draft safety lines, decision payoff
 //   alignment   the alignment view's data for all six scenarios: the stop of the most urgent
 //               contradiction, the source's values there, each channel's value and the verdict the
-//               engine gives (none before a result, none outside a first estimate's scope, violet
+//               engine gives (none before a result, none outside a first estimate's scope, lilac
 //               for a what-if), the impact as the engine's misinformed figure; the sensor readings
 //               that bear on a train; the plain sentence for each tool call
 // A change that moves a figure must be deliberate: update the golden value and say why in the commit.
@@ -570,7 +570,7 @@ const GOLDEN = {
   assert.deepEqual(pitch.channels.map((c) => `${c.channel}:${c.values.map((v) => v.text).join("+")}:${c.verdict}`), ["planner:Platform 5:wrong", "displays:Platform 5:wrong", "announcements:Platform 5:wrong", "coach:1st class G–H:wrong"]);
   assert.equal(pitch.change.text, "Changed 07:21 · Fahrdienstleiter Köln Hbf");
   assert.equal(pitch.change.id, "OPS-05");
-  // A what-if is violet, never wrong.
+  // A what-if is lilac, never wrong.
   const wi = compactForModel(simulateSync(model, { train_ids: ["RE 10109"], what_if: { changes: [{ train: "RE 10109", op: "skip", point: "KLMI" }] } }));
   const w = alignmentData(model, "T-10109", { result: wi, basisKey: "what_if" });
   assert.ok(w.whatIf && w.channels.some((c) => c.verdict === "what_if") && w.channels.every((c) => c.verdict !== "wrong"));

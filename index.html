@@ -8,8 +8,7 @@
        the app loads nothing from a third party. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.anthropic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light dark">
   <meta name="description" content="The Timetable Translator is an AI agent between the operational timetable and the customer timetable: it derives what passengers should be told from the single source, finds where published information contradicts it, confirms it with the physical layer, and proposes costed responses for human approval.">
   <title>Timetable Translator — two timetables, one truth</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -25,6 +24,8 @@
   <link rel="stylesheet" href="css/drawer.css">
   <link rel="stylesheet" href="css/modals.css">
 
+  <!-- The theme before the page is drawn (light unless the visitor chose dark), then Vici's script. -->
+  <script src="js/theme.js"></script>
   <script src="vici/dist/vici.js" defer></script>
 
   <!-- Operating snapshot and scripted replays: plain scripts that set window globals (no fetch needed). -->
@@ -48,6 +49,11 @@
 
     <div class="header-badges">
       <span id="mode-badge" class="vc-tag mode-badge" data-mode="none" role="status" aria-live="polite" title="Choose a mode with Start agent">No run active</span>
+      <!-- Vici's theme toggle (vici.js switches the theme and remembers the choice). -->
+      <span class="vc-tooltip-anchor">
+        <button type="button" class="vc-icon-button theme-toggle" data-vc-theme-toggle aria-labelledby="tip-theme"><span class="vc-icon vc-icon--moon vc-when-light" aria-hidden="true"></span><span class="vc-icon vc-icon--sun vc-when-dark" aria-hidden="true"></span></button>
+        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-theme">Dark theme</span>
+      </span>
       <span class="vc-tag vc-tag--feature ai-disclosure" title="The Timetable Translator is an AI system. Its analysis can be wrong. Every action is a draft that waits for your approval, and nothing is ever published to passengers or sent to a real railway system.">
         <span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>
         <span><span class="long">You are interacting with an </span>AI system</span>
