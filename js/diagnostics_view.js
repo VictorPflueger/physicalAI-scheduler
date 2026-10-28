@@ -41,7 +41,10 @@ export function openDiagnostics() {
     if (id === "world" && r.checks) {
       clear(worldList);
       for (const c of r.checks) {
-        worldList.appendChild(h("li", { dataset: { ok: String(!!c.ok) } }, h("span", { class: ["world-mark", c.ok ? "pass" : "fail"] }, icon(c.ok ? "check" : "x", 16)), h("span", {}, `${c.name}${c.detail ? ` — ${c.detail}` : ""}`)));
+        const s = c.ok ? "pass" : "fail";
+        worldList.appendChild(h("li", { dataset: { ok: String(!!c.ok) } },
+          h("span", { class: ["vc-tag", STATUS_TAG[s], "world-mark"] }, icon(STATUS_ICON[s], 14), STATUS_TEXT[s]),
+          h("span", {}, `${c.name}${c.detail ? ` — ${c.detail}` : ""}`)));
       }
     }
   }

@@ -6,7 +6,7 @@ Das Drehbuch ist auf Deutsch, weil der Pitch auf Deutsch gehalten wird. Die Ober
 
 **Empfohlener Lauf:** Szenario 1, **Short-notice platform change at Köln Hbf** (im Menü mit **Start here** markiert, in der Steuerleiste dann **Platform change**), im Modus **Simulation** bei Replay **×1**: eine vorbereitete Wiederholung eines typischen Agentenlaufs, überall als SIMULATION gekennzeichnet, ohne Schlüssel und ohne Netz; jede Zahl rechnet dabei dieselbe Engine wie im Live-Modus. Bis zur Entscheidung dauert der Lauf gut eine halbe Minute. Den Live-Modus zeigen Sie in der 10-Minuten-Fassung, wenn die Live-Probe am selben Tag auf demselben Netz sauber lief.
 
-**Bildschirm:** Am besten 1920 × 1080. Bei 1280 × 720 stehen in der Kopfzeile Symbole statt Wörtern (**How it works** ist das ⓘ, **Reset** und **Diagnostics** sind die Symbole rechts in der Steuerleiste). Sobald die Optionen offen sind, schrumpft die Abgleichsansicht dort auf eine Zeile ohne die Karte **You decide**: Zeigen Sie dann auf **Your decision** in der Schrittleiste über der Konsole. Die Optionskarten stehen zwei mal zwei; C und **Do nothing** liegen unter A und B, dorthin nach unten scrollen.
+**Bildschirm:** Am besten 1920 × 1080. Bei 1280 × 720 stehen in der Kopfzeile Symbole statt Wörtern (**How it works** ist das i im Sechseck, **Reset** und **Diagnostics** sind die Symbole rechts in der Steuerleiste). Sobald die Optionen offen sind, schrumpft die Abgleichsansicht dort auf eine Zeile ohne die Karte **You decide**: Zeigen Sie dann auf **Your decision** in der Schrittleiste über der Konsole. Die Optionskarten stehen zwei mal zwei; C und **Do nothing** liegen unter A und B, dorthin nach unten scrollen.
 
 **Die Geschichte:** Eine Weichenstörung verlegt ICE 618 nach Hamburg-Altona kurzfristig von Gleis 5 auf Gleis 7. Der Betriebsfahrplan, die Quelle, weiß es seit 07:21; es ist 07:28. Reiseauskunft und App, Anzeiger und Ansagen wurden um 05:30 erzeugt und zeigen noch Gleis 5, die Wagenreihung die Abschnitte von Gleis 5: erste Klasse in G–H statt F–G. **312** Einsteigende würden falsch informiert handeln, die ersten in **14 Minuten**. Mit der empfohlenen Option bleiben **7**, die richtige Information ist nach 2 Minuten draußen, alle Kanäle sind nach 8 Minuten wieder im Einklang mit der Quelle. Diese Zahlen rechnet die Engine aus der Quelle; sie sind in jedem Lauf gleich.
 
@@ -18,7 +18,7 @@ Das Drehbuch ist auf Deutsch, weil der Pitch auf Deutsch gehalten wird. Die Ober
 2. **Diagnostics → Run all tests** klicken. Alle drei Zeilen (**Anthropic API**, **World data integrity**, **Key and privacy**) müssen bestehen, wenn Sie live zeigen wollen; für die Simulation genügt **World data integrity**.
 3. Die **Simulation** von Szenario 1 einmal bei **×4** durchlaufen lassen, um die Bilder im Kopf zu haben, dann **Reset**.
 4. Für die 10-Minuten-Fassung mit Live-Teil: eine vollständige **Live**-Probe fahren (**Start agent** → **Live agent** → **Continue with my API key** → Schlüssel einfügen → **Check key and continue**). In der letzten Zeile der Konsole stehen unter **Run facts** (aufklappen) Dauer und Kosten. **Reset**, den Tab offen lassen: Der Schlüssel lebt nur in diesem Tab.
-5. Bühne einrichten: Szenario-Menü → **Short-notice platform change at Köln Hbf**, Replay **×1**, in der Konsole **Larger text** an, Browser im Vollbild (**F11**). Der Spiegel zeigt die Abgleichsansicht (**Alignment**) für ICE 618, die Statusanzeige **Idle**.
+5. Bühne einrichten: Szenario-Menü → **Short-notice platform change at Köln Hbf**, Replay **×1**, in der Konsole **Larger text** an, Browser im Vollbild (**F11**). Die Seite steht im hellen Thema, das Beamer in hellen Räumen am besten zeigen (die Sonne in der Kopfzeile schaltet vom dunklen zurück). Der Spiegel zeigt die Abgleichsansicht (**Alignment**) für ICE 618, die Statusanzeige **Idle**.
 6. Handy-Hotspot bereithalten. Den Schlüssel nie auf dem Beamer, im Chat oder auf Folien zeigen.
 
 ---
@@ -61,9 +61,9 @@ Dann schweigen und zeigen. Die Konsole rechts erzählt dieselben Schritte in kur
 
 | Nach etwa | Was Sie sehen | Was Sie sagen |
 |---|---|---|
-| 13 s | **Journey planner & app** wird rot, darunter in Amber die erste Schätzung | „Erste Schätzung, nur die App. Er prüft weiter.“ |
+| 13 s | **Journey planner & app** wird rot, darunter honiggelb die erste Schätzung | „Erste Schätzung, nur die App. Er prüft weiter.“ |
 | 19 s | Die Sensorkarte: **Confirms the source** | „Das Stellwerk bestätigt Gleis 7.“ |
-| 33 s | Alle vier Kanäle rot, darunter **312**; die Optionen öffnen sich, **You decide** wird burgund (bei 1280 × 720 **Your decision** in der Schrittleiste) | „312 Fahrgäste. Drei Optionen, jetzt entscheiden Sie.“ |
+| 33 s | Alle vier Kanäle rot, darunter **312**; die Optionen öffnen sich, **You decide** wird weinrot, Vicis Merlot (bei 1280 × 720 **Your decision** in der Schrittleiste) | „312 Fahrgäste. Drei Optionen, jetzt entscheiden Sie.“ |
 
 Wenn die Optionen offen sind (bei 1280 × 720 für C nach unten scrollen):
 
@@ -151,7 +151,7 @@ Bewegt sich etwa eine Minute nichts, **Abort**, Replay **×1**, **New run → Ru
 
 **API-Fehler, Netzverlust, WLAN-Probleme.** Die Konsole nennt die Ursache in Klartext. Hotspot oder gleich die Simulation; sie braucht kein Netz.
 
-**Der Hinweis lässt sich nicht bestätigen** (eine eigene Frage aus dem Publikum). Der Agent sagt das und rechnet höchstens ein gekennzeichnetes Was-wäre-wenn (violett):
+**Der Hinweis lässt sich nicht bestätigen** (eine eigene Frage aus dem Publikum). Der Agent sagt das und rechnet höchstens ein gekennzeichnetes Was-wäre-wenn (lila, die Farbe der KI):
 > „Er glaubt dem Hinweis nicht, nur weil er im Raum gefallen ist. Was die Quelle nicht hergibt, kennzeichnet er als Annahme.“
 
 **Ein leerer Live sweep.** Endet ein **Live sweep** mit „no material finding“:

@@ -14,9 +14,11 @@
   background-image: var(--vc-honeycomb-pattern);
   background-size: var(--vc-honeycomb-pattern-size);
   font-size: var(--vc-font-size-sm);
-  --mid-w: 116px;
+  /* the room between the timetables, where the lines and their labels run (Inter runs wider than the
+     former condensed figures, so the labels need a few pixels more than before) */
+  --mid-w: 124px;
 }
-#mirror[data-w="narrow"] { --mid-w: 96px; }
+#mirror[data-w="narrow"] { --mid-w: 100px; }
 
 /* ---- floating caption and view buttons (as on the sister apps' map and board) --------------------- */
 /* The three views are one group of toggle buttons that mirror.js owns (aria-pressed), drawn like Vici's
@@ -49,7 +51,9 @@
   font-family: var(--vc-font-display); font-weight: var(--vc-weight-semibold); font-size: 1.08rem; line-height: 1.15; letter-spacing: var(--vc-tracking-heading); color: var(--vc-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
-.cap-sub { color: var(--vc-text-muted); font-size: var(--fs-xs); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the caption's second line a step smaller than the shell's smallest text, with the x-height it had in the
+   former font: Inter runs wider, and the line keeps its words where it kept them before */
+.cap-sub { color: var(--vc-text-muted); font-size: 0.74rem; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cap-chip { flex: none; }
 .cap-chip[hidden] { display: none; }
 
@@ -81,7 +85,10 @@
 .strip-hit::before, .strip-hit::after { content: ""; position: absolute; pointer-events: none; }
 .strip-hit::before { inset: 0; clip-path: var(--vc-hex); }
 .strip-hit:hover::before { background: color-mix(in srgb, var(--vc-surface-hover) 70%, transparent); }
-.strip .net { stroke: var(--vc-neutral-solid); stroke-opacity: 0.32; stroke-width: 2; fill: none; stroke-linecap: round; }
+/* The network's lines are Vici's neutral solid, as the colour test's pairs say: a lighter or translucent
+   neutral is too faint for lines that carry information (which lines a train could take). Thinner than
+   the routes, so the route today (ink) and as published (dashed) still lead. */
+.strip .net { stroke: var(--vc-neutral-solid); stroke-width: 1.5; fill: none; stroke-linecap: round; }
 .strip .route-pub { stroke: var(--vc-neutral-solid); stroke-width: 2.6; stroke-dasharray: 7 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .strip .route-src { stroke: var(--vc-text); stroke-width: 3.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .strip .node-mark { fill: var(--vc-border-strong); stroke: none; }
@@ -152,9 +159,20 @@
 .ch-chip::before { inset: 0; z-index: -2; background: var(--vc-surface); clip-path: polygon(var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%); }
 .ch-chip:hover::before { background: var(--vc-surface-hover); }
 .ch-edge { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--edge); clip-path: polygon(evenodd, var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%, var(--_p) 0%, calc(var(--_p) + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(var(--_p) + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - var(--_p) - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(100% - var(--_p) - 0.57735 * var(--_t)) var(--_t), calc(var(--_p) + 0.57735 * var(--_t)) var(--_t)); }
-/* Generated from an older source version (or with a conversion fault): a dashed edge. A fact, not a finding. */
+/* Generated from an older source version (or with a conversion fault): a dashed edge. A fact, not a finding.
+   The dashes follow the capsule's outline: each slanted end from its point, each long edge from its
+   corner, so the points and corners are drawn and no end reads as a loose chevron. */
 .ch-chip[data-behind="true"] { --edge: var(--vc-border-strong); }
-.ch-chip[data-behind="true"] .ch-edge { background: repeating-linear-gradient(90deg, var(--edge) 0 5px, transparent 5px 9px); }
+.ch-chip[data-behind="true"] .ch-edge {
+  --_d: var(--edge) 0 5px, transparent 5px 9px;
+  background:
+    repeating-linear-gradient(30deg, var(--_d)) left top / var(--_p) 50% no-repeat,
+    repeating-linear-gradient(150deg, var(--_d)) left bottom / var(--_p) 50% no-repeat,
+    repeating-linear-gradient(-30deg, var(--_d)) right top / var(--_p) 50% no-repeat,
+    repeating-linear-gradient(210deg, var(--_d)) right bottom / var(--_p) 50% no-repeat,
+    repeating-linear-gradient(90deg, var(--_d)) left var(--_p) top 0 / calc(50% - var(--_p)) 100% no-repeat,
+    repeating-linear-gradient(270deg, var(--_d)) right var(--_p) top 0 / calc(50% - var(--_p)) 100% no-repeat;
+}
 /* The channel shown: a 2 px ink edge (a selection on the mirror is ink, never merlot). */
 .ch-chip[aria-pressed="true"] { --edge: var(--vc-text); --_t: 2px; }
 .ch-v { font: 500 0.78rem / 1 var(--vc-font-mono); color: var(--vc-text-muted); }
@@ -176,7 +194,9 @@
 
 .mc-cols { padding: 6px 14px 4px; border-bottom: 1px solid var(--vc-border-subtle); color: var(--vc-text-subtle); font-size: 0.74rem; font-weight: 600; }
 .mc-cols-side, .mrow { display: grid; align-items: center; column-gap: 6px; }
-.mc-cols-side[data-side="source"], .mrow[data-side="source"] { grid-template-columns: 18px 62px 40px minmax(0, 1fr) 38px; }
+/* the code and track columns hold four letters and two digits: the operating point's name takes the rest
+   (Inter runs wider than the former font) */
+.mc-cols-side[data-side="source"], .mrow[data-side="source"] { grid-template-columns: 18px 62px 36px minmax(0, 1fr) 32px; }
 .mc-cols-side[data-side="customer"], .mrow[data-side="customer"] { grid-template-columns: 18px 50px minmax(0, 1fr) 46px; }
 .mcard[data-channel="coach"] .mc-cols-side[data-side="customer"], .mcard[data-channel="coach"] .mrow[data-side="customer"] { grid-template-columns: 18px 50px minmax(0, 1fr) 70px; }
 .mc-cols-side { padding: 0 8px 0 4px; }
@@ -186,6 +206,9 @@
 .mc-cols-side .r { justify-self: end; text-align: right; }
 
 .mc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 6px 14px 10px; }
+/* The mirror's scrolling panels keep the shell's thin scrollbars (css/style.css names the legend's and
+   the popovers'), so they take little room from the rows on a 1280 px projector. */
+:is(.mc-body, .monitor, .align) { scrollbar-width: thin; scrollbar-color: var(--vc-border) transparent; }
 .mc-inner { position: relative; }
 .mc-side { position: relative; min-width: 0; }
 /* The spine: the line through each timetable's rows. */
@@ -253,12 +276,12 @@
 /* ---- the translation: lines from each published row to its source row ------------------------------------ */
 .mc-mid { position: relative; }
 .mc-links { position: absolute; top: 0; left: 0; overflow: visible; }
-.mc-links .ml { fill: none; stroke: var(--vc-neutral-solid); stroke-opacity: 0.5; stroke-width: 1.6; stroke-linecap: round; transition: stroke 0.5s ease, stroke-width 0.5s ease; }
+/* At rest a line is Vici's neutral solid, thin; a line in a state takes its tone and weight below. */
+.mc-links .ml { fill: none; stroke: var(--vc-neutral-solid); stroke-width: 1.5; stroke-linecap: round; transition: stroke 0.5s ease, stroke-width 0.5s ease; }
 .mc-links .ml[data-kind="not_in_source"], .mc-links .ml[data-kind="missing"] { stroke-dasharray: 5 4; }
-.mc-links .ml[data-kind="cancelled"] { stroke-dasharray: 2 4; stroke-opacity: 0.4; }
+.mc-links .ml[data-kind="cancelled"] { stroke-dasharray: 2 4; }
 .mc-links .ml-end polygon { fill: var(--vc-surface); stroke: var(--vc-neutral-solid); stroke-width: 1.6; }
 .mc-links .ml-end path { stroke: var(--vc-neutral-solid); stroke-width: 1.8; stroke-linecap: round; }
-.mc-links .ml-end[data-kind="cancelled"] { opacity: 0.5; }
 .mc-links [data-state="affected"] { --ml: var(--vc-danger-solid); }
 .mc-links [data-state="at_risk"], .mc-links [data-state="accepted"] { --ml: var(--vc-warning-text); }
 .mc-links [data-state="resolved"] { --ml: var(--vc-success-solid); }
@@ -268,7 +291,7 @@
 .mc-links .ml-end[data-state] path { stroke: var(--ml); }
 .mc-links[data-links="off"] .ml:not([data-state]), .mc-links[data-links="off"] .ml-end:not([data-state]) { display: none; }
 /* While the engine compares, the plain lines run fjord. */
-.mc-links[data-checking="true"] .ml:not([data-state]) { stroke: var(--vc-info-solid); stroke-opacity: 0.9; stroke-dasharray: 6 6; animation: lineRun 0.9s linear infinite; }
+.mc-links[data-checking="true"] .ml:not([data-state]) { stroke: var(--vc-info-solid); stroke-dasharray: 6 6; animation: lineRun 0.9s linear infinite; }
 @keyframes lineRun { to { stroke-dashoffset: -24; } }
 .mc-pills { position: absolute; inset: 0; pointer-events: none; }
 /* A line's label: a hex capsule on the line (::before), outlined in its state's tone (a ring, ::after,
@@ -280,7 +303,7 @@
   --pill-line: var(--vc-danger-solid);
   position: absolute; left: 50%; transform: translate(-50%, -50%);
   isolation: isolate;
-  display: inline-flex; align-items: center; gap: 3px;
+  display: inline-flex; align-items: center; gap: 2px;
   width: max-content; max-width: calc(var(--mid-w) - 2px);
   height: var(--_h); padding: 0 calc(var(--_p) + 1px); box-sizing: border-box;
   color: var(--vc-danger-text);
@@ -289,10 +312,10 @@
 .ml-pill::before, .ml-pill::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
 .ml-pill::before { z-index: -2; background: var(--vc-surface); clip-path: polygon(var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%); }
 .ml-pill::after { z-index: -1; background: var(--pill-line); clip-path: polygon(evenodd, var(--_p) 0%, calc(100% - var(--_p)) 0%, 100% 50%, calc(100% - var(--_p)) 100%, var(--_p) 100%, 0% 50%, var(--_p) 0%, calc(var(--_p) + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(var(--_p) + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - var(--_p) - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(100% - var(--_p) - 0.57735 * var(--_t)) var(--_t), calc(var(--_p) + 0.57735 * var(--_t)) var(--_t)); }
-.ml-pill strong { font: 700 0.74rem / 1 var(--vc-font-text); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ml-pill strong { font: 700 0.7rem / 1 var(--vc-font-text); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ml-pill .ml-mark { flex: none; margin-left: -2px; align-self: center; }
-.ml-pill span { font: 600 0.72rem / 1 var(--vc-font-text); color: var(--vc-text-muted); font-variant-numeric: tabular-nums; }
-.ml-pill .ml-pax { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; }
+.ml-pill span { font: 600 0.7rem / 1 var(--vc-font-text); color: var(--vc-text-muted); font-variant-numeric: tabular-nums; }
+.ml-pill .ml-pax { display: inline-flex; align-items: center; gap: 1px; margin-left: 1px; }
 .ml-pill .ml-pax .vc-icon { flex: none; }
 .ml-pill[data-state="at_risk"], .ml-pill[data-state="accepted"] { --pill-line: var(--vc-warning-text); color: var(--vc-warning-text); }
 .ml-pill[data-state="resolved"] { --pill-line: var(--vc-success-solid); color: var(--vc-success-text); }
@@ -311,7 +334,9 @@
   pointer-events: none;
 }
 .mon-head, .mon-row {
-  display: grid; grid-template-columns: minmax(92px, 0.8fr) minmax(170px, 1.7fr) minmax(70px, 0.6fr) minmax(120px, 1.2fr) minmax(140px, 1.15fr);
+  /* the runs and the sources take the room the train and the check can spare: Inter runs wider than
+     the former font, and a channel's tag never runs into the check */
+  display: grid; grid-template-columns: minmax(80px, 0.53fr) minmax(170px, 2.04fr) minmax(70px, 0.77fr) minmax(120px, 1.19fr) minmax(120px, 0.98fr);
   align-items: center; gap: 12px;
 }
 .mon-head {
@@ -391,7 +416,7 @@
 .legend-state[data-kind="resolved"] .legend-swatch-dot polygon { fill: var(--vc-success-border); stroke: var(--vc-success-solid); }
 .legend-state[data-kind="resolved"] .legend-state-mark { color: var(--vc-success-solid); }
 .legend-state[data-kind="checking"] .legend-swatch-dot polygon { fill: var(--vc-surface); stroke: var(--vc-info-solid); stroke-width: 2.5px; }
-.legend-swatch-line { width: 28px; height: 0; border-top: 2px solid var(--vc-neutral-solid); flex: none; opacity: 0.8; }
+.legend-swatch-line { width: 28px; height: 0; border-top: 2px solid var(--vc-neutral-solid); flex: none; }
 .legend-swatch-line.route { border-top: 3.5px solid var(--vc-text); opacity: 1; }
 .legend-swatch-line.route.dashed { border-top: 2.6px dashed var(--vc-neutral-solid); }
 .legend-mark { width: 28px; height: 14px; flex: none; position: relative; }
@@ -519,12 +544,12 @@
 /* Tiny (the drawer open on a small screen): the timetable rows only, so the finding stays in view;
    the head comes back with the room. */
 #mirror[data-h="tiny"] :is(.mc-head, .mc-cols) { display: none; }
-#mirror[data-w="narrow"] .mc-cols-side[data-side="source"], #mirror[data-w="narrow"] .mrow[data-side="source"] { grid-template-columns: 16px 58px 36px minmax(0, 1fr) 30px; }
+#mirror[data-w="narrow"] .mc-cols-side[data-side="source"], #mirror[data-w="narrow"] .mrow[data-side="source"] { grid-template-columns: 16px 58px 32px minmax(0, 1fr) 26px; }
 #mirror[data-w="narrow"] .mc-cols-side[data-side="customer"], #mirror[data-w="narrow"] .mrow[data-side="customer"] { grid-template-columns: 16px 46px minmax(0, 1fr) 34px; }
 #mirror[data-w="narrow"] .mcard[data-channel="coach"] .mc-cols-side[data-side="customer"], #mirror[data-w="narrow"] .mcard[data-channel="coach"] .mrow[data-side="customer"] { grid-template-columns: 16px 46px minmax(0, 1fr) 62px; }
 #mirror[data-w="narrow"] .mrow .nm strong { font-size: 0.9rem; }
 #mirror[data-w="narrow"] .mc-head-mid .vc-icon + .mc-mid-note { font-size: 0.66rem; }
-#mirror[data-w="narrow"] .mon-head, #mirror[data-w="narrow"] .mon-row { grid-template-columns: minmax(84px, 0.8fr) minmax(130px, 1.5fr) minmax(56px, 0.5fr) minmax(100px, 1.1fr) minmax(112px, 1fr); gap: 10px; }
+#mirror[data-w="narrow"] .mon-head, #mirror[data-w="narrow"] .mon-row { grid-template-columns: minmax(72px, 0.77fr) minmax(130px, 2.31fr) minmax(56px, 0.77fr) minmax(11.6rem, 1.74fr) minmax(96px, 1.1fr); gap: 10px; }
 #mirror[data-w="narrow"] .mon-row { min-height: 48px; padding-top: 3px; padding-bottom: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -538,14 +563,14 @@
    code column (the strip and the popovers keep it), the timetables keep their names. The rules carry
    the mirror's id and width class so they win over the narrow-mirror rules above. */
 @container mcard (max-width: 760px) {
-  #mirror[data-w] .mc-cols-side[data-side="source"], #mirror[data-w] .mrow[data-side="source"] { grid-template-columns: 16px 56px minmax(0, 1fr) 28px; }
+  #mirror[data-w] .mc-cols-side[data-side="source"], #mirror[data-w] .mrow[data-side="source"] { grid-template-columns: 16px 56px minmax(0, 1fr) 24px; }
   #mirror[data-w] .mc-cols-side[data-side="source"] .code, #mirror[data-w] .mrow[data-side="source"] .code { display: none; }
   #mirror[data-w] .mc-cols-side[data-side="customer"], #mirror[data-w] .mrow[data-side="customer"] { grid-template-columns: 16px 44px minmax(0, 1fr) 30px; }
   #mirror[data-w] .mcard[data-channel="coach"] .mc-cols-side[data-side="customer"], #mirror[data-w] .mcard[data-channel="coach"] .mrow[data-side="customer"] { grid-template-columns: 16px 44px minmax(0, 1fr) 60px; }
   #mirror[data-w] .mrow .nm strong { font-size: 0.88rem; }
   #mirror[data-w] .mrow .t { font-size: 0.78rem; }
-  #mirror[data-w] .mc-head, #mirror[data-w] .mc-cols, #mirror[data-w] .mc-inner { grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr); }
-  #mirror[data-w] .mc-inner { --mid-w: 92px; }
+  #mirror[data-w] .mc-head, #mirror[data-w] .mc-cols, #mirror[data-w] .mc-inner { grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); }
+  #mirror[data-w] .mc-inner { --mid-w: 96px; }
 }
 
 /* ---- forced colours (Windows contrast themes): the mirror's hexagons and capsules keep their outlines --- */
@@ -565,4 +590,11 @@
   .strip .node-ring, .strip .train-pos polygon.waiting { stroke: CanvasText; }
   .strip .node-pulse { stroke: Highlight; }
   .strip .train-pos .arrow { fill: Canvas; }
+  /* The open legend in Highlight, as the view shown (css/style.css); a row's state bar and a source
+     row's flag are shadows, which a contrast theme drops, so they become borders; the train in focus
+     on All trains keeps a frame. */
+  .mirror-tools .legend-btn[aria-expanded="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: Highlight; }
+  .mrow[data-state] { border-left: 4px solid CanvasText; }
+  .mrow[data-flag] { border-right: 4px solid CanvasText; }
+  .mon-row[data-focus="true"]:not(:focus-visible) { outline: 2px solid CanvasText; outline-offset: -2px; }
 }

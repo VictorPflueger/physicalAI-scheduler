@@ -11,7 +11,7 @@ const VICI = {
   play: "play", reset: "refresh", gear: "settings", globe: "globe-hex", check: "check", x: "close",
   alert: "warning", info: "info", user: "user", download: "download", copy: "copy",
   chevronDown: "chevron-down", chevronUp: "chevron-up", chevronRight: "chevron-right", eye: "eye",
-  external: "external", spark: "sparkle", users: "users", clock: "clock"
+  external: "external", spark: "sparkle", users: "users", clock: "clock", layers: "layers"
 };
 
 /** The app's own drawings (static, trusted strings; never built from data). */

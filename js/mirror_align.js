@@ -220,7 +220,7 @@ export function createAlign({ onChannel, onSource } = {}) {
       const fixed = (v) => st.tone === "resolved" && !v.ok && sourceOf.get(v.id);
       c.values.replaceChildren(...(ch.values.length
         ? ch.values.map((v) => h("span", { class: "al-ch-value", dataset: { ok: String(v.ok), type: v.type }, title: v.full },
-          fixed(v) ? [h("s", {}, v.text), h("span", { class: "al-arrow", "aria-label": "becomes" }, " → "), sourceOf.get(v.id)] : v.text))
+          fixed(v) ? [h("s", {}, v.text), h("span", { class: "al-arrow", "aria-label": "becomes" }, " → "), h("span", { class: "al-new" }, sourceOf.get(v.id))] : v.text))
         : [h("span", { class: "al-ch-value", dataset: { none: "true" } }, "—")]));
       c.status.replaceChildren(...[st.icon ? icon(st.icon, 15) : null, h("span", {}, st.text)].filter(Boolean));
       c.status.title = st.hint || "";

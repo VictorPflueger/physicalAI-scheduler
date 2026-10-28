@@ -144,12 +144,13 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   const capSub = h("span", { class: "cap-sub" }, "");
   const caption = h("div", { class: "mirror-caption" }, h("div", { class: "cap-line" }, capTitle, capChip), capSub);
   // The three views: a group of toggle buttons the mirror owns (aria-pressed), drawn like Vici's
-  // segmented control, the view shown in an ink frame; the legend's button beside them. On a narrow
-  // mirror they keep their icons only, and their tooltips name them then.
+  // segmented control, the view shown in an ink frame; the legend's button beside them, with Vici's
+  // layers icon (the legend's toggles are the mirror's layers), so it never looks like the header's
+  // "How it works". On a narrow mirror they keep their icons only, and their tooltips name them then.
   const btnAlign = h("button", { type: "button", "aria-pressed": "true", title: "One train at one stop: the source, the AI and what every channel tells passengers" }, icon("translate", 18), h("span", { class: "btn-text" }, "Alignment"));
   const btnTrain = h("button", { type: "button", "aria-pressed": "false", title: "One train: its source timetable beside what passengers are told, stop by stop" }, icon("timetable", 18), h("span", { class: "btn-text" }, "Timetables"));
   const btnMonitor = h("button", { type: "button", "aria-pressed": "false", title: "Every train in the window, first departure first" }, icon("list", 18), h("span", { class: "btn-text" }, "All trains"));
-  const btnLegend = h("button", { class: "vc-button vc-button--outline legend-btn", type: "button", "aria-expanded": "false", "aria-controls": "mirror-legend", title: "What the marks and colours mean" }, icon("info", 18), h("span", { class: "btn-text" }, "Legend"));
+  const btnLegend = h("button", { class: "vc-button vc-button--outline legend-btn", type: "button", "aria-expanded": "false", "aria-controls": "mirror-legend", title: "What the marks and colours mean" }, icon("layers", 18), h("span", { class: "btn-text" }, "Legend"));
   const tools = h("div", { class: "mirror-tools" },
     h("div", { class: "segmented mirror-views", role: "group", "aria-label": "Mirror views" },
       withTooltip(btnAlign, "Alignment", { below: true }), withTooltip(btnTrain, "Timetables", { below: true }), withTooltip(btnMonitor, "All trains", { below: true })),
@@ -760,6 +761,8 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   // The mirror's colours come from Vici's tokens through its classes, so a new theme repaints it; it
   // still redraws, so that anything drawn from a measured style follows the theme too.
   document.addEventListener("vc:themechange", () => render());
+  // The corridor strip measures its names to keep them apart: it draws again once the fonts are in.
+  document.fonts?.ready?.then(() => render());
 
   // ---- legend --------------------------------------------------------------------------------------------
   function buildLegend() {

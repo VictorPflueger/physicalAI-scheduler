@@ -12,7 +12,7 @@ import { APP_ROOT } from "./lib/harness.mjs";
 
 const DOCS = {
   "README.md": { words: 1500, sections: ["The pitch in five minutes", "What it is and why it matters", "The concept", "How it works", "Deploy", "The two modes", "Your API key", "What a run costs", "Troubleshooting", "Safety and the EU AI Act", "Quality and acceptance", "Files"] },
-  "DESIGN.md": { words: 900, numbered: 9 },
+  "DESIGN.md": { words: 900, numbered: 11 },
   "DEMO_SCRIPT.md": { words: 900, sections: ["Pre-flight", "Die 5-Minuten-Fassung", "Die 10-Minuten-Fassung", "Contingencies", "Fragen, die kommen werden"] },
   "DATA_SOURCES.md": { words: 700, numbered: 6 },
   "TECH_NOTES.md": { words: 1500, numbered: 12 },
@@ -51,7 +51,7 @@ for (const f of sources) {
 
 // Paths the documents name.
 const EXT = /\.(m?js|css|html|md|json|svg|yml|txt|jpg|woff2)$/;
-const FOLDERS = ["", "js", "css", "data", "tests", "tests/lib", "tools", "design", "fonts", "images", ".github/workflows"];
+const FOLDERS = ["", "js", "css", "data", "tests", "tests/lib", "tools", "vici", "vici/dist", ".github/workflows"];
 for (const [f, t] of Object.entries(text)) {
   const base = path.dirname(path.join(APP_ROOT, f));
   const names = new Set();
@@ -62,7 +62,7 @@ for (const [f, t] of Object.entries(text)) {
     if (/[<>*{}$]|^~|^\/|^https?:|^-/.test(clean)) continue;
     if (/^[\w-]+(\.[\w-]+)*\.(io|com|org|net|de|dev|ai)(\/|$)/i.test(clean)) continue; // a web address, not a path
     if (!clean.includes("/") && !EXT.test(clean)) continue;
-    if (!/^[\w./ -]+$/.test(clean) || !(EXT.test(clean) || clean.endsWith("/") || /^(js|css|data|tests|tools|fonts|design|images)(\/|$)/.test(clean))) continue;
+    if (!/^[\w./ -]+$/.test(clean) || !(EXT.test(clean) || clean.endsWith("/") || /^(js|css|data|tests|tools|vici)(\/|$)/.test(clean))) continue;
     // A bare file name ("sync.js") may live in any of the app's folders.
     const candidates = clean.includes("/")
       ? [path.join(APP_ROOT, clean), path.join(base, clean)]

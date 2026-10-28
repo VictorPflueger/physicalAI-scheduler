@@ -24,7 +24,7 @@
 
 /* ---- column heads: the three steps of the story -------------------------------------------------- */
 .al-head {
-  display: flex; align-items: baseline; column-gap: 7px;
+  display: flex; align-items: baseline; column-gap: 6px;
   margin: 2px 2px 0; height: 26px; min-width: 0; overflow: hidden; white-space: nowrap;
   font-family: var(--vc-font-display); font-weight: var(--vc-weight-semibold); font-size: 1rem; line-height: 1.2; letter-spacing: var(--vc-tracking-heading); color: var(--vc-text);
 }
@@ -41,7 +41,7 @@
   font-family: var(--vc-font-text); font-size: 0.82rem; font-weight: 700; letter-spacing: 0;
 }
 .al-num::after { content: ""; position: absolute; inset: 0; --_t: 2px; background: var(--vc-text); clip-path: polygon(evenodd, 25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%, calc(25% + 0.57735 * var(--_t)) var(--_t), calc(1.1547 * var(--_t)) 50%, calc(25% + 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(75% - 0.57735 * var(--_t)) calc(100% - var(--_t)), calc(100% - 1.1547 * var(--_t)) 50%, calc(75% - 0.57735 * var(--_t)) var(--_t), calc(25% + 0.57735 * var(--_t)) var(--_t)); }
-.al-head-sub { font-family: var(--vc-font-text); font-weight: 500; font-size: var(--fs-xs); letter-spacing: 0; color: var(--vc-text-subtle); flex: 1 1 auto; }
+.al-head-sub { font-family: var(--vc-font-text); font-weight: 500; font-size: 0.76rem; letter-spacing: 0; color: var(--vc-text-subtle); flex: 1 1 auto; }
 /* the channels' common publication time, at the column's right edge where each card used to carry it */
 .al-head-asof { margin-left: auto; flex: none; font-family: var(--vc-font-text); font-weight: 500; font-size: 0.76rem; letter-spacing: 0; color: var(--vc-text-subtle); }
 .al-head-asof[hidden] { display: none; }
@@ -70,15 +70,18 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 
 /* the source */
 .al-source { border-width: 2px; border-color: var(--vc-text); }
-/* in a narrow column the German name and the tag move under the title rather than out of the card */
-.al-source .al-card-top { flex-wrap: wrap; row-gap: 3px; }
+/* in a narrow column the German name and the tag move under the title rather than out of the card
+   (in the sensors' card too) */
+.al-source .al-card-top, .al-sensors .al-card-top { flex-wrap: wrap; row-gap: 3px; }
 .al-source:hover { border-color: var(--vc-text); background: var(--vc-surface-hover); }
 /* the stop is the card's first line: the train is the caption above the view */
 .al-stop { color: var(--vc-text); font-weight: 600; }
 .al-facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0; }
+/* a value is a small box with a small radius (Vici: larger containers get larger radii, nothing reads
+   as a pill); it takes a step smaller one as the view condenses (below) */
 .al-fact {
   font-family: var(--vc-font-text); font-weight: 700; font-size: 1.3rem; line-height: 1.15; font-variant-numeric: tabular-nums;
-  padding: 1px 8px; border-radius: var(--vc-radius-lg); background: var(--vc-bg-subtle); border: 1px solid var(--vc-border);
+  padding: 1px 8px; border-radius: var(--vc-radius-md); background: var(--vc-bg-subtle); border: 1px solid var(--vc-border);
 }
 .al-change { font-size: var(--fs-xs); color: var(--vc-text-subtle); }
 
@@ -129,7 +132,9 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 
 /* the channels */
 .al-channels { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; }
-.al-channels > li { min-width: 0; }
+/* Vici's base spaces list items (li + li); in this grid the cards keep its gaps alone, so the cards
+   of a row line up */
+.al-channels > li { min-width: 0; margin: 0; }
 /* A channel card carries its state as a bar on its left edge, in the state token (as a timetable row
    does), with a word and a mark under its value. */
 .al-channel { gap: 3px; padding: 8px 12px; border-left-width: 5px; }
@@ -138,8 +143,14 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .al-ch-values { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
 .al-ch-value { font-family: var(--vc-font-text); font-weight: 700; font-size: 1.22rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .al-ch-value[data-none="true"] { color: var(--vc-text-subtle); font-weight: 600; }
-.al-ch-value s { color: var(--vc-text-subtle); font-weight: 600; text-decoration-thickness: 2px; }
-.al-arrow { color: var(--vc-success-text); font-weight: 700; }
+/* the old value, struck through, a step smaller than the source's value: the pair keeps to one line
+   where Barlow's condensed figures kept it (Inter runs a fifth wider), and the new value leads */
+.al-ch-value s { color: var(--vc-text-subtle); font-weight: 600; font-size: 0.78em; text-decoration-thickness: 2px; }
+.al-arrow { color: var(--vc-success-text); font-weight: 700; margin-inline: -0.15em; }
+/* the old value and the source's value each stay whole: a line breaks at the arrow, never inside
+   "1st class F–G" after its dash (the smallest size, which hides the old value, wraps anywhere) */
+.al-ch-value s, .al-ch-value .al-new { white-space: nowrap; }
+.align[data-size="tiny"] .al-ch-value .al-new { white-space: normal; }
 .al-ch-status { display: flex; align-items: center; gap: 5px; font-size: var(--fs-xs); font-weight: 600; line-height: 1.25; color: var(--vc-text-subtle); min-width: 0; }
 /* a verdict is read whole: in a narrow card it wraps rather than ending in an ellipsis */
 .al-ch-status span { min-width: 0; overflow-wrap: break-word; }
@@ -187,12 +198,21 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="mid"] .al-col { gap: 6px; }
 .align[data-size="mid"] .al-channels, .align[data-size="short"] .al-channels { gap: 6px; }
 .align[data-size="mid"] .al-channel, .align[data-size="short"] .al-channel {
-  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 1px; padding: 6px 10px;
+  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 1px; padding: 5px 10px;
 }
 .align[data-size="mid"] .al-channel .al-card-top, .align[data-size="short"] .al-channel .al-card-top { flex: 1 0 100%; }
 .align[data-size="mid"] .al-ch-values, .align[data-size="short"] .al-ch-values { flex: 0 1 auto; }
 .align[data-size="mid"] .al-ch-status, .align[data-size="short"] .al-ch-status { flex: 0 1 auto; max-width: 100%; }
 .align[data-size="mid"] .al-ch-value { font-size: 1.12rem; }
+/* a little less air on a laptop: Inter runs wider than the former font, so more lines wrap, and the
+   view keeps the size the former font kept */
+.align[data-size="mid"] .al-head { height: 24px; }
+.align[data-size="mid"] :is(.al-source, .al-sensors, .al-ai, .al-gate) { padding: 8px 12px; }
+/* Smaller cards, smaller radii (Vici's hexagon guideline: larger containers get larger radii, and
+   nothing is fully rounded): a card a line or two high keeps the look of a card, never of a pill. */
+.align[data-size="mid"] .al-card { border-radius: var(--vc-radius-lg); }
+.align:is([data-size="short"], [data-size="tiny"]) :is(.al-card, .al-impact) { border-radius: var(--vc-radius-md); }
+.align:is([data-size="short"], [data-size="tiny"]) .al-fact { border-radius: var(--vc-radius-sm); }
 
 /* short (the drawer is open on a large screen): heads, the AI's rule and the sensors give way; channels two by two */
 .align[data-size="short"] .al-head, .align[data-size="tiny"] .al-head,
@@ -203,13 +223,20 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="tiny"] .al-ch-asof, .align[data-size="tiny"] .al-de,
 .align[data-size="tiny"] .al-stop, .align[data-size="tiny"] .al-source .al-card-top { display: none; }
 .align[data-size="short"], .align[data-size="tiny"] { align-content: start; --link-y: 34px; }
-.align[data-size="short"] .al-grid { grid-template-columns: minmax(0, 0.95fr) 22px minmax(0, 0.8fr) 22px minmax(0, 1.9fr); }
+.align[data-size="short"] .al-grid { grid-template-columns: minmax(0, 0.95fr) 22px minmax(0, 0.78fr) 22px minmax(0, 2fr); }
 .align[data-size="short"] .al-channels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.align[data-size="short"] .al-card, .align[data-size="tiny"] .al-card { padding: 6px 10px; gap: 2px; }
+/* a little less air when the drawer is open: Inter's lines are taller and wrap sooner than the former
+   font's, and the view keeps the size the former font kept */
+.align[data-size="short"] { gap: 10px; }
+.align[data-size="short"] .al-card { padding: 5px 10px; gap: 2px; }
+.align[data-size="short"] .al-card-top { line-height: 1.25; }
+.align[data-size="short"] .al-ch-asof { font-size: 0.7rem; }
+.align[data-size="short"] .al-channel .al-card-top { gap: 6px; }
+.align[data-size="tiny"] .al-card { padding: 6px 10px; gap: 2px; }
 .align[data-size="short"] .al-col, .align[data-size="tiny"] .al-col { gap: 6px; }
 .align[data-size="short"] .al-ai-status { min-height: 0; }
 .align[data-size="short"] .al-ai .al-card-top { display: none; }
-.align[data-size="short"] .al-impact { min-height: 40px; padding: 4px 12px; }
+.align[data-size="short"] .al-impact { min-height: 36px; padding: 4px 12px; }
 .align[data-size="short"] .al-impact-num { font-size: 1.5rem; }
 .align[data-size="short"] .al-fact, .align[data-size="short"] .al-ch-value { font-size: 1.04rem; }
 .align[data-size="short"] .al-source .al-tag-text, .align[data-size="tiny"] .al-source .al-tag-text { display: none; }
@@ -227,6 +254,9 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="tiny"] .al-channel .al-card-top { grid-column: 1 / -1; font-size: var(--fs-xs); padding-right: 18px; }
 .align[data-size="tiny"] .al-ch-status { position: absolute; top: 5px; right: 6px; }
 .align[data-size="tiny"] .al-channel .al-card-top .vc-icon { display: none; }
+/* the verdict's mark takes the corner, so a long name ("Journey planner & app") wraps rather than
+   end in an ellipsis */
+.align[data-size="tiny"] .al-ch-name { white-space: normal; }
 .align[data-size="tiny"] .al-ch-status > span:not(.vc-icon) { display: none; }
 .align[data-size="tiny"] .al-ch-value s, .align[data-size="tiny"] .al-ch-value .al-arrow { display: none; }
 .align[data-size="tiny"] .al-ch-status .vc-icon { --vc-icon-size: 18px; }
@@ -236,15 +266,26 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="tiny"] .al-ch-values, .align[data-size="tiny"] .al-facts { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 2px; min-width: 0; }
 .align[data-size="tiny"] .al-fact { padding: 0 6px; }
 .align[data-size="tiny"] .al-facts { margin: 0; }
-.align[data-size="tiny"] .al-impact { min-height: 0; padding: 3px 12px; font-size: var(--fs-xs); }
+.align[data-size="tiny"] .al-impact { min-height: 0; padding: 3px 12px; font-size: var(--fs-xs); border-radius: var(--vc-radius-sm); }
 .align[data-size="tiny"] .al-impact-num { font-size: 1.2rem; }
 .align[data-size="tiny"] .al-impact > .vc-icon { display: none; }
 
 /* a narrow mirror (a laptop): the source card keeps its marks, the German names give way */
 #mirror[data-w="narrow"] .al-source .al-tag-text, #mirror[data-w="narrow"] .al-source .al-de { display: none; }
 
+/* a narrow mirror (a laptop), with heads: the channels' column takes more of the width, so a channel's
+   value and verdict still share a line and the column's head keeps the channels' age whole (Inter and
+   Bricolage run wider than the former condensed figures) */
+@media (min-width: 761px) {
+  #mirror[data-w="narrow"] .align:is([data-size="tall"], [data-size="mid"]) .al-grid { grid-template-columns: minmax(0, 0.92fr) 24px minmax(0, 0.8fr) 24px minmax(0, 1.2fr); }
+}
+/* a large screen, with heads: the channels' column takes the width its head needs, so "What passengers
+   are told", "Kundenfahrplan" and the channels' age stay whole (Bricolage and Inter run wider than the
+   former condensed figures); the gutters narrow to the mid size's */
+@media (min-width: 1860px) {
+  #mirror:not([data-w="narrow"]) .align[data-size="tall"] .al-grid { grid-template-columns: minmax(0, 1fr) 24px minmax(0, 0.94fr) 24px minmax(0, 1.3fr); }
+}
 /* a narrow window stacks the story: source, translator, channels */
-#mirror[data-w="narrow"][data-h="tall"] .al-grid { grid-template-columns: minmax(0, 1fr) 24px minmax(0, 0.86fr) 24px minmax(0, 1.08fr); }
 @media (max-width: 760px) {
   .align { overflow-y: auto; }
   .al-grid { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }

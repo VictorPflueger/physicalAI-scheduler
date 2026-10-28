@@ -36,6 +36,46 @@ const SHORT = {
   KSO: "Solingen", KW: "Wuppertal", KWO: "Oberbarmen", EHG: "Hagen", EWIT: "Witten"
 };
 const PAD = 34;
+// The room between two neighbouring names in a row of the strip, in pixels.
+const NAME_GAP = 10;
+
+/**
+ * Neighbouring names keep NAME_GAP between them: Inter runs wider than the former condensed font, so
+ * on a narrower strip "Wuppertal" and "Oberbarmen" would run into one name. A name that comes too
+ * close moves a few pixels away from its neighbour (each of the two by half), never off the strip.
+ * Names are measured as drawn; a strip not laid out yet keeps them centred, and the next render
+ * (the mirror draws again once the fonts are in) spreads them.
+ */
+function spreadNames(svg, width) {
+  const rows = new Map();
+  for (const t of svg.querySelectorAll("text.node-name")) {
+    const w = typeof t.getComputedTextLength === "function" ? t.getComputedTextLength() : 0;
+    if (!(w > 0)) return;
+    const y = t.getAttribute("y");
+    if (!rows.has(y)) rows.set(y, []);
+    rows.get(y).push({ t, x: Number(t.getAttribute("x")), w });
+  }
+  for (const list of rows.values()) {
+    list.sort((a, b) => a.x - b.x);
+    for (let pass = 0; pass < 8; pass++) {
+      let moved = false;
+      for (let i = 1; i < list.length; i++) {
+        const a = list[i - 1];
+        const b = list[i];
+        const gap = b.x - b.w / 2 - (a.x + a.w / 2);
+        if (gap < NAME_GAP - 0.25) {
+          const d = (NAME_GAP - gap) / 2;
+          a.x -= d;
+          b.x += d;
+          moved = true;
+        }
+      }
+      for (const n of list) n.x = Math.min(width - 2 - n.w / 2, Math.max(2 + n.w / 2, n.x));
+      if (!moved) break;
+    }
+    for (const n of list) n.t.setAttribute("x", n.x.toFixed(1));
+  }
+}
 
 /** The strip's geometry for a width and a size: lanes, label rows, the x of every station. */
 export function stripGeometry(nodes, width, size) {
@@ -97,13 +137,14 @@ export function createStrip({ onStation }) {
         const sy = p.y - 10;
         grp.append(s("polygon", { class: "node-sensor", points: hexPoints(sx, sy, 3.8) }));
       }
-      // Labels: the Ril 100 code, and on a tall strip the short name, away from the lines between the lanes.
-      const dir = p.top ? -1 : 1;
-      const codeY = p.top ? p.y - (g.names ? 32 : 12) : p.y + (g.names ? 38 : 20);
+      // Labels: the Ril 100 code, and on a tall strip the short name, away from the lines between the lanes
+      // and clear of a state ring's flat edge (a ring and the train's marker never touch a label).
+      const codeY = p.top ? p.y - (g.names ? 32 : 15) : p.y + (g.names ? 38 : 23);
       grp.append(s("text", { class: "node-code", x: p.x, y: codeY, "text-anchor": "middle" }, n.id));
-      if (g.names) grp.append(s("text", { class: "node-name", x: p.x, y: p.y + dir * 13 + (p.top ? 0 : 7), "text-anchor": "middle", "data-hub": n.hub ? "true" : null }, SHORT[n.id] || n.name));
+      if (g.names) grp.append(s("text", { class: "node-name", x: p.x, y: p.top ? p.y - 16 : p.y + 23, "text-anchor": "middle", "data-hub": n.hub ? "true" : null }, SHORT[n.id] || n.name));
       svg.append(grp);
     }
+    if (g.names) spreadNames(svg, width);
 
     // Where the train is at the snapshot: between two points, or waiting at its first one.
     const pos = data.position;

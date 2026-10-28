@@ -28,6 +28,15 @@ export const COLOUR_PAIRS = [
   ["Alignment: the bar of a channel a what-if changes, on the canvas", "feature-solid", "bg-sunken", "mark"],
   ["Alignment: the bar of a channel being checked, on the canvas", "info-solid", "bg-sunken", "mark"],
   ["Alignment: the translator's card (derived values, lilac), on its tint", "feature-text", "feature-bg", "text"],
+  ["Alignment: the translator's rule and notes, on its tint", "text-muted", "feature-bg", "text"],
+  ["Alignment: the You decide card while a decision waits (solid merlot) and its frame once decided, on the canvas", "accent", "bg-sunken", "mark"],
+  ["Alignment: a channel's name and value in ink, on the tint of a contradiction", "text", "danger-bg", "text"],
+  ["Alignment: a channel's name and value in ink, on the tint of data still behind", "text", "warning-bg", "text"],
+  ["Alignment: a channel's name and value in ink, on the tint of a re-publication", "text", "success-bg", "text"],
+  ["Alignment: a channel's name and value in ink, on the tint of a what-if", "text", "feature-bg", "text"],
+  ["Alignment: a channel's icon and struck old value, on the tint of a contradiction", "text-muted", "danger-bg", "text"],
+  ["Alignment: a channel's icon and struck old value, on the tint of data still behind", "text-muted", "warning-bg", "text"],
+  ["Alignment: a channel's icon and struck old value, on the tint of a re-publication", "text-subtle", "success-bg", "text"],
   // The corridor strip and the mirror card's head (surface).
   ["Corridor: a station's ring that contradicts the source", "danger-solid", "surface", "mark"],
   ["Corridor: a station's ring with data still behind (at risk)", "warning-text", "surface", "mark"],
@@ -48,6 +57,14 @@ export const COLOUR_PAIRS = [
   ["Timetables: a row's state bar, data still behind, on its tint", "warning-text", "warning-bg", "mark"],
   ["Timetables: a row's state bar, re-published, on its tint", "success-solid", "success-bg", "mark"],
   ["Timetables: a row's state bar, a what-if, on its tint", "feature-solid", "feature-bg", "mark"],
+  ["Timetables: a flagged row's times and names in ink, on the tint of a contradiction", "text", "danger-bg", "text"],
+  ["Timetables: a flagged row's times and names in ink, on the tint of data still behind", "text", "warning-bg", "text"],
+  ["Timetables: a flagged row's times and names in ink, on the tint of a re-publication", "text", "success-bg", "text"],
+  ["Timetables: a flagged row's times and names in ink, on the tint of a what-if", "text", "feature-bg", "text"],
+  ["Timetables: a flagged row's arrival times and codes, on the tint of a contradiction", "text-muted", "danger-bg", "text"],
+  ["Timetables: a flagged row's arrival times and codes, on the tint of data still behind", "text-muted", "warning-bg", "text"],
+  ["Timetables: a flagged row's arrival times and codes, on the tint of a re-publication", "text-muted", "success-bg", "text"],
+  ["Timetables: a flagged row's arrival times and codes, on the tint of a what-if", "text-muted", "feature-bg", "text"],
   ["Timetables: a line from a published row to its source row, at rest", "neutral-solid", "surface", "mark"],
   ["Timetables: a line that contradicts the source", "danger-solid", "surface", "mark"],
   ["Timetables: a line with data still behind", "warning-text", "surface", "mark"],
@@ -67,7 +84,7 @@ export const COLOUR_PAIRS = [
   ["All trains: a train's state stripe (data still behind)", "warning-text", "surface", "mark"],
   ["All trains: a train's state stripe (re-published)", "success-solid", "surface", "mark"],
   ["All trains: the stripe of a train being checked", "info-solid", "surface", "mark"],
-  ["All trains: a channel behind the source (dashed chip)", "border-strong", "surface", "mark"]
+  ["Timetables: the dashed edge of a channel chip behind the source", "border-strong", "surface", "mark"]
 ];
 
 /**

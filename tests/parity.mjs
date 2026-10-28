@@ -1,11 +1,13 @@
 // Parity with the sister app: the shared shell must stay the shell the sister apps run, so a fix or a
 // design change in one can be carried to the others file by file. Compared with a checkout of Rebate
-// Hunter (the most recent sister app), with the app names and storage prefixes normalised:
-//   identical   the shared modules and stylesheets, character for character (comments included)
-//   same code   stylesheets whose comments name the app's own centrepiece: the rules must match with
-//               comments removed (style.css up to its marked app-specific block)
-//   same tokens every colour token and its value (css/tokens.css, design/tokens.json)
-//   same fonts  the self-hosted font files, byte for byte
+// Hunter (the sister app whose shell this one takes over), with the app names and storage prefixes
+// normalised:
+//   identical   the shared modules, js/theme.js, the shared stylesheets and the four tests that are the
+//               same file in every prototype, character for character (comments included); the hexagon
+//               test without its list of exceptions, the one place a shared test may differ
+//   same code   stylesheets whose comments name the app's own centrepiece or domain: the rules must
+//               match with comments removed (style.css up to its marked app-specific block)
+//   same Vici   vici/, Victor's design system: the same files, byte for byte
 // Usage: node tests/parity.mjs <path to a PROC-Rebate-Hunter checkout>
 //        (or set PARITY_REF; without a reference the check cannot run and says so)
 import fs from "node:fs";
@@ -21,11 +23,14 @@ if (!fs.existsSync(path.join(REF, "js", "sse.js"))) {
 
 const IDENTICAL = [
   "js/anthropic.js", "js/clock.js", "js/cost.js", "js/dom.js", "js/drawer.js", "js/handover.js", "js/keystore.js",
-  "js/labels.js", "js/md.js", "js/modal.js", "js/progress.js", "js/sse.js",
-  "css/components.css", "css/console.css", "css/drawer.css", "css/fonts.css"
+  "js/labels.js", "js/md.js", "js/modal.js", "js/progress.js", "js/sse.js", "js/theme.js",
+  "css/components.css", "css/console.css",
+  "tests/tokens.mjs", "tests/hexagon.mjs", "tests/page-icon.mjs", "tests/vici-files.mjs"
 ];
-const SAME_CODE = ["css/modals.css", "css/style.css"];
+const SAME_CODE = ["css/drawer.css", "css/modals.css", "css/style.css"];
 const APP_BLOCK = /\/\* -{20,} \*\/\n\/\* App-specific: not part of the shared shell[\s\S]*$/;
+// The hexagon test's exceptions (with the comment that introduces them) may differ between the prototypes.
+const EXCEPTIONS = /(\/\*\*\s*\n \* Allowed round things[\s\S]*?\*\/\s*\n)?const EXCEPTIONS = \[[\s\S]*?\];/;
 
 const read = (root, f) => fs.readFileSync(path.join(root, f), "utf8");
 const names = (s) => s
@@ -33,6 +38,7 @@ const names = (s) => s
   .replace(/Rebate Hunter|Timetable Translator/g, "APP")
   .replace(/rebate-hunter|timetable-translator/g, "app")
   .replace(/(["'`])(rh|tt)\./g, "$1app.");
+const shared = (f, s) => (f === "tests/hexagon.mjs" ? s.replace(EXCEPTIONS, "const EXCEPTIONS = …;") : s);
 const code = (s) => names(s).replace(APP_BLOCK, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s+/g, " ").trim();
 
 const problems = [];
@@ -45,9 +51,13 @@ const firstDiff = (a, b) => {
 };
 
 for (const f of IDENTICAL) {
-  const a = names(read(REF, f));
-  const b = names(read(APP_ROOT, f));
   checked += 1;
+  if (!fs.existsSync(path.join(REF, f)) || !fs.existsSync(path.join(APP_ROOT, f))) {
+    problems.push(`${f} is missing ${fs.existsSync(path.join(APP_ROOT, f)) ? "from the sister app" : "here"}`);
+    continue;
+  }
+  const a = names(shared(f, read(REF, f)));
+  const b = names(shared(f, read(APP_ROOT, f)));
   if (a !== b) problems.push(`${f} differs from the sister app (${firstDiff(a, b)})`);
 }
 for (const f of SAME_CODE) {
@@ -61,26 +71,22 @@ for (const f of SAME_CODE) {
   }
 }
 
-// Every colour token and its value.
-const tokens = (css) => Object.fromEntries([...css.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
-const ta = tokens(read(REF, "css/tokens.css"));
-const tb = tokens(read(APP_ROOT, "css/tokens.css"));
-checked += 1;
-const tokenDiff = [...new Set([...Object.keys(ta), ...Object.keys(tb)])].filter((k) => ta[k] !== tb[k]);
-if (tokenDiff.length) problems.push(`css/tokens.css: ${tokenDiff.length} tokens differ (${tokenDiff.slice(0, 5).map((k) => `${k} ${ta[k]} ≠ ${tb[k]}`).join("; ")})`);
-const ja = JSON.parse(read(REF, "design/tokens.json"));
-const jb = JSON.parse(read(APP_ROOT, "design/tokens.json"));
-const strip = (o) => JSON.stringify(o, (k, v) => (["description", "$description", "name", "title"].includes(k) ? undefined : v));
-checked += 1;
-if (strip(ja) !== strip(jb)) problems.push("design/tokens.json: the token values differ from the sister app");
-
-// The self-hosted fonts.
+// vici/: the same files, byte for byte.
 const hash = (p) => crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex");
-const fa = fs.readdirSync(path.join(REF, "fonts")).filter((f) => f.endsWith(".woff2")).sort();
-const fb = fs.readdirSync(path.join(APP_ROOT, "fonts")).filter((f) => f.endsWith(".woff2")).sort();
+const walk = (root, dir = "") => fs.readdirSync(path.join(root, dir), { withFileTypes: true })
+  .flatMap((e) => (e.isDirectory() ? walk(root, path.join(dir, e.name)) : [path.join(dir, e.name)])).sort();
 checked += 1;
-if (fa.join() !== fb.join()) problems.push(`fonts: different files (${fa.join(", ")} / ${fb.join(", ")})`);
-else for (const f of fa) if (hash(path.join(REF, "fonts", f)) !== hash(path.join(APP_ROOT, "fonts", f))) problems.push(`fonts/${f} differs`);
+if (!fs.existsSync(path.join(REF, "vici")) || !fs.existsSync(path.join(APP_ROOT, "vici"))) problems.push(`vici/ is missing ${fs.existsSync(path.join(APP_ROOT, "vici")) ? "from the sister app" : "here"}`);
+else {
+  const va = walk(path.join(REF, "vici"));
+  const vb = walk(path.join(APP_ROOT, "vici"));
+  const only = (x, y) => x.filter((f) => !y.includes(f));
+  if (va.join() !== vb.join()) problems.push(`vici/: different files (only in the sister app: ${only(va, vb).join(", ") || "none"}; only here: ${only(vb, va).join(", ") || "none"})`);
+  else {
+    const differ = va.filter((f) => hash(path.join(REF, "vici", f)) !== hash(path.join(APP_ROOT, "vici", f)));
+    if (differ.length) problems.push(`vici/: ${differ.length} file(s) differ (${differ.slice(0, 5).join(", ")})`);
+  }
+}
 
 for (const p of problems) console.log(`FAIL  ${p}`);
 console.log(`${checked - problems.length}/${checked} parity checks passed against ${REF}.`);
