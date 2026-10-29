@@ -176,10 +176,14 @@ if (wanted("sim")) {
     checks.next = await page.evaluate(() => {
       const entries = [...document.querySelectorAll("#console .entry")];
       const next = entries.find((e) => e.dataset.type === "next");
+      // Its line, not only its buttons, stays in view above the run's last line (drawer open, 1920 px).
+      const box = document.querySelector("#console .log").getBoundingClientRect();
+      const line = next?.querySelector(".run-next p")?.getBoundingClientRect();
       return {
         ids: next ? [...next.querySelectorAll(".scenario-next button[data-id]")].map((b) => b.dataset.id) : [],
         others: (window.SCENARIOS || []).filter((s) => s.id !== "SC-PLATFORM").map((s) => s.id),
-        beforeLast: !!next && entries.indexOf(next) === entries.length - 2
+        beforeLast: !!next && entries.indexOf(next) === entries.length - 2,
+        lineInView: !!line && line.top >= box.top - 1 && line.bottom <= box.bottom + 1
       };
     });
     await shot(page, "05-done.png");
@@ -231,7 +235,7 @@ if (wanted("sim")) {
     [checks.drafts > 0, "approval must produce drafts"],
     [checks.statusEnd === "Done" && checks.startLabel === "New run", "run ends Done"],
     [checks.lastEntryInView && checks.replayFacts, "console ends on the Replay facts line (closed, the facts inside)"],
-    [checks.next?.ids.length >= 5 && checks.next.ids.join(",") === checks.next.others.join(",") && checks.next.beforeLast, `just above it, the other scenarios (${JSON.stringify(checks.next)})`],
+    [checks.next?.ids.length >= 5 && checks.next.ids.join(",") === checks.next.others.join(",") && checks.next.beforeLast && checks.next.lineInView, `just above it, the other scenarios, their line in view (${JSON.stringify(checks.next)})`],
     [!!checks.nextRun && checks.nextRun.says.includes(checks.nextRun.want), `choosing one opens the mode choice for that scenario (${JSON.stringify(checks.nextRun)})`],
     [checks.reportHasSimNote, "summary marked as simulated"],
     [checks.auditMode === "simulation" && checks.auditRunFacts && checks.auditNoKey && /^run-\d{8}-\d{4}-\w+-SIMULATION-audit\.json$/.test(checks.auditFile || ""), `audit export: simulation mode, run facts, no key (${checks.auditFile})`]

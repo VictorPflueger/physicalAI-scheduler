@@ -89,7 +89,7 @@ Die Abgleichsansicht steht in voller Größe: jeder Kanal grün, der alte Wert d
 
 In der Konsole steht über der letzten Zeile **Try another scenario** mit den anderen fünf Szenarien. Darauf zeigen, damit das Publikum sieht, dass es mehr gibt:
 
-> „Fünf weitere Fälle stehen bereit, jeder eine andere Art von Widerspruch. Ein Klick, und der nächste läuft.“
+> „Fünf weitere Fälle stehen bereit, jeder eine andere Art von Widerspruch; hier wählen Sie den nächsten.“
 
 > „Nächster Schritt: ein Schattenbetrieb auf einer Linie, nur lesend, gemessen an Ihren Kennzahlen. Den Vorschlag dazu schicke ich Ihnen nach dem Termin.“
 
@@ -131,7 +131,7 @@ In der Konsole **Open management summary** zeigen, dann **Audit → Export JSON*
 
 ### 7:30 — Ein zweites Szenario
 
-Replay **×2**, dann in der Konsole unter **Try another scenario** auf **6 Construction order** klicken (oder im Szenario-Menü **Construction order breaks a connection in Dortmund**, dann **New run**) → **Run simulation**. In der Abgleichsansicht zeigen, was sich ändert: Die Quelle sagt **Arrives 10:00** und **Connection lost**, Reiseauskunft und Ansagen zeigen noch **Arrives 09:56** und **RE 57 reachable**.
+Replay **×2** (bei 1280 × 720 zuerst die Schublade mit **Hide** schließen, sonst bleibt für die Konsole kein Platz), dann in der Konsole unter **Try another scenario** auf **6 Construction order** klicken (oder im Szenario-Menü **Construction order breaks a connection in Dortmund**, dann **New run**) → **Run simulation**. In der Abgleichsansicht zeigen, was sich ändert: Die Quelle sagt **Arrives 10:00** und **Connection lost**, Reiseauskunft und Ansagen zeigen noch **Arrives 09:56** und **RE 57 reachable**.
 
 > „Eine Baustellen-Fahrplananordnung, freigegeben nach der täglichen Erzeugung: ICE 612 kommt vier Minuten später in Dortmund an, und der Anschluss an den RE 57 bricht. Der Agent bittet die Disposition, den Anschluss zu halten; entscheiden tut sie. Dasselbe Muster, eine andere Art von Widerspruch.“
 

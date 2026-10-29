@@ -365,8 +365,11 @@ html { font-size: clamp(93.75%, 0.48vw + 50%, 112.5%); }
 .scenario-pick__item[aria-current="true"] .num-badge { background: var(--vc-accent); color: var(--vc-on-accent); }
 .scenario-pick__item[aria-current="true"] .num-badge::before { background: var(--vc-accent); }
 .run-next p { margin: 0; }
-.scenario-next { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.scenario-next__item { gap: 8px; }
+/* the others in columns of equal buttons (two in a laptop's console, three on a large screen; a long
+   name wraps inside its button), so the entry stays short enough for its line above to show with the
+   run's last line below it */
+.scenario-next { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 6px; }
+.scenario-next .scenario-next__item { gap: 8px; width: 100%; height: auto; min-height: var(--hit); padding-block: 4px; justify-content: flex-start; text-align: left; white-space: normal; line-height: 1.15; }
 .scenario-next .num-badge { width: 26px; height: 22px; }
 /* A short console (a laptop): one line per scenario, the kind of contradiction in the tooltip, and
    less air around the list, so all seven fit 1280 x 720 without scrolling. */

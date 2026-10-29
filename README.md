@@ -16,7 +16,7 @@ Open the live site, read the intro window with the audience, close it, and start
 
 **What it achieves.** 312 passengers misled becomes 7 with the recommended option; the right information reaches passengers in 2 minutes and every channel is aligned with the source in 8, before the train leaves rather than at the next publication cycle. Every figure comes from the source and a deterministic engine, every fact the AI writes is checked against what the tools returned, the passenger message is drafted in German and English, and nothing goes out without approval.
 
-The other five scenarios (a diversion, an operational stop published as a passenger stop, a new terminus, a reversed coach order, a construction order) are there for questions: before a run the console lists all six, and when a run has finished, **Try another scenario** above its last line starts any of the others with one click. **Timetables** shows the source timetable beside each channel's, stop by stop; **All trains** lists every train in the next three hours.
+The other five scenarios (a diversion, an operational stop published as a passenger stop, a new terminus, a reversed coach order, a construction order) are there for questions: before a run the console lists all six, and when a run has finished, **Try another scenario** above its last line offers the others, each one click from the mode choice for its run. **Timetables** shows the source timetable beside each channel's, stop by stop; **All trains** lists every train in the next three hours.
 
 ## What it is and why it matters
 

@@ -145,7 +145,7 @@ export function createConsole(panel, { scenarios = [], onPickScenario, onRunScen
     const others = scenarios.filter((s) => s.id !== doneId);
     if (!others.length) return null;
     return entry("next", null, "list", h("div", { class: "run-next" },
-      h("p", {}, h("strong", {}, doneId ? "Try another scenario" : "Try a scenario"), " · each shows a different kind of contradiction."),
+      h("p", {}, h("strong", {}, doneId ? "Try another scenario" : "Try a scenario"), ", each a different contradiction:"),
       h("ul", { class: "scenario-next", "aria-label": "Start a run of another scenario" }, others.map((s) => {
         const b = h("button", { class: "vc-button vc-button--outline button-compact scenario-next__item", type: "button", dataset: { id: s.id }, title: `Start a run of scenario ${s.number}: ${s.title}` },
           h("span", { class: "num-badge", "aria-hidden": "true" }, String(s.number)),
