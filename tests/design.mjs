@@ -190,7 +190,11 @@ for (const theme of wanted("states") ? THEMES : []) {
     await page.click('.vc-menu__item[data-id="SC-OPSSTOP"]');
     await toOptions(page);
     await page.click('.option-card[aria-label^="Option B:"] [data-action="approve"]');
-    await page.waitForTimeout(800);
+    // The player takes the decision once it has finished its recommendation (it queues the click until
+    // then), so wait for the decision's payoff on the mirror rather than a fixed time: a slower machine
+    // takes longer to get there.
+    await page.waitForFunction(() => document.querySelector('#mirror [data-tone="at-risk"]') && !document.querySelector('#mirror [data-tone="affected"]'), null, { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(400);
     const warning = await mirrorColours(page);
     problems.push(...warning.mismatches.map((m) => `informed only: ${m}`));
     if (!warning.counted.at_risk || warning.counted.affected) problems.push(`option B is not in the warning tone on the mirror (${JSON.stringify(warning.counted)})`);
