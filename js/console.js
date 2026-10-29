@@ -139,12 +139,12 @@ export function createConsole(panel, { scenarios = [], onPickScenario, onRunScen
 
   /**
    * After a run: the other scenarios, one click from a new run of each (the mode dialog comes first).
-   * Part of the run's last line, below its facts, so the console still ends on the run's end.
+   * An entry of its own just above the run's last line, so the console still ends on the run's end.
    */
   function nextScenarios(doneId) {
     const others = scenarios.filter((s) => s.id !== doneId);
     if (!others.length) return null;
-    return h("div", { class: "run-next" },
+    return entry("next", null, "list", h("div", { class: "run-next" },
       h("p", {}, h("strong", {}, doneId ? "Try another scenario" : "Try a scenario"), " · each shows a different kind of contradiction."),
       h("ul", { class: "scenario-next", "aria-label": "Start a run of another scenario" }, others.map((s) => {
         const b = h("button", { class: "vc-button vc-button--outline button-compact scenario-next__item", type: "button", dataset: { id: s.id }, title: `Start a run of scenario ${s.number}: ${s.title}` },
@@ -152,7 +152,7 @@ export function createConsole(panel, { scenarios = [], onPickScenario, onRunScen
           h("span", {}, h("span", { class: "vc-visually-hidden" }, `Scenario ${s.number}: `), s.short || s.title));
         b.addEventListener("click", () => onRunScenario?.(s.id));
         return h("li", {}, b);
-      })));
+      }))));
   }
 
   function add(el) {
@@ -408,6 +408,9 @@ export function createConsole(panel, { scenarios = [], onPickScenario, onRunScen
       incomplete: "Run stopped before the workflow was complete."
     }[status] || "Run ended.";
     const canSave = status === "done" && sawReport && runMeta?.mode === "live" && runMeta?.entry === "scenario";
+    // What next: the other scenarios, so a visitor who started from the intro finds them.
+    const next = nextScenarios(runMeta?.entry === "scenario" ? runMeta.scenario_id : null);
+    if (next) add(next);
     // Facts for completed runs (the audit has every event up to this one).
     let facts = null;
     if (["done", "no_findings", "incomplete"].includes(status)) {
@@ -418,9 +421,7 @@ export function createConsole(panel, { scenarios = [], onPickScenario, onRunScen
       // The run's facts (tool calls, checks, cost) are one click away: the audience reads "Run complete".
       facts ? h("details", { class: "run-facts" }, h("summary", {}, icon("chevronRight", 14), runMeta?.mode === "simulation" ? "Replay facts" : "Run facts"), h("p", {}, facts)) : null,
       canSave ? h("div", { class: "entry-actions" },
-        h("button", { class: "vc-button vc-button--outline button-compact", type: "button", title: "Download this run as a simulation script that can replace the scripted replay of this scenario", on: { click: () => onSaveSimulation?.() } }, icon("download", 16), "Save run as simulation")) : null,
-      // What next: the other scenarios, so a visitor who started from the intro finds them.
-      nextScenarios(runMeta?.entry === "scenario" ? runMeta.scenario_id : null)),
+        h("button", { class: "vc-button vc-button--outline button-compact", type: "button", title: "Download this run as a simulation script that can replace the scripted replay of this scenario", on: { click: () => onSaveSimulation?.() } }, icon("download", 16), "Save run as simulation")) : null),
     { level: status === "error" ? "error" : "info" }));
     for (const el of byMsg.values()) { el.classList.remove("streaming"); el.removeAttribute("aria-busy"); }
   });

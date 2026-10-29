@@ -364,7 +364,6 @@ html { font-size: clamp(93.75%, 0.48vw + 50%, 112.5%); }
 .scenario-pick .num-badge::before, .scenario-next .num-badge::before { content: ""; position: absolute; inset: 1px 1.1547px; z-index: -1; clip-path: var(--vc-hex); background: var(--vc-surface); }
 .scenario-pick__item[aria-current="true"] .num-badge { background: var(--vc-accent); color: var(--vc-on-accent); }
 .scenario-pick__item[aria-current="true"] .num-badge::before { background: var(--vc-accent); }
-.run-next { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--vc-border-subtle); }
 .run-next p { margin: 0; }
 .scenario-next { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .scenario-next__item { gap: 8px; }
