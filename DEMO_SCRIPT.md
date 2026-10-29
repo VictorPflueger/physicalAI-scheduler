@@ -131,7 +131,7 @@ In der Konsole **Open management summary** zeigen, dann **Audit → Export JSON*
 
 ### 7:30 — Ein zweites Szenario
 
-Replay **×2**, dann in der Konsole unter **Try another scenario** auf **Construction order breaks a connection in Dortmund** klicken (oder Szenario-Menü, dann **New run**) → **Run simulation**. In der Abgleichsansicht zeigen, was sich ändert: Die Quelle sagt **Arrives 10:00** und **Connection lost**, Reiseauskunft und Ansagen zeigen noch **Arrives 09:56** und **RE 57 reachable**.
+Replay **×2**, dann in der Konsole unter **Try another scenario** auf **6 Construction order** klicken (oder im Szenario-Menü **Construction order breaks a connection in Dortmund**, dann **New run**) → **Run simulation**. In der Abgleichsansicht zeigen, was sich ändert: Die Quelle sagt **Arrives 10:00** und **Connection lost**, Reiseauskunft und Ansagen zeigen noch **Arrives 09:56** und **RE 57 reachable**.
 
 > „Eine Baustellen-Fahrplananordnung, freigegeben nach der täglichen Erzeugung: ICE 612 kommt vier Minuten später in Dortmund an, und der Anschluss an den RE 57 bricht. Der Agent bittet die Disposition, den Anschluss zu halten; entscheiden tut sie. Dasselbe Muster, eine andere Art von Widerspruch.“
 
