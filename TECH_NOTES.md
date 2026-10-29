@@ -208,6 +208,8 @@ Run states (as the status pill and the console name them, in the words of the fi
 
 On 28 October 2026, for 1.3.0, `node tests/run-all.mjs` passed every suite, none skipped, with checkouts of Rebate Hunter (`73c00f8`), Vici (v1.0.0, `fdd868b`) and Victor's website next to this repository, so that the parity, Vici-files and page-icon checks compared rather than skipped.
 
+On 29 October 2026, for 1.3.1, `node tests/run-all.mjs` passed every suite again, none skipped, against the same checkouts of Rebate Hunter and Vici and the website at `f6f7aae`; the smoke suite has eleven cases since, with *picker*.
+
 | What | How | Result |
 |---|---|---|
 | Station codes and names | All 16 checked code by code against the public operating-point directory (2018 open-data edition, `ds-100` module) | All match (`DATA_SOURCES.md` §2) |
