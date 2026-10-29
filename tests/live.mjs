@@ -673,7 +673,7 @@ const EXPECT = {
   "live: key rejected (401)": (c) => [[c.keyForgotten && /401/.test(c.message || ""), "key removed and 401 explained"]],
   "live: sweep with no findings": (c) => [
     [/no material finding/i.test(c.endLine || "") && /Run facts/.test(c.endLine || "") && /tool calls/.test(c.endLine || ""), `honest end with run facts (got ${c.endLine})`],
-    [c.monitor?.view === "monitor" && /^Live sweep: 3 of 34 checked/.test(c.monitor?.caption || "") && c.monitor?.inSync?.join(",") === "RE 10106,ICE 614,RE 10107", `the monitor shows the sweep (got ${JSON.stringify(c.monitor)})`]
+    [c.monitor?.view === "monitor" && /^Live sweep: 3 of 36 checked/.test(c.monitor?.caption || "") && c.monitor?.inSync?.join(",") === "RE 10106,ICE 614,RE 10107", `the monitor shows the sweep (got ${JSON.stringify(c.monitor)})`]
   ],
   "live: guardrails (broken-off response, alerts, options, stale decision, drafts, outcome)": (c) => [
     [c.discarded >= 1, `the broken-off response's text is marked as discarded (got ${c.discarded})`],

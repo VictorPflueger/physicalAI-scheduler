@@ -269,6 +269,13 @@ button.al-card:hover { border-color: var(--vc-border-strong); }
 .align[data-size="tiny"] .al-impact { min-height: 0; padding: 3px 12px; font-size: var(--fs-xs); border-radius: var(--vc-radius-sm); }
 .align[data-size="tiny"] .al-impact-num { font-size: 1.2rem; }
 .align[data-size="tiny"] .al-impact > .vc-icon { display: none; }
+/* dense: the smallest size when it still outgrows the view (js/mirror.js), for instance two values on a
+   channel with one wrapping ("IC 2117 reachable"): values and names a step smaller, less air, so the
+   impact line stays in view; nothing is cut */
+.align[data-size="tiny"][data-dense="true"] :is(.al-fact, .al-ch-value) { font-size: 0.82rem; line-height: 1.1; }
+.align[data-size="tiny"][data-dense="true"] .al-channel { padding-block: 3px; }
+.align[data-size="tiny"][data-dense="true"] .al-channel .al-card-top { line-height: 1.15; }
+.align[data-size="tiny"][data-dense="true"] :is(.al-ch-values, .al-facts) { gap: 1px; }
 
 /* a narrow mirror (a laptop): the source card keeps its marks, the German names give way */
 #mirror[data-w="narrow"] .al-source .al-tag-text, #mirror[data-w="narrow"] .al-source .al-de { display: none; }

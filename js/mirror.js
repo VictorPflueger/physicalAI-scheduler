@@ -577,7 +577,12 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     // legend that narrows the cards) steps the view down a size, so the impact line stays in view.
     const SIZES = ["tall", "mid", "short", "tiny"];
     const view = align.element;
-    for (let i = SIZES.indexOf(size); i < SIZES.length - 1 && view.clientHeight > 0 && view.scrollHeight > view.clientHeight + 1; i++) view.dataset.size = SIZES[i + 1];
+    const outgrows = () => view.clientHeight > 0 && view.scrollHeight > view.clientHeight + 1;
+    delete view.dataset.dense;
+    for (let i = SIZES.indexOf(size); i < SIZES.length - 1 && outgrows(); i++) view.dataset.size = SIZES[i + 1];
+    // The smallest size packs tighter when it still outgrows the view (two values on a channel, one of
+    // them wrapping in a narrow card): values and names a step smaller, less air.
+    if (view.dataset.size === "tiny" && outgrows()) view.dataset.dense = "true";
     if (st.focusCard) { st.focusCard = false; align.focusFirst(); }
   }
 
