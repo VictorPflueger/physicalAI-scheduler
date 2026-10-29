@@ -255,6 +255,16 @@ Answered and kept: the console is still the densest part (about 480 words of nar
 |---|---|---|---|
 | C49 | Every scenario ran inside one national corridor; a train planned from several railways' deliveries, whose customer timetable is merged from them at fixed times, was not covered | Scenario 7: ICE 318 from Dortmund via Köln and Aachen to Bruxelles-Midi; the partner railway delivers works on its section at 06:12, after the European timetable's merge at 04:00, so the journey planner and the on-board announcements show the old arrival and a lost connection while the displays show the new one. Option A merges the train again from both deliveries, checked before release, and aligns every channel in 20 minutes; B informs as well but waits for the next merge (D-T38, D-T39). The strip draws the line to Brussels and the border for that train only (D-T40) | `tools/build_world.mjs`, `data/scenarios.js`, `data/reference_cases.js`, `data/sim_runs.js`, `js/mirror_data.js`, `js/mirror_strip.js` |
 
+Found by an independent review of both changes (an agent that had not built them, 29 October 2026: the screenshots of the scenario list and of scenario 7 at 1920 × 1080 and 1280 × 720, light and dark, and the stage script) and fixed:
+
+| ID | What the customer saw | Change | Where |
+|---|---|---|---|
+| C50 | After a run, the line *Try another scenario* sat above the visible part of the console, its buttons one per row on a laptop | The other scenarios stand in equal columns, two on a laptop and three on a large screen, and the line stays in view above the run's last line; the smoke suite checks it with the drawer open | `css/style.css`, `js/console.js`, `tests/smoke.mjs` |
+| C51 | At 1280 × 720, the second label at ICE 318's last stop (*Connection*, 41) ran out of the timetable card | A stack of labels that would run past the last row moves up instead | `js/mirror_card.js` |
+| C52 | The running times that confirm the partner's works were yesterday's, while the works are valid from today | The partner's first two trains on the section this morning, +8.6 and +9.3 min | `tools/build_world.mjs`, `data/sim_runs.js` |
+| C53 | Option A's residual risk said a few act before the message reaches them, with 80 minutes to go | *A few miss the app, the announcement and the crew alike* | `data/sim_runs.js` |
+| C54 | The stage script named a button by its full title, promised a run with one click, did not say to hide the drawer on a laptop, and had no answer to the 08:00 cycle, the three left with A and B, 252 against 230 and the first moment at Liège | All corrected or answered in the script's questions; the summary's table says *at tonight's merge* instead of *never* | `DEMO_SCRIPT.md`, `data/sim_runs.js` |
+
 ## Part 6. Decisions and open points
 
 The decisions are logged as D-T1 to D-T42 in `TECH_NOTES.md` §8. Open points for a next version: a rehearsal and a recorded live run per scenario (O1, O2); origin–destination figures if a pilot has them (O3); a German interface if the audience asks for it (O4); an audit by train and stop in live mode (O5); and, for a client setting, the app on its own host rather than a shared `github.io` origin (`README.md`, *Your API key*).
