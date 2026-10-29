@@ -1,10 +1,13 @@
 // Smoke tests of the main flows and the failure modes of loading:
 //   sim          a full Simulation run (ICE 618's platform change) with the finding on the alignment
 //                view and in the timetables, options, the approval's payoff (both views and the KPI
-//                tiles), outbox, summary and audit export
+//                tiles), outbox, summary and audit export; at the end the other scenarios, one of which
+//                opens the mode choice for itself
 //   live         key check (401, then accepted), a model that keeps ending its turn early
 //   diag         Diagnostics dialog, custom what-if blocks Simulation
 //   intro        first visit opens the intro window; "How it works" reopens it; Start agent leads to the mode choice
+//   picker       the idle console lists the scenarios in the menu's order and marks the current one; a click
+//                selects one (control, mirror and mark follow); the control says "N of M", on a laptop too
 //   mirror       the timetable mirror by mouse and keyboard: a scenario's train in the alignment view
 //                (its cards with the focus ring), then the timetables: the popovers of both timetables
 //                and of a station (Escape returns the focus), the channel chips, the legend and its
@@ -169,6 +172,16 @@ if (wanted("sim")) {
       const d = els.slice(-1)[0]?.querySelector("details.run-facts");
       return !!d && !d.open && d.querySelector("summary")?.textContent.trim() === "Replay facts" && /tool calls/.test(d.querySelector("p")?.textContent || "");
     });
+    // Just above that line, the other scenarios, each one click from its own run.
+    checks.next = await page.evaluate(() => {
+      const entries = [...document.querySelectorAll("#console .entry")];
+      const next = entries.find((e) => e.dataset.type === "next");
+      return {
+        ids: next ? [...next.querySelectorAll(".scenario-next button[data-id]")].map((b) => b.dataset.id) : [],
+        others: (window.SCENARIOS || []).filter((s) => s.id !== "SC-PLATFORM").map((s) => s.id),
+        beforeLast: !!next && entries.indexOf(next) === entries.length - 2
+      };
+    });
     await shot(page, "05-done.png");
     await page.click('button:has-text("Open management summary")');
     await page.waitForSelector(".report-modal", { timeout: 5000 });
@@ -187,6 +200,15 @@ if (wanted("sim")) {
     checks.auditRunFacts = !!audit.run_facts;
     checks.keyStored = await page.evaluate((k) => !!sessionStorage.getItem(k), KEYS.apiKey);
     checks.auditNoKey = checks.keyStored && !JSON.stringify(audit).includes("MOCKKEY") && !JSON.stringify(audit).includes("sk-ant");
+    // Choosing another scenario at the end opens the mode choice for exactly that scenario.
+    const last = checks.next.ids[checks.next.ids.length - 1];
+    if (last) {
+      const want = await page.evaluate((id) => { const s = window.SCENARIOS.find((x) => x.id === id); return `Scenario ${s.number} of ${window.SCENARIOS.length}: ${s.title}`; }, last);
+      await page.click(`#console .entry[data-type="next"] .scenario-next button[data-id="${last}"]`);
+      await page.waitForSelector(".mode-card", { timeout: 5000 });
+      checks.nextRun = { want, says: (await page.textContent(".run-summary")).replace(/\s+/g, " ").trim() };
+      await page.keyboard.press("Escape");
+    }
   } catch (err) {
     checks.FAILED = String(err.message).split("\n")[0];
     await shot(page, "sim-fail.png");
@@ -209,6 +231,8 @@ if (wanted("sim")) {
     [checks.drafts > 0, "approval must produce drafts"],
     [checks.statusEnd === "Done" && checks.startLabel === "New run", "run ends Done"],
     [checks.lastEntryInView && checks.replayFacts, "console ends on the Replay facts line (closed, the facts inside)"],
+    [checks.next?.ids.length >= 5 && checks.next.ids.join(",") === checks.next.others.join(",") && checks.next.beforeLast, `just above it, the other scenarios (${JSON.stringify(checks.next)})`],
+    [!!checks.nextRun && checks.nextRun.says.includes(checks.nextRun.want), `choosing one opens the mode choice for that scenario (${JSON.stringify(checks.nextRun)})`],
     [checks.reportHasSimNote, "summary marked as simulated"],
     [checks.auditMode === "simulation" && checks.auditRunFacts && checks.auditNoKey && /^run-\d{8}-\d{4}-\w+-SIMULATION-audit\.json$/.test(checks.auditFile || ""), `audit export: simulation mode, run facts, no key (${checks.auditFile})`]
   ]);
@@ -333,6 +357,7 @@ if (wanted("intro")) {
     checks.fits = await page.$eval(".intro-modal", (e) => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; });
     await page.waitForTimeout(200);
     checks.focus = await page.evaluate(() => document.activeElement?.textContent?.trim());
+    checks.note = (await page.textContent(".intro-modal .vc-dialog__footer .dialog-note"))?.trim();
     await shot(page, "20-intro.png");
     await page.click('.intro-modal .vc-dialog__footer button:has-text("Close")');
     await page.waitForSelector(".intro-modal", { state: "detached", timeout: 3000 });
@@ -372,7 +397,69 @@ if (wanted("intro")) {
     [checks.flag === "1" && checks.reopenedOnReload === false, "once closed, it does not open again on reload"],
     [checks.buttonLabel === "How it works", "header button labelled How it works"],
     [checks.startOpensModeChoice === "simulation,live", "Start agent in the intro opens the mode choice"],
-    [JSON.stringify(checks.duringRunButtons) === '["Close"]' && /Spotting|Assessing|Checking|Calculating|Proposing/.test(checks.statusAfterClose || ""), `during a run: Close only, and the run carries on (${checks.duringRunButtons}, ${checks.statusAfterClose})`]
+    [JSON.stringify(checks.duringRunButtons) === '["Close"]' && /Spotting|Assessing|Checking|Calculating|Proposing/.test(checks.statusAfterClose || ""), `during a run: Close only, and the run carries on (${checks.duringRunButtons}, ${checks.statusAfterClose})`],
+    [/^[A-Z][a-z]+ scenarios in the Scenario menu\.$/.test(checks.note || ""), `the intro's footer points to the scenarios (${checks.note})`]
+  ]);
+}
+
+// ---- picker: the scenarios in view -------------------------------------------------------------------------
+// Before a run the console lists every preset scenario, in the Scenario menu's order, with its number and
+// title, and marks the current one; a click selects it (the control and the mirror follow) and the menu
+// moves the mark too. The control names the scenario as "N of M", on a laptop as well.
+if (wanted("picker")) {
+  const t = await newPage();
+  const { page } = t;
+  const checks = {};
+  const list = "#console .log-empty .scenario-pick button[data-id]";
+  const marked = () => page.$$eval(`${list}[aria-current="true"]`, (els) => els.map((e) => e.dataset.id).join(","));
+  const control = () => page.$eval("#dd-scenario", (e) => e.innerText.replace(/\s+/g, " ").trim());
+  try {
+    await boot(page);
+    await page.waitForTimeout(500);
+    checks.scenarios = await page.evaluate(() => (window.SCENARIOS || []).map((s) => ({ id: s.id, number: s.number, title: s.title, short: s.short, train: (window.WORLD?.trains || []).find((x) => x.id === s.train_id)?.number || null })));
+    await page.click("#dd-scenario");
+    checks.menu = await page.$$eval('.vc-menu[aria-labelledby="dd-scenario"] .vc-menu__item[data-id]', (els) => els.map((e) => e.dataset.id).filter((id) => id !== "custom"));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(200);
+    checks.items = await page.$$eval(list, (els) => els.map((e) => ({ id: e.dataset.id, text: e.textContent.replace(/\s+/g, " ").trim(), h: Math.round(e.getBoundingClientRect().height), w: Math.round(e.getBoundingClientRect().width) })));
+    checks.heading = (await page.textContent("#console .log-empty h3")).trim();
+    checks.markIdle = await marked();
+    checks.controlIdle = await control();
+    await shot(page, "22-picker-idle.png");
+    const second = checks.scenarios[1];
+    await page.click(`${list}[data-id="${second.id}"]`);
+    await page.waitForTimeout(500);
+    checks.afterClick = { mark: await marked(), control: await control(), caption: (await page.textContent("#mirror .mirror-caption strong")).trim() };
+    await pickScenario(page, checks.scenarios[0].id);
+    checks.markAfterMenu = await marked();
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.waitForTimeout(500);
+    checks.controlLaptop = await control();
+    checks.laptop = await page.evaluate((sel) => {
+      const log = document.querySelector("#console .log");
+      const box = log.getBoundingClientRect();
+      const first = document.querySelector(sel).getBoundingClientRect();
+      return { sideways: log.scrollWidth - log.clientWidth, firstInView: first.top >= box.top - 1 && first.bottom <= box.bottom + 1, bar: Math.round(document.getElementById("controls").getBoundingClientRect().height) };
+    }, list);
+    await shot(page, "23-picker-laptop.png");
+  } catch (err) {
+    checks.FAILED = String(err.message).split("\n")[0];
+    await shot(page, "picker-fail.png");
+  }
+  const sc = checks.scenarios || [];
+  const n = sc.length;
+  const ids = sc.map((s) => s.id).join(",");
+  await finish("picker: the scenarios in the idle console and on the control", t, checks, [
+    [n >= 6 && (checks.menu || []).join(",") === ids, `the Scenario menu lists the preset scenarios (${checks.menu})`],
+    [(checks.items || []).map((i) => i.id).join(",") === ids, `the idle console lists them in the menu's order (${(checks.items || []).map((i) => i.id)})`],
+    [(checks.items || []).every((i) => { const s = sc.find((x) => x.id === i.id); return s && i.text.includes(String(s.number)) && i.text.includes(s.title) && i.h >= 40 && i.w >= 40; }), "each item shows its number and title and is at least 40 px"],
+    [checks.heading === "Pick a scenario, then start the agent", `the list's heading (${checks.heading})`],
+    [checks.markIdle === sc[0]?.id && checks.controlIdle?.includes(`1 of ${n}`), `the first scenario is marked and the control says 1 of ${n} (${checks.markIdle}; ${checks.controlIdle})`],
+    [checks.afterClick?.mark === sc[1]?.id && checks.afterClick?.control.includes(`${sc[1]?.number} of ${n}`) && checks.afterClick?.control.includes(sc[1]?.short) && checks.afterClick?.caption.startsWith(`${sc[1]?.train} `),
+      `a click selects the scenario: mark, control and mirror follow (${JSON.stringify(checks.afterClick)})`],
+    [checks.markAfterMenu === sc[0]?.id, `the menu moves the mark too (${checks.markAfterMenu})`],
+    [checks.controlLaptop?.includes(`1 of ${n}`) && checks.laptop?.sideways <= 0 && checks.laptop?.firstInView && checks.laptop?.bar <= 70,
+      `at 1280×720 the control still says 1 of ${n}, the list starts in view, nothing overflows (${checks.controlLaptop}; ${JSON.stringify(checks.laptop)})`]
   ]);
 }
 

@@ -2,7 +2,7 @@
 
 A live, agentic AI demo for passenger information on the railway. The Timetable Translator stands between the **Betriebsfahrplan**, the operational timetable that operations keep (every operating point, tenths of a minute, tracks, operational stops), and the **Kundenfahrplan**, the customer timetable passengers see in the journey planner and app, on station displays, in announcements and in the coach order. It answers the question a passenger-information desk asks every morning: *where does what we tell passengers contradict what the trains will really do, who will act on the wrong information, how soon, and what is the cleanest way to put it right?*
 
-**Live site: [victorpflueger.github.io/physicalAI-scheduler](https://victorpflueger.github.io/physicalAI-scheduler/)** · Version 1.3.0 · Static website, no backend, no build step. It looks like the rest of Victor Pflüger's work: it is built on his design system Vici, in a light and a dark theme. It is a sister prototype of the Navigator (supply-chain disruptions), Rebate Hunter (procurement rebates) and Repack Pilot, built on the same shell.
+**Live site: [victorpflueger.github.io/physicalAI-scheduler](https://victorpflueger.github.io/physicalAI-scheduler/)** · Version 1.3.1 · Static website, no backend, no build step. It looks like the rest of Victor Pflüger's work: it is built on his design system Vici, in a light and a dark theme. It is a sister prototype of the Navigator (supply-chain disruptions), Rebate Hunter (procurement rebates) and Repack Pilot, built on the same shell.
 
 ---
 
@@ -16,7 +16,7 @@ Open the live site, read the intro window with the audience, close it, and start
 
 **What it achieves.** 312 passengers misled becomes 7 with the recommended option; the right information reaches passengers in 2 minutes and every channel is aligned with the source in 8, before the train leaves rather than at the next publication cycle. Every figure comes from the source and a deterministic engine, every fact the AI writes is checked against what the tools returned, the passenger message is drafted in German and English, and nothing goes out without approval.
 
-The other five scenarios (a diversion, an operational stop published as a passenger stop, a new terminus, a reversed coach order, a construction order) are there for questions. **Timetables** shows the source timetable beside each channel's, stop by stop; **All trains** lists every train in the next three hours.
+The other five scenarios (a diversion, an operational stop published as a passenger stop, a new terminus, a reversed coach order, a construction order) are there for questions: before a run the console lists all six, and when a run has finished, **Try another scenario** above its last line starts any of the others with one click. **Timetables** shows the source timetable beside each channel's, stop by stop; **All trains** lists every train in the next three hours.
 
 ## What it is and why it matters
 
@@ -119,6 +119,7 @@ On a first visit, a short window explains what the Timetable Translator does (th
 - **All trains** (the sync monitor) lists every train in the next 180 minutes (the S-Bahn shuttles aside), first departure first, with its source version, the channels still behind it, and what the agent's check found. The Live sweep fills it in as it goes. A row opens its train.
 - **While the agent works**, the column it reads pulses in fjord blue, the station a sensor was read at gets a mark, and tags record what was checked (source read, published view read, physical layer read, passengers read). When the drawer opens, the mirror makes room: first the strip goes, then the card's head, so the rows with the finding stay in view. **Legend** explains every mark and has toggles for passing points, lines and the strip.
 - **The progress rail** above the console shows the agent's plan in five steps and where it is now. **Guardrail** lines in the console show where code refused a step and why.
+- **Choosing a scenario.** Before a run the console lists the six preset scenarios, each a different kind of contradiction, with scenario 1 marked *Start here*; a click loads one (the mirror shows its train) and **Start agent** runs it. The Scenario control in the control bar names the one loaded (*Scenario 1 of 6: Platform change*, on a laptop *1 of 6 Platform change*), and its menu holds the same list and the custom what-if. When a run has finished, **Try another scenario** above the console's last line offers the other five: one click opens the mode choice for that scenario.
 
 **Light or dark.** The page opens in the light theme, made for projectors in lit rooms. The moon in the header switches to the dark theme, and every page of Victor's site remembers the choice.
 
