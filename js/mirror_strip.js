@@ -1,5 +1,7 @@
 // The corridor strip above the mirror card: the Köln – Dortmund corridor as a schematic (the main line
-// along the bottom, the Wuppertal line along the top), the route the train in focus runs today
+// along the bottom, the Wuppertal line along the top; for a cross-border train also the line from Köln
+// through Aachen and the border to Liège and Brussels, on the upper lane to the left, with the border
+// drawn as a dashed line between the two countries), the route the train in focus runs today
 // according to the source (solid) and the one the journey planner still shows where the two differ
 // (dashed), its passenger stops, operational stops and passing points, where it is at the snapshot,
 // the stations the physical layer was read at, and the stations of a contradiction in their state
@@ -33,7 +35,8 @@ export function hexShape(cls = null) {
 const SHORT = {
   KK: "Köln", KKDZ: "Deutz", KKM: "Mülheim", KLMI: "Leverkusen", KD: "Düsseldorf", KDFF: "Flughafen",
   EDG: "Duisburg", EMLR: "Mülheim (R)", EE: "Essen", EBO: "Bochum", EDO: "Dortmund",
-  KSO: "Solingen", KW: "Wuppertal", KWO: "Oberbarmen", EHG: "Hagen", EWIT: "Witten"
+  KSO: "Solingen", KW: "Wuppertal", KWO: "Oberbarmen", EHG: "Hagen", EWIT: "Witten",
+  KA: "Aachen", KXA: "Border", XBLIG: "Liège", XBB: "Bruxelles"
 };
 const PAD = 34;
 // The room between two neighbouring names in a row of the strip, in pixels.
@@ -85,7 +88,9 @@ export function stripGeometry(nodes, width, size) {
   const yTop = names ? 44 : 26;
   const yBot = yTop + 42;
   const height = yBot + (names ? 44 : 26);
-  const x = (n) => PAD + (n.x / 100) * Math.max(10, width - 2 * PAD);
+  // The corridor spans 0–100; the line beyond Köln, when drawn, lies to the left of 0.
+  const minX = Math.min(0, ...nodes.map((n) => n.x));
+  const x = (n) => PAD + ((n.x - minX) / (100 - minX)) * Math.max(10, width - 2 * PAD);
   const pos = new Map(nodes.map((n) => [n.id, { x: x(n), y: n.y < 20 ? yTop : yBot, top: n.y < 20 }]));
   return { yTop, yBot, height, names, pos };
 }
@@ -111,6 +116,15 @@ export function createStrip({ onStation }) {
     const P = (id) => g.pos.get(id);
     const line = (ids) => ids.map((id, i) => `${i ? "L" : "M"}${P(id).x.toFixed(1)} ${P(id).y}`).join(" ");
 
+    // A border point: a dashed line from below its mark to the foot of the strip (its code and name
+    // stay clear above), the two countries' codes beside the line at the foot.
+    for (const n of data.nodes.filter((x) => x.border)) {
+      const bp = P(n.id);
+      const bx = bp.x;
+      svg.append(s("path", { class: "strip-border", d: `M${bx.toFixed(1)} ${(bp.y + 9).toFixed(1)} L${bx.toFixed(1)} ${g.height - 4}` }));
+      svg.append(s("text", { class: "border-code", x: (bx - 6).toFixed(1), y: g.height - 6, "text-anchor": "end" }, n.border.west));
+      svg.append(s("text", { class: "border-code", x: (bx + 6).toFixed(1), y: g.height - 6, "text-anchor": "start" }, n.border.east));
+    }
     // The network, then the route as published (where it differs), then today's route.
     for (const e of data.edges) svg.append(s("path", { class: "net", d: line([e.a, e.b]) }));
     const differs = data.published.length && data.published.join() !== data.route.join();

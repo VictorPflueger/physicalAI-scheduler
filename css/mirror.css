@@ -105,6 +105,10 @@
 @keyframes nodePulse { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
 .strip .node-sensor { fill: var(--vc-info-solid); stroke: var(--vc-surface); stroke-width: 1.5; }
 .strip .node-code { font: 500 10.5px var(--vc-font-mono); fill: var(--vc-text-muted); }
+/* The border on the line beyond the corridor: a thin dashed upright in the network's neutral, the two
+   countries' codes at its foot (west, east); upright and finer than the dashed route as published. */
+.strip .strip-border { stroke: var(--vc-neutral-solid); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
+.strip .border-code { font: 600 10.5px var(--vc-font-mono); fill: var(--vc-text-muted); letter-spacing: 0.04em; }
 .strip .node-name { font: 600 11.5px var(--vc-font-text); fill: var(--vc-text-muted); }
 .strip .node-name[data-hub="true"] { font-weight: 700; fill: var(--vc-text); }
 .strip .node[data-role="stop"] .node-code, .strip .node[data-role="ops"] .node-code { fill: var(--vc-text); font-weight: 600; }
@@ -245,6 +249,8 @@
 .mrow .t[data-lines="1"] .ta, .mrow .t[data-lines="1"] .td { color: var(--vc-text); }
 .mrow .t[data-pass="true"] { color: var(--vc-text-subtle); font-style: italic; }
 .mrow .code { font: 500 0.78rem / 1 var(--vc-font-mono); color: var(--vc-text-muted); }
+/* A five-letter code (a foreign station, XBLIG) a size smaller, so it stays on one line in its column. */
+.mrow .code[data-long="true"] { font-size: 0.68rem; letter-spacing: -0.02em; white-space: nowrap; }
 .mrow .nm { display: grid; min-width: 0; line-height: 1.15; }
 .mrow .nm strong { font: 600 0.95rem / 1.2 var(--vc-font-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mrow .nm .sub { font-size: 0.76rem; color: var(--vc-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

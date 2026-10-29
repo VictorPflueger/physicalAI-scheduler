@@ -1,5 +1,5 @@
 /*
- * TIMETABLE TRANSLATOR — reference cases for the six preset scenarios.
+ * TIMETABLE TRANSLATOR — reference cases for the seven preset scenarios.
  *
  * A reference case is the sync position and the response options a representative agent run
  * would arrive at AFTER verification. It serves two purposes:
@@ -159,6 +159,32 @@ window.REFERENCE_CASES = {
         ] },
         { variant_id: "V3", name: "Messages only, data at tomorrow's run", actions: [
           { type: "message", channels: ["app_push", "announcements", "planner"] }
+        ] }
+      ]
+    }
+  },
+
+  "SC-EUROPE": {
+    hypothesis: {
+      label: "First estimate from the service desk: the journey planner and app only",
+      train_ids: ["T-318"], channels: ["planner"]
+    },
+    finding: {
+      label: "ICE 318 from the source: +9 min from Liège-Guillemins, the IC 2117 connection at Bruxelles-Midi lost; planner and on-board announcements still on the European timetable of 04:00",
+      train_ids: ["T-318"],
+      variants: [
+        { variant_id: "V1", name: "Merge ICE 318 again and re-publish it, tell the passengers and brief the crew on board", actions: [
+          { type: "republish" },
+          { type: "message", channels: ["app_push", "announcements"] },
+          { type: "staff" }
+        ] },
+        { variant_id: "V2", name: "Messages and train crew, the European timetable at tonight's merge", actions: [
+          { type: "message", channels: ["app_push", "announcements", "planner"] },
+          { type: "staff" }
+        ] },
+        { variant_id: "V3", name: "Override the on-board announcements by hand", actions: [
+          { type: "override", channels: ["announcements"] },
+          { type: "message", channels: ["app_push"] }
         ] }
       ]
     }

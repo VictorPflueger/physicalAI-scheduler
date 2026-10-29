@@ -1,4 +1,4 @@
-// Plays all six simulation scripts in the browser along four decision patterns (approve the
+// Plays all seven simulation scripts in the browser along four decision patterns (approve the
 // recommendation, reject one and approve another, accept the risk, reject all three and then accept
 // the risk) and checks the integrity rules: no unresolved placeholders, SIMULATION markings, no
 // network at all, the reasoning labels in the console, the payoff of the decision on the KPI tiles
@@ -23,7 +23,8 @@ const PLANS = {
   "SC-OPSSTOP": { reject: ["V1"], approve: "V2", drafts: "approve-all", mirror: "at_risk", monitor: /^Option B approved: informed, data behind$/ },
   "SC-TERMINUS": { reject: [], approve: "baseline", drafts: "approve-all", mirror: "accepted", monitor: /^Risk accepted: nothing changed$/ },
   "SC-COACH": { reject: ["V1", "V2", "V3"], approve: "baseline", drafts: "approve-all", mirror: "accepted", monitor: /^Risk accepted: nothing changed$/ },
-  "SC-FPLO": { reject: ["V3"], approve: "V2", drafts: "reject-last", mirror: "resolved", monitor: /^Option B approved: re-publish$/ }
+  "SC-FPLO": { reject: ["V3"], approve: "V2", drafts: "reject-last", mirror: "resolved", monitor: /^Option B approved: re-publish$/ },
+  "SC-EUROPE": { reject: [], approve: "V1", drafts: "approve-all", mirror: "resolved", monitor: /^Option A approved: re-publish$/ }
 };
 
 const results = [];

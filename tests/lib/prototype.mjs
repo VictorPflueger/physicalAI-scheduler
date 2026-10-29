@@ -48,6 +48,8 @@ export const COLOUR_PAIRS = [
   ["Corridor: the route as published and the network at rest", "neutral-solid", "surface", "mark"],
   ["Corridor: the train's position marker", "text", "surface", "mark"],
   ["Corridor: station codes and names", "text-muted", "surface", "text"],
+  ["Corridor: the border on the cross-border line (a dashed upright)", "neutral-solid", "surface", "mark"],
+  ["Corridor: the two countries' codes at the border", "text-muted", "surface", "text"],
   ["Mirror card: the translator (derived) between the two timetables", "feature-text", "surface", "text"],
   ["Mirror card: the translator while it compares (fjord)", "info-text", "surface", "text"],
   // The two timetables (surface): rows, lines, line labels.

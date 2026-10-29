@@ -4,7 +4,7 @@ Das Drehbuch ist auf Deutsch, weil der Pitch auf Deutsch gehalten wird. Die Ober
 
 **Publikum:** Fahrgastinformation, Betriebsführung und IT eines Eisenbahnunternehmens. **Ziel:** Nach fünf Minuten kann das Publikum drei Fragen beantworten: *Was tut er? Wie gleicht die KI die Information ab? Was bringt es?* Und einen Satz wiederholen: *„Die KI hält keinen eigenen Fahrplan. Sie übersetzt zwischen Betriebsfahrplan und Kundenfahrplan, findet die Widersprüche, lässt zählen, wer falsch informiert handeln würde und wann, und bereitet die Korrektur vor. Entscheidung und Veröffentlichung bleiben beim Menschen.“*
 
-**Empfohlener Lauf:** Szenario 1, **Short-notice platform change at Köln Hbf** (vor dem Lauf in der Liste der Konsole und im Szenario-Menü mit **Start here** markiert, in der Steuerleiste dann **Scenario 1 of 6: Platform change**, bei 1280 × 720 **1 of 6 Platform change**), im Modus **Simulation** bei Replay **×1**: eine vorbereitete Wiederholung eines typischen Agentenlaufs, überall als SIMULATION gekennzeichnet, ohne Schlüssel und ohne Netz; jede Zahl rechnet dabei dieselbe Engine wie im Live-Modus. Bis zur Entscheidung dauert der Lauf gut eine halbe Minute. Den Live-Modus zeigen Sie in der 10-Minuten-Fassung, wenn die Live-Probe am selben Tag auf demselben Netz sauber lief.
+**Empfohlener Lauf:** Szenario 1, **Short-notice platform change at Köln Hbf** (vor dem Lauf in der Liste der Konsole und im Szenario-Menü mit **Start here** markiert, in der Steuerleiste dann **Scenario 1 of 7: Platform change**, bei 1280 × 720 **1 of 7 Platform change**), im Modus **Simulation** bei Replay **×1**: eine vorbereitete Wiederholung eines typischen Agentenlaufs, überall als SIMULATION gekennzeichnet, ohne Schlüssel und ohne Netz; jede Zahl rechnet dabei dieselbe Engine wie im Live-Modus. Bis zur Entscheidung dauert der Lauf gut eine halbe Minute. Den Live-Modus zeigen Sie in der 10-Minuten-Fassung, wenn die Live-Probe am selben Tag auf demselben Netz sauber lief.
 
 **Bildschirm:** Am besten 1920 × 1080. Bei 1280 × 720 stehen in der Kopfzeile Symbole statt Wörtern (**How it works** ist das i im Sechseck, **Reset** und **Diagnostics** sind die Symbole rechts in der Steuerleiste). Sobald die Optionen offen sind, schrumpft die Abgleichsansicht dort auf eine Zeile ohne die Karte **You decide**: Zeigen Sie dann auf **Your decision** in der Schrittleiste über der Konsole. Die Optionskarten stehen zwei mal zwei; C und **Do nothing** liegen unter A und B, dorthin nach unten scrollen.
 
@@ -16,7 +16,7 @@ Das Drehbuch ist auf Deutsch, weil der Pitch auf Deutsch gehalten wird. Die Ober
 
 1. Die Seite in Chrome oder Edge öffnen und hart neu laden (**Strg + Umschalt + R**). Beim ersten Besuch öffnet sich das Fenster **How the Timetable Translator works** von selbst; schließen, im Pitch öffnen Sie es über **How it works**. Andere Tabs schließen, Benachrichtigungen aus, Netzteil an, Ruhezustand aus.
 2. **Diagnostics → Run all tests** klicken. Alle drei Zeilen (**Anthropic API**, **World data integrity**, **Key and privacy**) müssen bestehen, wenn Sie live zeigen wollen; für die Simulation genügt **World data integrity**.
-3. Die **Simulation** von Szenario 1 einmal bei **×4** durchlaufen lassen, um die Bilder im Kopf zu haben, dann **Reset**.
+3. Die **Simulation** von Szenario 1 einmal bei **×4** durchlaufen lassen, um die Bilder im Kopf zu haben, dann **Reset**. Wer in der 10-Minuten-Fassung Szenario 7 zeigen will (der europäische Fahrplan), lässt auch dieses einmal laufen.
 4. Für die 10-Minuten-Fassung mit Live-Teil: eine vollständige **Live**-Probe fahren (**Start agent** → **Live agent** → **Continue with my API key** → Schlüssel einfügen → **Check key and continue**). In der letzten Zeile der Konsole stehen unter **Run facts** (aufklappen) Dauer und Kosten. **Reset**, den Tab offen lassen: Der Schlüssel lebt nur in diesem Tab.
 5. Bühne einrichten: in der Liste der Konsole **Short-notice platform change at Köln Hbf** anklicken (oder Szenario-Menü), Replay **×1**, in der Konsole **Larger text** an, Browser im Vollbild (**F11**). Die Seite steht im hellen Thema, das Beamer in hellen Räumen am besten zeigen (die Sonne in der Kopfzeile schaltet vom dunklen zurück). Der Spiegel zeigt die Abgleichsansicht (**Alignment**) für ICE 618, die Statusanzeige **Idle**.
 6. Handy-Hotspot bereithalten. Den Schlüssel nie auf dem Beamer, im Chat oder auf Folien zeigen.
@@ -87,9 +87,9 @@ Die Abgleichsansicht steht in voller Größe: jeder Kanal grün, der alte Wert d
 
 > „Drei Dinge. Fahrgäste rechtzeitig informiert: 7 statt 312. Eine Wahrheit: alle Kanäle aus der Quelle. Menschen entscheiden: Nichts geht ohne Freigabe hinaus.“
 
-In der Konsole steht über der letzten Zeile **Try another scenario** mit den anderen fünf Szenarien. Darauf zeigen, damit das Publikum sieht, dass es mehr gibt:
+In der Konsole steht über der letzten Zeile **Try another scenario** mit den anderen sechs Szenarien. Darauf zeigen, damit das Publikum sieht, dass es mehr gibt:
 
-> „Fünf weitere Fälle stehen bereit, jeder eine andere Art von Widerspruch; hier wählen Sie den nächsten.“
+> „Sechs weitere Fälle stehen bereit, jeder eine andere Art von Widerspruch; hier wählen Sie den nächsten.“
 
 > „Nächster Schritt: ein Schattenbetrieb auf einer Linie, nur lesend, gemessen an Ihren Kennzahlen. Den Vorschlag dazu schicke ich Ihnen nach dem Termin.“
 
@@ -108,7 +108,7 @@ Dieselbe Geschichte, mit Zeit für die Technik dahinter und die Einwände. Die e
 | 5 min | Was er tut, wie die KI abgleicht, der Lauf, die Entscheidung, was er bringt | Wie in der 5-Minuten-Fassung |
 | 90 s | Unter der Haube: die zwei Fahrpläne | **Timetables**: Betriebsfahrplan neben Kundenfahrplan, Zeile für Zeile |
 | 60 s | Nachvollziehbarkeit | **Open management summary**, **Audit → Export JSON**, die **Replay facts** |
-| 60 s | Ein zweites Szenario | **Construction order breaks a connection in Dortmund** in der Simulation |
+| 60 s | Ein zweites Szenario | **Construction order breaks a connection in Dortmund** in der Simulation, oder Szenario 7, der europäische Fahrplan |
 | 90 s | Einwände und nächster Schritt | Fragen aus dem Raum |
 
 ### 5:00 — Unter der Haube
@@ -134,6 +134,18 @@ In der Konsole **Open management summary** zeigen, dann **Audit → Export JSON*
 Replay **×2** (bei 1280 × 720 zuerst die Schublade mit **Hide** schließen, sonst bleibt für die Konsole kein Platz), dann in der Konsole unter **Try another scenario** auf **6 Construction order** klicken (oder im Szenario-Menü **Construction order breaks a connection in Dortmund**, dann **New run**) → **Run simulation**. In der Abgleichsansicht zeigen, was sich ändert: Die Quelle sagt **Arrives 10:00** und **Connection lost**, Reiseauskunft und Ansagen zeigen noch **Arrives 09:56** und **RE 57 reachable**.
 
 > „Eine Baustellen-Fahrplananordnung, freigegeben nach der täglichen Erzeugung: ICE 612 kommt vier Minuten später in Dortmund an, und der Anschluss an den RE 57 bricht. Der Agent bittet die Disposition, den Anschluss zu halten; entscheiden tut sie. Dasselbe Muster, eine andere Art von Widerspruch.“
+
+### 7:30, alternativ — Der europäische Fahrplan (Szenario 7)
+
+Statt Dortmund, wenn das Publikum grenzüberschreitende Züge plant. Replay **×2** (bei 1280 × 720 zuerst die Schublade mit **Hide** schließen), unter **Try another scenario** auf **7 European timetable** klicken (im Szenario-Menü **ICE to Brussels: the European timetable lags**, dann **New run**) → **Run simulation**. Die Abgleichsansicht zeigt ICE 318 in Bruxelles-Midi: Die Quelle sagt **Arrives 09:42** und **Connection lost**, Reiseauskunft und Ansagen zeigen noch **Arrives 09:33** und **IC 2117 reachable**, die Anzeiger schon **Arrives 09:42**. Mit geschlossener Schublade (**Hide**) zeigt **Timetables** oben den Streckenstreifen: von Dortmund über Köln und Aachen, über die gestrichelte Grenze (**BE**, **DE**) bis Brüssel (bei 1280 × 720 mit den Kürzeln). Wer die Grenze im Betriebsfahrplan sehen will: unter **Legend** die **Passes** einschalten, dann steht **Aachen Süd Grenze** (KXA) mit ihrer Durchfahrt um 08:30.2 in der Liste.
+
+> „Ein Zug über die Grenze. Die Partnerbahn liefert um 06:12 Bauarbeiten auf ihrem Abschnitt, neun Minuten mehr ab Lüttich. Der europäische Fahrplan wurde um 04:00 zusammengeführt, also vorher: App und Zugansagen zeigen den alten Lauf, die Anzeiger den neuen. 230 Reisende würden danach handeln, 41 verpassen in Brüssel den Anschluss nach Oostende.“
+
+Bei den Optionen:
+
+> „A und B informieren gleich gut, drei bleiben falsch informiert. Aber nur A bringt die Daten in Ordnung: Der Zug wird aus beiden Lieferungen neu zusammengeführt, geprüft und neu veröffentlicht; nach 20 Minuten stimmen alle Kanäle. B wartet auf die nächste Nacht.“
+
+Daran schließt die Frage an, wie heute mit einer Lieferung umgegangen wird, die nach dem Zusammenführen kommt, und wo der Übersetzer ansetzen würde: lesend, am Ergebnis der Zusammenführung, verglichen mit den Lieferungen der Bahnen.
 
 ### 8:30 — Einwände und nächster Schritt
 
@@ -181,6 +193,12 @@ Bewegt sich etwa eine Minute nichts, **Abort**, Replay **×1**, **New run → Ru
 | „Warum bleiben bei A noch 7?“ | „Das sind die, die schon auf dem Weg zum alten Gleis 5 sind, bevor Meldung, Anzeiger oder Ansage sie erreichen. Die Engine rechnet für jeden Kanal, wen er bis zur Abfahrt noch erreicht; nicht jeder liest die App oder hört die Ansage rechtzeitig.“ |
 | „Warum lässt C so viele falsch informiert, B so wenige?“ | „C setzt nur das Gleis von Hand und schickt eine App-Meldung; die Wagenreihung zeigt weiter die alten Abschnitte, und wer reserviert hat, steht am falschen Platz. B schickt die Meldung auf allen Kanälen, mit dem Abschnitt, und Personal am Bahnsteig.“ |
 | „Warum gerade jetzt?“ | „Fahrgäste haben Anspruch auf Information über Störungen und Verspätungen, geplant und in Echtzeit; so steht es in der EU-Fahrgastrechteverordnung 2021/782. Und je mehr kurzfristig gebaut und umgeleitet wird, desto öfter laufen Betriebs- und Kundenfahrplan auseinander.“ |
+| „Wie käme der Übersetzer an den europäischen Fahrplan?“ | „Lesend, wie an alles andere: an das Ergebnis der Zusammenführung, an die Lieferungen der Bahnen und an die Kanäle, die daraus erzeugt werden. Er findet, wo ein Kanal noch den alten Lauf zeigt, zählt, wer danach handeln würde, und schlägt vor, den Zug aus beiden Lieferungen neu zusammenzuführen. Zusammenführen und veröffentlichen tun weiterhin Sie; in der Demo sind Zeitpunkt und Regeln der Zusammenführung Annahmen.“ |
+| „Woher weiß er, dass die Lieferung der Partnerbahn stimmt?“ | „Nicht aus der Lieferung allein: Eine verifizierte Meldung verlangt eine unabhängige Beobachtung. In Szenario 7 sind es die gemessenen Fahrzeiten der ersten beiden Züge der Partnerbahn auf dem Abschnitt heute früh, 8,6 und 9,3 Minuten mehr.“ |
+| „Was passiert um 08:00?“ (Szenario 7) | „Um 08:00 läuft der halbstündliche Zyklus der nationalen Daten. Grenzüberschreitende Züge nimmt er nicht mit; die kommen in der Demo erst mit der nächsten Zusammenführung heute Nacht. Deshalb hilft er hier nicht.“ |
+| „Warum bleiben bei A und B noch drei?“ (Szenario 7) | „Nicht jeder liest die App, hört die Durchsage oder trifft das Zugpersonal. Die Engine rechnet für jeden Kanal, wen er erreicht; drei von 230 erreicht keiner dieser Wege. A und B informieren gleich gut, nur A bringt die Daten in Ordnung.“ |
+| „Warum 252 an der Linie und 230 auf der Kachel?“ (Szenario 7) | „252 fahren nach Brüssel und verlassen sich auf die falsche Ankunft. 230 davon würden danach handeln; die übrigen sehen unterwegs die Anzeiger, die schon 09:42 zeigen.“ |
+| „Warum zuerst in Lüttich, um 08:48?“ (Szenario 7) | „Lüttich ist der letzte Halt vor Brüssel. Bis zur Abfahrt dort könnten die Reisenden noch anders planen; diesen Moment nimmt die Engine als den ersten, an dem jemand falsch informiert handelt.“ |
 | „Was kostet ein Lauf?“ | „Auf dem Standardmodell einige Zehntel Euro. Die Kachel **Session cost** zeigt die echten Kosten jedes Aufrufs.“ |
 | „Sind meine Daten im Browser sicher?“ | „Es gibt keinen Server. Ein Schlüssel bleibt in diesem Tab und geht nur an Anthropic; der Browser blockiert jede andere Verbindung, und Diagnostics prüft das.“ |
 

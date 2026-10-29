@@ -1,7 +1,7 @@
 /*
  * TIMETABLE TRANSLATOR — simulation scripts (Simulation mode).
  *
- * One script per preset scenario. Each mirrors what the live agent does: the same tools in the same
+ * One script per preset scenario (seven). Each mirrors what the live agent does: the same tools in the same
  * order, a hypothesis that is checked against the source, the published channels and the physical
  * layer, a visible "Revised:" self-correction, exactly three costed responses plus the do-nothing
  * baseline, drafts that wait for approval, and a management summary.
@@ -864,6 +864,154 @@ window.SIM_RUNS = {
             } },
             { awaitActions: true },
             { report: "## ICE 612 and RE 10109: construction order Bochum – Dortmund\n\n**What we found.** Fplo 1187 (06:50) adds +4.0 min from Bochum Hbf to both trains; the customer timetable still shows the old arrivals and the RE 57 connection.\n\n**Decision.** The risk was accepted: nothing is published and nothing is requested.\n\n**What that means.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, until tomorrow's daily run.\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts (the decision memo) approved.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { end: "done" }
+          ]
+        }
+      } }
+    ]
+  },
+
+  "SC-EUROPE": {
+    title: "ICE to Brussels: the European timetable lags",
+    // Scenario 7, the European timetable. A partner railway's change for its own section reaches the
+    // source (the operations log) at 06:12, after the European timetable's nightly merge: the journey
+    // planner and the on-board announcements, which take cross-border trains from that timetable,
+    // still show the old run; the station displays, fed by each railway's own data, are right.
+    steps: [
+      { state: "scanning" },
+      { say: "Lead from the international service desk: passengers on ICE 318 to Bruxelles-Midi ask whether their connection to Oostende still works, as the partner railway has works in Belgium. A question is not a source: I read the operations log first." },
+      { mirror: { train_ids: ["T-318"], state: "at_risk", focus: "T-318" } },
+      { tool: "ops_list_changes", input: { train: "ICE 318" } },
+      { say: "Finding: the partner railway delivered a change for its own section at 06:12 (OPS-06). Works between Liège-Guillemins and Bruxelles-Midi add +9.0 minutes from Liège; the section in Germany is unchanged. That delivery is the source now." },
+      { tool: "kfp_get_published", input: { train: "ICE 318", channel: "planner" } },
+      { say: "Hypothesis: only the app is behind. It takes cross-border trains from the European timetable, merged at 04:00, before the delivery, and still shows the arrival at Bruxelles-Midi at 09:33." },
+
+      { state: "verifying" },
+      { sync: "hypothesis" },
+      { say: "First estimate, from the journey planner alone: {{hyp.pax}} passengers would act on the old arrival. Before I rely on that, I read every channel, the source timetable and the sensors." },
+
+      { tool: "kfp_get_published", input: { train: "ICE 318" } },
+      { tool: "ops_get_timetable", input: { train: "ICE 318" } },
+      { tool: "phys_observe", input: { point: "XBLIG" } },
+      { say: "Revised: only the app is behind → the on-board announcements come from the same European timetable and say 09:33 too. The station displays take each railway's data directly and say 09:42, as the source does." },
+      { say: "Confirmed: the sensors agree with the source. The partner's first two trains on that section this morning ran +8.6 and +9.3 minutes late: the works are real." },
+      { tool: "ops_get_passengers", input: { train: "ICE 318" } },
+      { say: "Finding: 41 passengers on ICE 318 plan to change at Bruxelles-Midi to IC 2117 to Oostende at 09:42, with a 6-minute minimum transfer. Arriving at 09:42, they miss it." },
+      { alert: {
+        title: "ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42",
+        severity: "high",
+        basis: "verified",
+        summary: "The partner railway's delivery of 06:12 (OPS-06) adds +9.0 min from Liège-Guillemins, and the running times measured on its section confirm the works. The journey planner and the on-board announcements take the train from the European timetable merged at 04:00: they still show 09:33 and the connection to IC 2117. The station displays show 09:42.",
+        train_ids: ["T-318"],
+        point_ids: ["XBB"],
+        sources: [
+          { title: "Operations log OPS-06: the partner railway's delivery for its section (synthetic)" },
+          { title: "Running-time measurement Liège-Guillemins – Bruxelles-Midi (synthetic)" },
+          { title: "Published customer timetable, all channels (synthetic)" }
+        ]
+      } },
+
+      { state: "simulating" },
+      { sync: "finding" },
+      { say: "Impact: {{pax}} passengers would act on wrong information; the first decide at Liège-Guillemins in {{first_min}} minutes, and {{T-318.XBB.connection.pax}} would miss IC 2117 without warning. The European timetable is merged again only tonight." },
+      { mirror: { train_ids: ["T-318"], point_ids: ["XBB"], state: "affected", focus: "T-318" } },
+
+      { options: {
+        recommended: "V1",
+        baseline_description: "The app and the on-board announcements keep the old arrival and the connection to IC 2117 until tonight's merge; {{pax}} passengers act on them.",
+        texts: {
+          V1: {
+            title: "Merge again and re-publish",
+            description: "ICE 318 merged again from both railways' deliveries, checked and re-published to every channel, plus a message and the crew on board.",
+            residual_risk: "A few miss the app, the announcement and the crew alike."
+          },
+          V2: {
+            title: "Messages and crew only",
+            description: "App push, announcements and a planner note, and the crew on board; the European timetable waits for tonight's merge.",
+            residual_risk: "The European timetable stays wrong until tonight."
+          },
+          V3: {
+            title: "Override the announcements",
+            description: "The on-board announcements set by hand, plus an app message.",
+            residual_risk: "The planner keeps the old arrival; the override is a second truth."
+          }
+        }
+      } },
+      { say: "Recommendation: option A. Like B, it leaves {{V1.mis}} instead of {{pax}} passengers misinformed, and it also puts the European timetable right: ICE 318 merged again from both railways' deliveries, every channel aligned after {{V1.sync}} minutes, nothing kept by hand." },
+
+      { awaitOption: {
+        rejected: {
+          V1: "Option A rejected. B informs passengers without touching the data; C sets the announcements by hand.",
+          V2: "Option B rejected. A merges the train again from the source; C sets the announcements by hand.",
+          V3: "Option C rejected. A merges the train again from the source; B informs without touching the data."
+        },
+        approved: {
+          V1: [
+            { state: "executing" },
+            { say: "Option A approved. I draft the passenger message, the order to merge ICE 318 again and the briefing for the train crew." },
+            { draft: {
+              type: "passenger_message", recipient: "Passenger information desk, international trains",
+              subject: "ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable",
+              body: "App-Push (DE): ICE 318 nach Bruxelles-Midi: Wegen Bauarbeiten in Belgien Ankunft {{T-318.XBB.time.arr}} statt 09:33. Der Anschluss an IC 2117 nach Oostende um 09:42 ist nicht erreichbar; nächste Verbindung: {{alt.T-318.XBB.onboard.de}}.\nApp push (EN): ICE 318 to Bruxelles-Midi: because of works in Belgium, arrival {{T-318.XBB.time.arr}} instead of 09:33. The connection to IC 2117 to Oostende at 09:42 cannot be made; next connection: {{alt.T-318.XBB.onboard.en}}.\n\nZugansage ICE 318 (DE): Wegen Bauarbeiten in Belgien erreichen wir Bruxelles-Midi um {{T-318.XBB.time.arr}}, nicht um 09:33. Reisende nach Oostende: Ihr Anschluss an IC 2117 um 09:42 ist nicht erreichbar. Nächste Verbindung: {{alt.T-318.XBB.onboard.de}}.\nOn-board announcement ICE 318 (EN): Because of works in Belgium we reach Bruxelles-Midi at {{T-318.XBB.time.arr}}, not 09:33. Passengers for Oostende: your connection to IC 2117 at 09:42 cannot be made. Next connection: {{alt.T-318.XBB.onboard.en}}."
+            } },
+            { draft: {
+              type: "republish_order", recipient: "European timetable team (timetable publication)",
+              subject: "Merge ICE 318 again from both deliveries and re-publish it (OPS-06)",
+              body: "Please merge ICE 318 again in the European timetable from the current deliveries: the German section as it stands and the partner railway's delivery for the Belgian section of 06:12 (OPS-06, +9.0 min from Liège-Guillemins, source version 2). Check the merge against both deliveries, then re-publish the train to the journey planner and app and to the on-board announcements; the station displays already show it.\n\nNo value is typed by hand. Every channel is expected to be aligned after {{V1.sync}} minutes."
+            } },
+            { draft: {
+              type: "staff_brief", recipient: "Train crew of ICE 318",
+              subject: "ICE 318: later arrival at Bruxelles-Midi, passengers for Oostende",
+              body: "ICE 318 reaches Bruxelles-Midi at {{T-318.XBB.time.arr}}, not 09:33 (OPS-06: works between Liège-Guillemins and Bruxelles-Midi, +9.0 min). Until the train is merged again, the journey planner and the on-board announcements still show 09:33 and the connection to IC 2117 to Oostende at 09:42.\n\nPlease tell passengers after Liège-Guillemins, and send the 41 passengers for Oostende to {{alt.T-318.XBB.onboard.en}}."
+            } },
+            { awaitActions: true },
+            { report: "## ICE 318: the European timetable behind the partner's change\n\n**What we found.** The partner railway delivered a change for its section of ICE 318 at 06:12 (OPS-06): works between Liège-Guillemins and Bruxelles-Midi add +9.0 min, and the running times measured there confirm it. The journey planner and app and the on-board announcements take the train from the European timetable merged at 04:00: they still show the arrival at Bruxelles-Midi at 09:33 instead of {{T-318.XBB.time.arr}}, and the connection to IC 2117 to Oostende as reachable. The station displays already show {{T-318.XBB.time.arr}}.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, and {{T-318.XBB.connection.pax}} miss IC 2117 without warning; the European timetable is merged again only tonight.\n\n**Decision.** Option A approved: ICE 318 merged again from both railways' deliveries and re-published, with a message on the app and on board, and the crew briefed.\n\n| | Do nothing | Option A |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V1.mis}} |\n| Right information from | – | +{{V1.from}} min |\n| Every channel aligned with the source | at tonight's merge | after {{V1.sync}} min |\n| Values kept by hand | – | {{V1.ov}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** The merge is checked against both deliveries before it is released; until then the message and the crew carry the change.\n\n**How we know.** The partner railway's delivery in the operations log and the source timetable; the old arrival from the published channels; the running times from the physical layer; the connection from today's passenger figures; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { end: "done" }
+          ],
+          V2: [
+            { state: "executing" },
+            { say: "Option B approved. I draft the passenger message and the briefing for the train crew; the European timetable stays as it is until tonight's merge." },
+            { draft: {
+              type: "passenger_message", recipient: "Passenger information desk, international trains",
+              subject: "ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable",
+              body: "App-Push (DE): ICE 318 nach Bruxelles-Midi: Wegen Bauarbeiten in Belgien Ankunft {{T-318.XBB.time.arr}} statt 09:33. Der Anschluss an IC 2117 nach Oostende um 09:42 ist nicht erreichbar; nächste Verbindung: {{alt.T-318.XBB.onboard.de}}.\nApp push (EN): ICE 318 to Bruxelles-Midi: because of works in Belgium, arrival {{T-318.XBB.time.arr}} instead of 09:33. The connection to IC 2117 to Oostende at 09:42 cannot be made; next connection: {{alt.T-318.XBB.onboard.en}}.\n\nZugansage ICE 318 (DE): Wegen Bauarbeiten in Belgien erreichen wir Bruxelles-Midi um {{T-318.XBB.time.arr}}, nicht um 09:33. Reisende nach Oostende: Ihr Anschluss an IC 2117 um 09:42 ist nicht erreichbar.\nOn-board announcement ICE 318 (EN): Because of works in Belgium we reach Bruxelles-Midi at {{T-318.XBB.time.arr}}, not 09:33. Passengers for Oostende: your connection to IC 2117 at 09:42 cannot be made.\n\nReiseauskunft (DE): ICE 318: Ankunft in Bruxelles-Midi {{T-318.XBB.time.arr}} statt 09:33; Anschluss an IC 2117 nicht erreichbar.\nJourney planner (EN): ICE 318: arrival at Bruxelles-Midi {{T-318.XBB.time.arr}} instead of 09:33; the connection to IC 2117 cannot be made."
+            } },
+            { draft: {
+              type: "staff_brief", recipient: "Train crew of ICE 318",
+              subject: "ICE 318: later arrival at Bruxelles-Midi, passengers for Oostende",
+              body: "ICE 318 reaches Bruxelles-Midi at {{T-318.XBB.time.arr}}, not 09:33 (OPS-06: works between Liège-Guillemins and Bruxelles-Midi, +9.0 min). The journey planner and the on-board announcements still show 09:33 and the connection to IC 2117 to Oostende at 09:42.\n\nPlease tell passengers after Liège-Guillemins, and send the 41 passengers for Oostende to {{alt.T-318.XBB.onboard.en}}."
+            } },
+            { awaitActions: true },
+            { report: "## ICE 318: the European timetable behind the partner's change\n\n**What we found.** The partner railway delivered a change for its section of ICE 318 at 06:12 (OPS-06): +9.0 min between Liège-Guillemins and Bruxelles-Midi. The journey planner and the on-board announcements take the train from the European timetable merged at 04:00 and still show 09:33 instead of {{T-318.XBB.time.arr}}, and the connection to IC 2117 as reachable.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\n**Decision.** Option B approved: messages on the app, the announcements and the planner, and the crew on board. The European timetable stays as it is until tonight's merge.\n\n| | Do nothing | Option B |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V2.mis}} |\n| Right information from | – | +{{V2.from}} min |\n| Every channel aligned with the source | at tonight's merge | at tonight's merge |\n| Contradictions left in the data | {{contra}} | {{V2.res}} |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** The planner and the announcements keep the old arrival until the European timetable is merged again.\n\n**How we know.** The partner railway's delivery in the operations log and the source timetable; the old arrival from the published channels; the running times from the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { end: "done" }
+          ],
+          V3: [
+            { state: "executing" },
+            { say: "Option C approved. I draft the override request for the on-board announcements and the app message. The override is a value kept by hand: the request says when to remove it." },
+            { draft: {
+              type: "override_request", recipient: "Train crew of ICE 318 (on-board announcements)",
+              subject: "Override for ICE 318: arrival at Bruxelles-Midi {{T-318.XBB.time.arr}} in the announcements",
+              body: "Please set by hand in the on-board announcements of ICE 318:\n- arrival at Bruxelles-Midi: {{T-318.XBB.time.arr}} (published: 09:33)\n- connection to IC 2117 to Oostende at 09:42: not reachable\n\nBasis: OPS-06 (06:12) in the source; the running times on the partner's section confirm the works.\n\nRemove the override as soon as ICE 318 is merged again in the European timetable, or at Bruxelles-Midi at the latest."
+            } },
+            { draft: {
+              type: "passenger_message", recipient: "Passenger information desk, international trains",
+              subject: "ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable",
+              body: "App-Push (DE): ICE 318 nach Bruxelles-Midi: Wegen Bauarbeiten in Belgien Ankunft {{T-318.XBB.time.arr}} statt 09:33. Der Anschluss an IC 2117 nach Oostende um 09:42 ist nicht erreichbar; nächste Verbindung: {{alt.T-318.XBB.onboard.de}}.\nApp push (EN): ICE 318 to Bruxelles-Midi: because of works in Belgium, arrival {{T-318.XBB.time.arr}} instead of 09:33. The connection to IC 2117 to Oostende at 09:42 cannot be made; next connection: {{alt.T-318.XBB.onboard.en}}."
+            } },
+            { awaitActions: true },
+            { report: "## ICE 318: the European timetable behind the partner's change\n\n**What we found.** The partner railway delivered a change for its section of ICE 318 at 06:12 (OPS-06): +9.0 min between Liège-Guillemins and Bruxelles-Midi. The journey planner and the on-board announcements still show 09:33 instead of {{T-318.XBB.time.arr}}, from the European timetable merged at 04:00.\n\n**If we do nothing.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\n**Decision.** Option C approved: the on-board announcements set by hand, and an app message.\n\n| | Do nothing | Option C |\n|---|---|---|\n| Passengers still misinformed | {{pax}} | {{V3.mis}} |\n| Right information from | – | +{{V3.from}} min |\n| Values kept by hand (second truth) | – | {{V3.ov}} |\n| Every channel aligned with the source | at tonight's merge | at tonight's merge, the override removed |\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts approved in the Outbox. They are drafts: nothing was published.\n\n**Residual risk.** The override is a second truth: it must be removed once the train is merged again, and the planner keeps the old arrival meanwhile.\n\n**How we know.** The partner railway's delivery in the operations log and the source timetable; the old arrival from the published channels; the running times from the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
+            { end: "done" }
+          ],
+          baseline: [
+            { state: "executing" },
+            { say: "You accepted the risk. Nothing is published and nothing is requested; I record the decision in an internal memo." },
+            { draft: {
+              type: "memo", recipient: "Passenger information desk, international trains",
+              subject: "ICE 318 (OPS-06): risk accepted, no publication",
+              body: "Decision recorded: no action on ICE 318 to Bruxelles-Midi.\n\nThe partner railway's delivery of 06:12 (OPS-06) adds +9.0 min from Liège-Guillemins; the journey planner and the on-board announcements still show 09:33 instead of {{T-318.XBB.time.arr}}, and the connection to IC 2117. If nothing changes, {{pax}} passengers act on wrong information, the first in {{first_min}} minutes.\n\nPlease review if the situation changes."
+            } },
+            { awaitActions: true },
+            { report: "## ICE 318: the European timetable behind the partner's change\n\n**What we found.** The partner railway delivered a change for its section of ICE 318 at 06:12 (OPS-06); the journey planner and the on-board announcements still show 09:33 instead of {{T-318.XBB.time.arr}} at Bruxelles-Midi, and the connection to IC 2117.\n\n**Decision.** The risk was accepted: nothing is published and nothing is requested.\n\n**What that means.** {{pax}} passengers act on wrong information, the first in {{first_min}} minutes, until the European timetable is merged again tonight.\n\n**Actions.** {{actions.approved}} of {{actions.total}} drafts (the decision memo) approved.\n\n**How we know.** The operations log, the source timetable, every published channel and the physical layer; every figure from the deterministic sync engine.\n\n*Simulated run (scripted replay). Figures calculated by the sync engine from the synthetic operating snapshot.*" },
             { end: "done" }
           ]
         }

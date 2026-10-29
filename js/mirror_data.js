@@ -147,15 +147,28 @@ export function placeRight(leftTops, links, count, rowH, height) {
   return top;
 }
 
-/** The corridor strip: stations, lines, the train's source route and its published route. */
+/**
+ * The corridor strip: stations, lines, the train's source route and its published route. The points
+ * beyond the corridor (the cross-border line to Brussels) are drawn only for a train that runs on that
+ * line, and then the whole line, so a train starting abroad is not drawn on a loose dot and every
+ * other train keeps the corridor as it was; a border point carries the two countries.
+ */
 export function stripData(model, trainId) {
-  const nodes = [...model.points.values()].map((p) => ({ id: p.id, name: p.name, x: p.x, y: p.y, hub: !!p.hub }));
-  const edges = model.world.segments.map((s) => ({ a: s.a, b: s.b }));
-  if (!trainId || !model.trains.has(trainId)) return { nodes, edges, route: [], stops: [], published: [], publishedStops: [], position: null };
-  const st = sourceState(model, trainId);
-  const info = publishedInfo(model, trainId, "planner");
-  const pub = sourceState(model, trainId, info.version);
-  const t = model.trains.get(trainId);
+  const train = trainId && model.trains.has(trainId) ? trainId : null;
+  const st = train ? sourceState(model, train) : null;
+  const info = train ? publishedInfo(model, train, "planner") : null;
+  const pub = train ? sourceState(model, train, info.version) : null;
+  const runs = new Set([...(st?.rows || []), ...(pub?.rows || [])].map((r) => r.point));
+  const abroad = new Set(model.world.lines
+    .filter((l) => l.points.some((id) => runs.has(id) && model.points.get(id)?.beyond))
+    .flatMap((l) => l.points));
+  const nodes = [...model.points.values()]
+    .filter((p) => !p.beyond || abroad.has(p.id))
+    .map((p) => ({ id: p.id, name: p.name, x: p.x, y: p.y, hub: !!p.hub, ...(p.border ? { border: p.border } : {}) }));
+  const drawn = new Set(nodes.map((n) => n.id));
+  const edges = model.world.segments.filter((s) => drawn.has(s.a) && drawn.has(s.b)).map((s) => ({ a: s.a, b: s.b }));
+  if (!train) return { nodes, edges, route: [], stops: [], published: [], publishedStops: [], position: null };
+  const t = model.trains.get(train);
   return {
     nodes, edges,
     route: st.rows.map((r) => r.point),

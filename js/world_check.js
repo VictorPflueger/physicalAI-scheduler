@@ -18,9 +18,9 @@ export function checkWorld(world, scenarios = [], referenceCases = {}, simRuns =
   add("Model builds without structural problems", model.problems.length === 0, model.problems.slice(0, 5).join(" | ") || "no problems");
 
   // ---- counts ---------------------------------------------------------------------------------
-  add("16 stations with Ril 100 codes, 3 lines, 6 injectable scenarios",
-    world.points.length === 16 && world.points.every((p) => RIL100.test(p.ril100) && p.ril100 === p.id) && world.lines.length === 3 && scenarios.length === 6,
-    `${world.points.length} stations, ${world.lines.length} lines, ${scenarios.length} scenarios`);
+  add("20 operating points with Ril 100 codes (16 in the corridor, 4 beyond it), 4 lines, 7 injectable scenarios",
+    world.points.length === 20 && world.points.filter((p) => p.beyond).length === 4 && world.points.every((p) => RIL100.test(p.ril100) && p.ril100 === p.id) && world.lines.length === 4 && scenarios.length === 7,
+    `${world.points.length} operating points, ${world.lines.length} lines, ${scenarios.length} scenarios`);
 
   // ---- trips: network, times, tracks ------------------------------------------------------------------
   const net = new Set(world.segments.flatMap((s) => [`${s.a}-${s.b}`, `${s.b}-${s.a}`]));
