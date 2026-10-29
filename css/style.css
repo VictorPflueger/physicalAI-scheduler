@@ -334,3 +334,63 @@ html { font-size: clamp(93.75%, 0.48vw + 50%, 112.5%); }
    so its capsule still shows on the card. (A fix for the shared drawer.css; Rebate Hunter's approved
    drafts look the same.) */
 .action-card[data-status="approved"] .action-status { --_bg: var(--vc-surface); }
+
+/* The scenarios in the console (js/console.js): while no run is on screen the empty log lists every
+   scenario, each a button (the chosen one in a 2 px ink frame, its number in merlot as in the menu),
+   and after a run it offers the others in a row of buttons. Visitors who never open the Scenario
+   menu still find the other scenarios. */
+.scenario-pick { list-style: none; margin: 8px 0 14px; padding: 0; display: grid; gap: 6px; }
+.scenario-pick > li, .scenario-next > li { margin: 0; }
+.scenario-pick__item {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  width: 100%; min-height: var(--hit); padding: 7px 12px;
+  border: 1px solid var(--vc-border); border-radius: var(--vc-radius-md);
+  background: var(--vc-surface); color: var(--vc-text); text-align: left; cursor: pointer;
+  font: var(--vc-weight-medium) var(--vc-font-size-md) / 1.25 var(--vc-font-text);
+}
+.scenario-pick__item:hover { background: var(--vc-surface-hover); border-color: var(--vc-border-strong); }
+.scenario-pick__item[aria-current="true"] { border: 2px solid var(--vc-text); padding: 6px 11px; background: var(--vc-surface-selected); }
+.scenario-pick__title { display: block; }
+.scenario-pick__hint { display: block; color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); font-weight: var(--vc-weight-regular); }
+.scenario-pick .num-badge, .scenario-next .num-badge {
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 30px; height: 26px; clip-path: var(--vc-hex);
+  background: var(--vc-border);
+  font: var(--vc-weight-semibold) var(--vc-font-size-sm) / 1 var(--vc-font-text);
+  font-variant-numeric: tabular-nums;
+  color: var(--vc-text-muted);
+}
+.scenario-pick .num-badge::before, .scenario-next .num-badge::before { content: ""; position: absolute; inset: 1px 1.1547px; z-index: -1; clip-path: var(--vc-hex); background: var(--vc-surface); }
+.scenario-pick__item[aria-current="true"] .num-badge { background: var(--vc-accent); color: var(--vc-on-accent); }
+.scenario-pick__item[aria-current="true"] .num-badge::before { background: var(--vc-accent); }
+.run-next { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--vc-border-subtle); }
+.run-next p { margin: 0; }
+.scenario-next { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.scenario-next__item { gap: 8px; }
+.scenario-next .num-badge { width: 26px; height: 22px; }
+/* A short console (a laptop): one line per scenario, the kind of contradiction in the tooltip, and
+   less air around the list, so all seven fit 1280 x 720 without scrolling. */
+@media (max-height: 820px) {
+  .log-empty:has(.scenario-pick) { padding-top: 14px; }
+  .log-empty:has(.scenario-pick) h3 { margin-bottom: 4px; }
+  .scenario-pick__lead { margin-bottom: 4px; }
+  .scenario-pick { gap: 3px; margin-block: 6px 8px; }
+  .scenario-pick__hint, .scenario-pick__plan { display: none; }
+  .scenario-pick__item { min-height: 40px; padding-block: 3px; }
+  .scenario-pick__item[aria-current="true"] { padding-block: 2px; }
+}
+@media (forced-colors: active) {
+  .scenario-pick .num-badge, .scenario-next .num-badge { forced-color-adjust: none; background-color: CanvasText; color: CanvasText; }
+  .scenario-pick .num-badge::before, .scenario-next .num-badge::before { background-color: Canvas; }
+  .scenario-pick__item[aria-current="true"] .num-badge { background-color: Highlight; color: HighlightText; }
+  .scenario-pick__item[aria-current="true"] .num-badge::before { background-color: Highlight; }
+  .scenario-pick__item { border-color: CanvasText; }
+}
+
+/* The scenario control's count ("1 of 7") stands in for its caption where the bar hides captions
+   (laptops, up to 1600 px); above that the caption says it ("Scenario 1 of 7:"). */
+.controls .dropdown-toggle .dd-count { display: none; color: var(--vc-text-muted); font-weight: var(--vc-weight-medium); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 1600px) {
+  .controls .dropdown-toggle .dd-count:not([hidden]) { display: inline; }
+}

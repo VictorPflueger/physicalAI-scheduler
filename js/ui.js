@@ -34,7 +34,20 @@ export function initUI() {
   // ---- components ------------------------------------------------------------------------------
   const badge = document.getElementById("mode-badge");
   const mirror = createMirror(document.getElementById("mirror"), { scenarios, initialScenario: getState().scenarioId });
+  // Choosing a scenario: from the menu, or from the list in the console.
+  const selectScenario = (id) => {
+    setState({ scenarioId: id, entry: "scenario" });
+    if (!isRunning(getState())) mirror.focusScenario(id);
+  };
   const consoleUI = createConsole(document.getElementById("console"), {
+    scenarios,
+    onPickScenario: (id) => selectScenario(id),
+    // After a run: another scenario, straight into the run flow (the mode dialog asks first).
+    onRunScenario: (id) => {
+      if (isRunning(getState())) return;
+      selectScenario(id);
+      start("scenario");
+    },
     onOpenOptions: () => drawer.show("options"),
     onOpenOutbox: () => drawer.show("outbox"),
     onOpenReport: (md) => showReport(md, { mode: getState().mode, simSource: getState().simSource }),
@@ -73,10 +86,7 @@ export function initUI() {
   const controls = createControls(document.getElementById("controls"), scenarios, {
     onStart: () => start(getState().entry === "custom" ? "custom" : "scenario"),
     onLiveScan: () => start("scan"),
-    onSelectScenario: (id) => {
-      setState({ scenarioId: id, entry: "scenario" });
-      if (!isRunning(getState())) mirror.focusScenario(id);
-    },
+    onSelectScenario: (id) => selectScenario(id),
     onSelectCustom: async () => {
       const text = await askCustomScenario(getState().customText);
       if (text) setState({ entry: "custom", customText: text });
@@ -110,7 +120,9 @@ export function initUI() {
 
   // ---- state → view ----------------------------------------------------------------------------
   const render = (s) => {
-    controls.update(s, { scenarioLabel: byId(s.scenarioId)?.short || "Choose" });
+    const sc = byId(s.scenarioId);
+    controls.update(s, { scenarioLabel: sc?.short || "Choose", scenarioNumber: sc?.number ?? null, scenarioCount: scenarios.length });
+    consoleUI.setScenario(s.entry === "scenario" ? s.scenarioId : null);
     badge.dataset.mode = s.mode || "none";
     // A Vici tag: LIVE solid merlot with a pulsing hexagon, SIMULATION on its neutral tape.
     badge.className = s.mode === "live" ? "vc-tag vc-tag--solid mode-badge" : "vc-tag mode-badge";
@@ -142,7 +154,7 @@ export function initUI() {
     const scenario = byId(getState().scenarioId);
     const runLabel = entry === "scan" ? "Live sweep: every train in the window checked against the source, no injected scenario"
       : entry === "custom" ? `Custom what-if: ${getState().customText}`
-        : `Scenario ${scenario?.number}: ${scenario?.title}`;
+        : `Scenario ${scenario?.number} of ${scenarios.length}: ${scenario?.title}`;
 
     let mode = "live";
     if (entry !== "scan") {
