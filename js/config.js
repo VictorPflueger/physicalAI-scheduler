@@ -4,7 +4,7 @@ export const APP = {
   id: "tt",
   name: "Timetable Translator",
   fullName: "Passenger-Information Timetable Translator",
-  version: "1.3.0"
+  version: "1.3.1"
 };
 
 export const ANTHROPIC = {

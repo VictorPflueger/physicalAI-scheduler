@@ -79,7 +79,7 @@ export function createControls(root, scenarios, handlers) {
   let shownState = "idle";
   onAwaitedChange(() => { pill.querySelector(".text").textContent = runStateLabel(shownState); });
 
-  function update(s, { scenarioLabel } = {}) {
+  function update(s, { scenarioLabel, scenarioNumber = null, scenarioCount = 0 } = {}) {
     const running = isRunning(s);
     const finished = isFinished(s);
     const sim = s.mode === "simulation";
@@ -88,7 +88,11 @@ export function createControls(root, scenarios, handlers) {
     startBtn.lastChild.textContent = finished ? "New run" : "Start agent";
     setDisabled(startBtn, running, "A run is in progress. Abort it or wait until it finishes.");
 
-    scenarioDd.setValue(s.entry === "custom" ? "custom" : s.scenarioId, s.entry === "custom" ? `Custom: ${shorten(s.customText, 34)}` : scenarioLabel);
+    // "Scenario 1 of 7": the caption says there are more to choose from.
+    const custom = s.entry === "custom";
+    const counted = !custom && scenarioNumber !== null && scenarioCount > 1;
+    scenarioDd.setCaption(counted ? `Scenario ${scenarioNumber} of ${scenarioCount}` : "Scenario", counted ? `${scenarioNumber} of ${scenarioCount}` : "");
+    scenarioDd.setValue(custom ? "custom" : s.scenarioId, custom ? `Custom: ${shorten(s.customText, 34)}` : scenarioLabel);
     scenarioDd.setDisabled(running, "Locked while the agent runs.");
     scenarioDd.setItemDisabled("custom", sim && !finished, "Requires Live mode. Reset to switch modes.");
 
@@ -124,10 +128,13 @@ function shorten(text, n) {
 
 function dropdown({ id, caption, items, onSelect, width }) {
   const valueEl = h("span", { class: "value" }, "");
+  const captionEl = h("span", { class: "caption" }, `${caption}:`);
+  // Where the bar has no room for captions (laptops), a short count stands in for it ("1 of 7").
+  const countEl = h("span", { class: "dd-count", hidden: true }, "");
   const toggle = h("button", {
     class: "vc-button vc-button--outline dropdown-toggle", type: "button", id: `dd-${id}`,
     "aria-haspopup": "menu", "aria-expanded": "false", style: width ? { minWidth: `${Math.min(width, 360)}px` } : undefined
-  }, h("span", { class: "caption" }, `${caption}:`), valueEl, icon("chevronDown", 16));
+  }, captionEl, countEl, valueEl, icon("chevronDown", 16));
   // Vici's menu, opened and closed by this module (no popover attribute: vici.js leaves it alone).
   const menu = h("div", { class: "vc-menu dropdown-menu", role: "menu", "aria-labelledby": `dd-${id}`, hidden: true });
   const itemEls = new Map();
@@ -184,6 +191,12 @@ function dropdown({ id, caption, items, onSelect, width }) {
 
   return {
     el: wrap,
+    setCaption(text, count = "") {
+      const t = `${text}:`;
+      if (captionEl.textContent !== t) captionEl.textContent = t;
+      if (countEl.textContent !== count) countEl.textContent = count;
+      countEl.hidden = !count;
+    },
     setValue(idVal, label) {
       valueEl.textContent = label || "";
       for (const [iid, el] of itemEls) el.setAttribute("aria-checked", String(iid === idVal));

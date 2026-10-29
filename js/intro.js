@@ -72,6 +72,8 @@ function markIntroSeen() {
   try { localStorage.setItem(STORAGE.introSeen, "1"); } catch { /* storage blocked: it opens again next time */ }
 }
 
+const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+
 // The channels in the example, in a word each: the window names them, the alignment view details them.
 const SHORT_CHANNEL = { planner: "app", displays: "displays", announcements: "announcements", coach: "coach order" };
 
@@ -114,9 +116,12 @@ export function openIntro({ startLabel = "Start agent", onStart = null } = {}) {
     const value = h("ul", { class: "intro-value" }, VALUE.map((v) =>
       h("li", {}, h("strong", {}, v.title), h("span", {}, v.text))));
 
+    // Start agent runs the chosen scenario: the note says there are more (the Scenario menu, and the
+    // list in the console).
+    const n = (globalThis.SCENARIOS || []).length;
     const footer = onStart
       ? [
-        h("span", { class: "dialog-note" }),
+        h("span", { class: "dialog-note" }, n > 1 ? `${COUNT_WORDS[n] || n} scenarios in the Scenario menu.` : ""),
         h("button", { class: "vc-button vc-button--ghost", type: "button", on: { click: () => modal.close(null) } }, "Close"),
         h("button", { class: "vc-button", type: "button", autofocus: true, on: { click: () => modal.close("start") } }, icon("play", 18), startLabel)
       ]

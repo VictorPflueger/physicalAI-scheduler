@@ -26,7 +26,11 @@ import { getModel } from "./world.js";
 const PHASES = new Set(["awaiting_approval"]);
 const TEXT_SIZE_KEY = STORAGE.consoleText;
 
-export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport, onSaveSimulation } = {}) {
+/**
+ * scenarios: the preset scenarios (data/scenarios.js). onPickScenario(id) chooses one (as the menu
+ * does); onRunScenario(id) chooses one and starts a run of it (the mode dialog comes first).
+ */
+export function createConsole(panel, { scenarios = [], onPickScenario, onRunScenario, onOpenOptions, onOpenOutbox, onOpenReport, onSaveSimulation } = {}) {
   const count = h("span", { class: "count vc-tabular" }, "");
   const jumpBtn = h("button", { class: "vc-button vc-button--outline button-compact", type: "button", hidden: true }, icon("chevronDown", 16), "Jump to latest");
   // Larger text for projectors, remembered per browser (a convenience; storage may be unavailable).
@@ -74,7 +78,8 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
   const noteIntent = () => { userIntentUntil = performance.now() + 900; };
   for (const type of ["wheel", "touchmove", "pointerdown", "keydown"]) log.addEventListener(type, noteIntent, { passive: true });
   const atBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-  const pin = () => { if (follow) log.scrollTop = log.scrollHeight; };
+  // The empty log (the scenarios to pick from) reads from its top; a log with entries follows its end.
+  const pin = () => { if (follow && entries > 0) log.scrollTop = log.scrollHeight; };
 
   log.addEventListener("scroll", () => {
     if (atBottom()) {
@@ -92,12 +97,62 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
     log.scrollTo({ top: log.scrollHeight, behavior: prefersReducedMotion() ? "auto" : "smooth" });
   });
 
+  // The scenarios, in plain view: with no run on screen the empty log lists every scenario (a visitor
+  // who never opens the Scenario menu still sees that there are several), and after a run it offers the
+  // others. The chosen one is marked; the menu and this list choose the same thing.
+  let chosen = null;
+  let pickList = null;
+
+  function scenarioPick() {
+    const items = scenarios.map((s) => {
+      const b = h("button", { class: "scenario-pick__item", type: "button", dataset: { id: s.id }, "aria-current": String(s.id === chosen), title: s.seed || s.title },
+        h("span", { class: "num-badge", "aria-hidden": "true" }, String(s.number)),
+        h("span", { class: "scenario-pick__text" },
+          h("span", { class: "scenario-pick__title" }, h("span", { class: "vc-visually-hidden" }, `Scenario ${s.number}: `), s.title),
+          h("span", { class: "scenario-pick__hint" }, s.category)),
+        // The scenario of the five-minute demonstration, as the menu marks it.
+        s.start_here ? h("span", { class: "vc-tag vc-tag--accent" }, "Start here") : null);
+      b.addEventListener("click", () => onPickScenario?.(s.id));
+      return h("li", {}, b);
+    });
+    return h("ul", { class: "scenario-pick", "aria-label": "Scenarios" }, items);
+  }
+
   function showEmpty() {
     clear(log);
+    pickList = scenarios.length ? scenarioPick() : null;
     log.appendChild(h("div", { class: "log-empty" },
       h("h3", {}, "Pick a scenario, then start the agent"),
-      h("p", {}, "The five steps above are its plan.")));
+      scenarios.length ? h("p", { class: "scenario-pick__lead" }, `${countWord(scenarios.length)} scenarios, each a different kind of contradiction.`) : null,
+      pickList,
+      h("p", { class: "scenario-pick__plan" }, "The five steps above are its plan.")));
     count.textContent = "";
+    log.scrollTop = 0;
+  }
+
+  /** The scenario chosen now (the menu or this list): the idle list marks it. */
+  function setScenario(id) {
+    chosen = id;
+    if (!pickList || !pickList.isConnected) return;
+    for (const b of pickList.querySelectorAll("button[data-id]")) b.setAttribute("aria-current", String(b.dataset.id === id));
+  }
+
+  /**
+   * After a run: the other scenarios, one click from a new run of each (the mode dialog comes first).
+   * An entry of its own just above the run's last line, so the console still ends on the run's end.
+   */
+  function nextScenarios(doneId) {
+    const others = scenarios.filter((s) => s.id !== doneId);
+    if (!others.length) return null;
+    return entry("next", null, "list", h("div", { class: "run-next" },
+      h("p", {}, h("strong", {}, doneId ? "Try another scenario" : "Try a scenario"), ", each a different contradiction:"),
+      h("ul", { class: "scenario-next", "aria-label": "Start a run of another scenario" }, others.map((s) => {
+        const b = h("button", { class: "vc-button vc-button--outline button-compact scenario-next__item", type: "button", dataset: { id: s.id }, title: `Start a run of scenario ${s.number}: ${s.title}` },
+          h("span", { class: "num-badge", "aria-hidden": "true" }, String(s.number)),
+          h("span", {}, h("span", { class: "vc-visually-hidden" }, `Scenario ${s.number}: `), s.short || s.title));
+        b.addEventListener("click", () => onRunScenario?.(s.id));
+        return h("li", {}, b);
+      }))));
   }
 
   function add(el) {
@@ -353,6 +408,9 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
       incomplete: "Run stopped before the workflow was complete."
     }[status] || "Run ended.";
     const canSave = status === "done" && sawReport && runMeta?.mode === "live" && runMeta?.entry === "scenario";
+    // What next: the other scenarios, so a visitor who started from the intro finds them.
+    const next = nextScenarios(runMeta?.entry === "scenario" ? runMeta.scenario_id : null);
+    if (next) add(next);
     // Facts for completed runs (the audit has every event up to this one).
     let facts = null;
     if (["done", "no_findings", "incomplete"].includes(status)) {
@@ -388,7 +446,13 @@ export function createConsole(panel, { onOpenOptions, onOpenOutbox, onOpenReport
   try { storedSize = localStorage.getItem(TEXT_SIZE_KEY); } catch { /* storage unavailable */ }
   applySize(storedSize === "large");
   showEmpty();
-  return { reset };
+  return { reset, setScenario };
+}
+
+const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+/** "Seven" for 7: a count at the start of a sentence, in words up to twelve. */
+function countWord(n) {
+  return COUNT_WORDS[n] || String(n);
 }
 
 // ---------------------------------------------------------------------------------------------
