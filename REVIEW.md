@@ -9,7 +9,7 @@ This document has six parts:
 5. **The customer's view:** the rework for a five-to-ten-minute pitch, finding by finding.
 6. **Decisions and open points.**
 
-Subject: Timetable Translator 1.3.1 (`js/config.js`), 29 October 2026: version 1.0.0 of 18 October 2026, reworked for a five-to-ten-minute customer pitch in 1.1.0, made simpler to read in 1.2.0 (Part 5), moved onto Vici in 1.3.0 (Part 1), and the scenarios put in view in 1.3.1 after the first pitch (Part 5). Reference: Rebate Hunter 7.2.0 (`VictorPflueger/PROC-Rebate-Hunter`, commit `73c00f8`, the sister app whose shell this build reuses) and Navigator 1.1.0 (`VictorPflueger/supply-chain-navigator`). Live sites: `victorpflueger.github.io/PROC-Rebate-Hunter/`, `victorpflueger.github.io/supply-chain-navigator/`.
+Subject: Timetable Translator 1.4.0 (`js/config.js`), 29 October 2026: version 1.0.0 of 18 October 2026, reworked for a five-to-ten-minute customer pitch in 1.1.0, made simpler to read in 1.2.0 (Part 5), moved onto Vici in 1.3.0 (Part 1), the scenarios put in view in 1.3.1 after the first pitch, and a seventh scenario on the European timetable in 1.4.0 (Part 5). Reference: Rebate Hunter 7.2.0 (`VictorPflueger/PROC-Rebate-Hunter`, commit `73c00f8`, the sister app whose shell this build reuses) and Navigator 1.1.0 (`VictorPflueger/supply-chain-navigator`). Live sites: `victorpflueger.github.io/PROC-Rebate-Hunter/`, `victorpflueger.github.io/supply-chain-navigator/`.
 
 ---
 
@@ -249,8 +249,14 @@ Answered and kept: the console is still the densest part (about 480 words of nar
 |---|---|---|---|
 | C48 | The scenarios could be switched only in the Scenario menu, whose caption read *Scenario*; before a run the console stood empty, and after it nothing pointed to the other five | Before a run the console lists every scenario, each a row with its number, title and kind of contradiction, the one loaded marked; after a run *Try another scenario* offers the others, one click from their own run; the control says *Scenario 1 of 6* (*1 of 6* on a laptop) and the intro's footer how many scenarios the menu holds (D-T36) | `js/console.js`, `js/controls.js`, `js/intro.js`, `js/ui.js` |
 
+**For the next pitch (1.4.0, 29 October 2026).** The feedback suggested a case on the European timetable for cross-border long-distance trains as an extension worth discussing.
+
+| ID | What the customer would ask | Change | Where |
+|---|---|---|---|
+| C49 | Every scenario ran inside one national corridor; a train planned from several railways' deliveries, whose customer timetable is merged from them at fixed times, was not covered | Scenario 7: ICE 318 from Dortmund via Köln and Aachen to Bruxelles-Midi; the partner railway delivers works on its section at 06:12, after the European timetable's merge at 04:00, so the journey planner and the on-board announcements show the old arrival and a lost connection while the displays show the new one. Option A merges the train again from both deliveries, checked before release, and aligns every channel in 20 minutes; B informs as well but waits for the next merge (D-T38, D-T39). The strip draws the line to Brussels and the border for that train only (D-T40) | `tools/build_world.mjs`, `data/scenarios.js`, `data/reference_cases.js`, `data/sim_runs.js`, `js/mirror_data.js`, `js/mirror_strip.js` |
+
 ## Part 6. Decisions and open points
 
-The decisions are logged as D-T1 to D-T37 in `TECH_NOTES.md` §8. Open points for a next version: a rehearsal and a recorded live run per scenario (O1, O2); origin–destination figures if a pilot has them (O3); a German interface if the audience asks for it (O4); an audit by train and stop in live mode (O5); and, for a client setting, the app on its own host rather than a shared `github.io` origin (`README.md`, *Your API key*).
+The decisions are logged as D-T1 to D-T42 in `TECH_NOTES.md` §8. Open points for a next version: a rehearsal and a recorded live run per scenario (O1, O2); origin–destination figures if a pilot has them (O3); a German interface if the audience asks for it (O4); an audit by train and stop in live mode (O5); and, for a client setting, the app on its own host rather than a shared `github.io` origin (`README.md`, *Your API key*).
 
 **Requested on 28 October 2026:** rework the prototype onto Vici, Victor's design system, in a light and a dark theme, without changing what it does, the way Rebate Hunter did. Done in 1.3.0 (Part 1). What Vici or the shared shell should fix (colour-blind gaps, merlot close to danger, the console's diagonal mark and the pressed segment in forced colours, the key dialog's line length, the shell's list of scrolling panels, a KPI note cut after two lines, an approved draft's invisible tag, a summary longer than the screen) is in the pull request of 1.3.0, to be made in all four prototypes together; the colour test reports the gaps on every run.
