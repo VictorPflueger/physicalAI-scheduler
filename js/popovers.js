@@ -100,13 +100,17 @@ export function stationPopover(model, point, ctx = {}) {
   if (!p) return h("div", {}, "Unknown station.");
   const obs = model.obsByPoint.get(point) || [];
   const tracks = Object.entries(p.tracks).filter(([, s]) => !s.bus);
+  // A border point is an operating point without platforms: trains pass it.
+  const border = p.border ? `border point ${p.border.west} | ${p.border.east}` : null;
   return h("div", {},
     h("div", { class: "pop-title" }, p.name),
-    h("div", { class: "pop-sub" }, `Ril 100 code ${p.ril100} · ${tracks.length} platform tracks`),
+    h("div", { class: "pop-sub" }, `Ril 100 code ${p.ril100} · ${border || `${tracks.length} platform tracks`}`),
     h("div", { class: "pop-tags" }, stateChip(ctx.state)),
-    dl([["Platform tracks", tracks.map(([k, s]) => `${k}${s.length_m !== 405 ? ` (${s.length_m} m)` : ""}`).join(", ")]]),
+    dl([tracks.length
+      ? ["Platform tracks", tracks.map(([k, s]) => `${k}${s.length_m !== 405 ? ` (${s.length_m} m)` : ""}`).join(", ")]
+      : ["Platforms", "none: trains pass this point without stopping"]]),
     obs.length ? h("table", { class: "vc-table vc-table--compact pop-table" },
       h("thead", {}, h("tr", {}, h("th", {}, "Physical layer"), h("th", { class: "r" }, "Time"))),
       h("tbody", {}, obs.map((o) => h("tr", {}, h("td", {}, h("strong", {}, o.source), h("br"), o.text), h("td", { class: "r" }, minuteLabel(o.at)))))) : h("p", { class: "pop-note" }, "No observation from the physical layer at this station this morning."),
-    h("p", { class: "pop-note" }, "The station and its Ril 100 code are real; platform data and observations are invented."));
+    h("p", { class: "pop-note" }, p.border ? "The border point and its Ril 100 code are real; observations are invented." : "The station and its Ril 100 code are real; platform data and observations are invented."));
 }

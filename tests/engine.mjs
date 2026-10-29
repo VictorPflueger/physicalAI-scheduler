@@ -1,11 +1,11 @@
 // Golden-figure tests for the domain core (Node.js 20 or later; no browser needed):
-//   engine      the six reference cases give the frozen figures below: passengers misinformed and
+//   engine      the seven reference cases give the frozen figures below: passengers misinformed and
 //               affected, the first affected moment, and every variant's figures; a passenger who
 //               relies on two wrong facts at one stop is counted once
 //   projection  the customer view rounds arrivals up and departures down, keeps short stops in order,
 //               hides operational stops (unless a conversion fault publishes them), lists cancelled
 //               and extra stops, and names the new terminus
-//   sweep       every train outside the six scenarios matches the source (honest negatives)
+//   sweep       every train outside the seven scenarios matches the source (honest negatives)
 //   refusals    the engine refuses unknown trains, channels and points, invalid actions and variant
 //               sets, and labels partial scopes and what-ifs
 //   facts       the fact audit reads times, platforms, minutes, trains and passengers in English and
@@ -18,7 +18,7 @@
 //   mirror      the mirror's data: links between the timetables, row placement, published rows with
 //               cancelled stops, the corridor strip, the sync monitor, and what a lookup touches
 //   texts       placeholders, journeys in German and English, draft safety lines, decision payoff
-//   alignment   the alignment view's data for all six scenarios: the stop of the most urgent
+//   alignment   the alignment view's data for all seven scenarios: the stop of the most urgent
 //               contradiction, the source's values there, each channel's value and the verdict the
 //               engine gives (none before a result, none outside a first estimate's scope, lilac
 //               for a what-if), the impact as the engine's misinformed figure; the sensor readings
@@ -90,10 +90,15 @@ const GOLDEN = {
     hypothesis: { basis: "partial", contradictions: 2, misinformed: 118, affected: 118, first: 137 },
     finding: { contradictions: 3, misinformed: 234, affected: 234, first: 126, ids: ["T-612/EDO/time", "T-612/EDO/connection", "T-10109/EDO/time"] },
     variants: { V1: [11, 223, 2, 8, 0, 0, 10, 46], V2: [13, 221, 2, 8, 0, 0, 7, 0], V3: [15, 219, 2, null, 3, 0, 6, 0] }
+  },
+  "SC-EUROPE": {
+    hypothesis: { basis: "partial", contradictions: 2, misinformed: 39, affected: 252, first: 80 },
+    finding: { contradictions: 2, misinformed: 230, affected: 252, first: 80, ids: ["T-318/XBB/time", "T-318/XBB/connection"] },
+    variants: { V1: [3, 227, 2, 20, 0, 0, 17, 0], V2: [3, 227, 2, null, 2, 0, 10, 0], V3: [37, 193, 2, null, 2, 1, 6, 0] }
   }
 };
 {
-  assert.equal(SCENARIOS.length, 6);
+  assert.equal(SCENARIOS.length, 7);
   for (const sc of SCENARIOS) {
     const g = GOLDEN[sc.id];
     const h = simulateSync(model, structuredClone(REF[sc.id].hypothesis));
@@ -108,7 +113,7 @@ const GOLDEN = {
     // The recommended option of every authored script (V1) brings every channel back in sync.
     assert.ok(f.variants[0].time_to_sync_min !== null && f.variants[0].manual_overrides === 0, `${sc.id}: V1 is in sync without overrides`);
   }
-  ok("six reference cases: golden figures for the first estimate, the finding and every variant");
+  ok("seven reference cases: golden figures for the first estimate, the finding and every variant");
 }
 
 {
@@ -194,7 +199,7 @@ const GOLDEN = {
   const scenarioTrains = new Set(SCENARIOS.flatMap((s) => s.exposure_check.train_ids));
   const strays = WORLD.trains.filter((t) => !scenarioTrains.has(t.id) && trainContradictions(model, t.id).length);
   assert.deepEqual(strays.map((t) => t.id), []);
-  assert.equal(WORLD.trains.length - scenarioTrains.size, 74);
+  assert.equal(WORLD.trains.length - scenarioTrains.size, 76);
   // ICE 1023 is diverted too, but published automatically: in sync.
   assert.equal(trainContradictions(model, "T-1023").length, 0);
   const res = simulateSync(model, { train_ids: ["T-1023"] });
@@ -203,7 +208,7 @@ const GOLDEN = {
   // In sync itself, but the same diversion leaves two other trains wrong: the result says so.
   assert.equal(res.basis, "partial");
   assert.match(res.left_out.join(" "), /same operational change.*ICE 1022, ICE 1026/);
-  ok("sweep: 74 trains outside the scenarios match the source; ICE 1023's diversion is published correctly and points to its siblings");
+  ok("sweep: 76 trains outside the scenarios match the source; ICE 1023's diversion is published correctly and points to its siblings");
 }
 
 // ---- refusals and labels --------------------------------------------------------------------------------
@@ -453,7 +458,7 @@ const GOLDEN = {
   assert.deepEqual(positionNow(model, sourceState(model, "T-1022").rows), { at: "EDO", between: null, state: "waiting" });
   // The monitor: no S-Bahn shuttles, first departure first, created trips named.
   const mon = monitorTrains(model);
-  assert.ok(mon.length === 34 && mon.every((r) => r.category !== "S"));
+  assert.ok(mon.length === 36 && mon.every((r) => r.category !== "S"));
   for (let i = 1; i < mon.length; i++) assert.ok(mon[i].first_min >= mon[i - 1].first_min);
   assert.equal(mon.find((r) => r.id === "T-SEV1").created_by, "OPS-03");
   // What a lookup touches, and what its result confirmed.
@@ -466,6 +471,36 @@ const GOLDEN = {
   const compact = compactForModel(simulateSync(model, structuredClone(REF["SC-DIVERSION"].finding)));
   assert.equal(contradictionsOf(compact, "T-1026").length, 5);
   ok("mirror data: links, placement, cancelled rows, strip routes and position, the monitor, lookups and their confirmations");
+}
+
+// ---- cross-border: the European timetable --------------------------------------------------------------
+{
+  // ICE 318 runs on beyond the corridor to Bruxelles-Midi. The partner railway's delivery (06:12) came
+  // after the nightly merge (04:00): the planner and the announcements still show the merged times, the
+  // displays take the source directly. Only the stop abroad is wrong, and the connection there.
+  const f = compactForModel(simulateSync(model, structuredClone(REF["SC-EUROPE"].finding)));
+  assert.deepEqual(f.contradictions.map((c) => `${c.id}:${c.channels_wrong.join("+")}:${c.causes.join("+")}`),
+    ["T-318/XBB/time:planner+announcements:european_merge", "T-318/XBB/connection:planner+announcements:european_merge"]);
+  assert.deepEqual(f.contradictions.map((c) => c.passengers), [252, 41]);
+  assert.ok(model.causes.european_merge.needs_manual_release && model.causes.european_merge.auto_fix_at === null, "the merge waits for tonight; a re-merge needs a release");
+  // The German section and the stop at Liège-Guillemins are the same in both versions; Brussels is 9 min later.
+  const before = customerView(model, "T-318", { version: 1 }).rows;
+  const now = customerView(model, "T-318").rows;
+  assert.deepEqual(before.filter((r) => r.point !== "XBB"), now.filter((r) => r.point !== "XBB"));
+  assert.equal(now.find((r) => r.point === "XBB").arr - before.find((r) => r.point === "XBB").arr, 9 * 60);
+  // The change and its physical evidence: the partner's delivery in the log, yesterday's section times.
+  assert.deepEqual(OPS_TOOLS.ops_list_changes(model, { train: "ICE 318" }).changes.map((c) => `${c.id}:${c.time}:${c.kind}`), ["OPS-06:06:12:partner_delivery"]);
+  assert.deepEqual(OPS_TOOLS.phys_observe(model, { point: "XBLIG" }).observations.map((o) => `${o.id}:${o.kind}`), ["PHY-10:section_time"]);
+  // The strip: the line beyond the corridor, with its border point, only for trains on that line.
+  const abroad = ["KA", "KXA", "XBLIG", "XBB"];
+  const s318 = stripData(model, "T-318");
+  assert.deepEqual(s318.nodes.filter((n) => abroad.includes(n.id)).map((n) => n.id), abroad);
+  assert.deepEqual(s318.nodes.find((n) => n.id === "KXA").border, { west: "BE", east: "DE" });
+  assert.deepEqual(s318.route.slice(-4), abroad);
+  assert.deepEqual(stripData(model, "T-IC2117").nodes.filter((n) => abroad.includes(n.id)).map((n) => n.id), abroad, "a train starting abroad gets the whole line, not a loose dot");
+  for (const id of [null, "T-618", "T-1022"]) assert.ok(!stripData(model, id).nodes.some((n) => abroad.includes(n.id)), `${id}: the corridor as it was`);
+  assert.equal(stripData(model, "T-318").edges.length, stripData(model, "T-618").edges.length + 4);
+  ok("cross-border: the stop abroad and its connection behind on two channels, the rest unchanged, the change and its evidence, the line beyond the corridor on the strip");
 }
 
 // ---- texts: placeholders, journeys, drafts, payoff ---------------------------------------------------------------------
@@ -560,7 +595,7 @@ const GOLDEN = {
       assert.equal(h.impact.stage, "estimate");
       assert.equal(h.impact.pax, hyp.baseline.misinformed_pax);
       // The impact line names what the estimate left out, as the engine does: channels, a stop or a train.
-      const leftOut = { "SC-PLATFORM": "channel", "SC-DIVERSION": "train", "SC-OPSSTOP": "channel", "SC-TERMINUS": "channel", "SC-COACH": "stop", "SC-FPLO": "train" }[sc.id];
+      const leftOut = { "SC-PLATFORM": "channel", "SC-DIVERSION": "train", "SC-OPSSTOP": "channel", "SC-TERMINUS": "channel", "SC-COACH": "stop", "SC-FPLO": "train", "SC-EUROPE": "channel" }[sc.id];
       assert.deepEqual(h.impact.notChecked, [leftOut], `${sc.id}: what the first estimate left out`);
     }
   }
@@ -588,7 +623,7 @@ const GOLDEN = {
   assert.equal(toolPlain("phys_observe", { point: "KK" }, model), "Reads the sensors at Köln Hbf: the physical layer");
   assert.match(toolPlain("sim_sync", { train_ids: ["ICE 618"] }, model), /^Calculates who would act on wrong information/);
   assert.equal(toolPlain("web_search", { query: "x" }, model), null);
-  ok("alignment: the stop, the source's values, each channel's value and verdict, the impact, the sensors and the plain tool sentences for all six scenarios");
+  ok("alignment: the stop, the source's values, each channel's value and verdict, the impact, the sensors and the plain tool sentences for all seven scenarios");
 }
 
 console.log(`\nAll ${passed} engine tests passed.`);

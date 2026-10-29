@@ -3,7 +3,8 @@
  *
  * Each scenario is only a short, UNVERIFIED lead ("seed") written the way a first hint typically
  * arrives at a passenger-information desk (a radio message, a staff chat, a customer complaint, a
- * station team's note, a train manager's report, the construction office). In Live mode the agent
+ * station team's note, a train manager's report, the construction office, the international service
+ * desk). In Live mode the agent
  * receives the seed text and nothing else: it must find the train and the operational change in the
  * source, read what customers are told, confirm the change with the physical layer, quantify it with
  * the deterministic sync engine and propose options.
@@ -74,5 +75,15 @@ window.SCENARIOS = [
     seed: "Construction office: a timetable order for Bochum – Dortmund (speed restriction, about 4 minutes) went out this morning. Has anyone checked what passengers are told about Dortmund and their connections?",
     train_id: "T-612",
     exposure_check: { train_ids: ["T-612", "T-10109"], types: ["time", "connection"] }
+  },
+  {
+    id: "SC-EUROPE",
+    number: 7,
+    title: "ICE to Brussels: the European timetable lags",
+    short: "European timetable",
+    category: "European timetable / partner delivery",
+    seed: "Note from the international service desk: the partner railway in Belgium has works between Liège and Brussels this week. Passengers on ICE 318 to Bruxelles-Midi ask whether their connection to Oostende at 09:42 still works: the app says yes.",
+    train_id: "T-318",
+    exposure_check: { train_ids: ["T-318"], types: ["time", "connection"] }
   }
 ];

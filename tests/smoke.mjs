@@ -604,7 +604,7 @@ if (wanted("mirror")) {
     [checks.legendClosed === "true:mirror-legend", `Escape closes the legend and returns the focus to its button (${checks.legendClosed})`],
     [/mrow\|source\|EDO/.test(checks.focusKept || "") && /mrow\|source\|EDO/.test(checks.focusBackAfterRedraw || ""), `focus survives a redraw, and the popover gives it back after one (${checks.focusKept}; ${checks.focusBackAfterRedraw})`],
     [(checks.rings || []).length === 6 && checks.rings.every((r) => r.endsWith(":true")), `the mirror's buttons show the focus ring (${checks.rings})`],
-    [checks.monitor?.n === 34 && checks.monitor?.sorted && /^All trains: 34 in the next/.test(checks.monitor?.caption || "") && checks.monitor?.sev === "created by OPS-03", `all trains: 34, first departure first (${JSON.stringify(checks.monitor)})`],
+    [checks.monitor?.n === 36 && checks.monitor?.sorted && /^All trains: 36 in the next/.test(checks.monitor?.caption || "") && checks.monitor?.sev === "created by OPS-03", `all trains: 36, first departure first (${JSON.stringify(checks.monitor)})`],
     [checks.afterRow === "train:ICE 1026 · Berlin Hbf → Köln Hbf" && /mrow\|source\|/.test(checks.focusAfterRow || ""), `a monitor row opens its train and the focus follows (${checks.afterRow}; ${checks.focusAfterRow})`],
     [(checks.small || []).length === 0, `every mirror control is at least 40 px (${checks.small})`],
     [(checks.external || []).length === 0, `nothing loads from outside (${checks.external})`]

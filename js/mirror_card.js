@@ -149,7 +149,8 @@ export function createCard({ onSource, onCustomer, onChannel }) {
     },
     h("span", { class: "spine" }, h("i")),
     timeCell(r.arr, r.dep, r.activity === "pass" ? r.pass : null),
-    h("span", { class: "code" }, r.ril100),
+    // A foreign station's DS 100 code runs to five letters (XBLIG): a size smaller, so it keeps one line.
+    h("span", r.ril100.length > 4 ? { class: "code", dataset: { long: "true" } } : { class: "code" }, r.ril100),
     h("span", { class: "nm" }, h("strong", {}, r.station), sub.length ? h("span", { class: "sub" }, sub.join(" · ")) : null),
     h("span", { class: "trk" }, r.track || ""));
     if (flagged) b.dataset.flag = flagged;

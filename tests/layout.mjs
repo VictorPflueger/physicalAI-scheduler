@@ -10,7 +10,7 @@
 //              strip and card never cover each other, the strip's labels stay apart, the rows and the
 //              lines between them stay inside the card, the line labels never stack on each other, and
 //              the finding is in view in the card
-//   scenarios  the other five scenarios at 1280×720 through the finding, options and outbox, whose
+//   scenarios  the other six scenarios at 1280×720 through the finding, options and outbox, whose
 //              longer KPI subtitles must not push the header to a third row, and whose mirrors follow
 //              the rules above; their findings at 1600×900 too
 //   targets    every visible interactive element is at least 40 px high and wide at 1920×1080, in the
@@ -311,7 +311,8 @@ if (wanted("viewports")) {
 
 if (wanted("scenarios")) {
   const problems = [];
-  for (const id of ["SC-DIVERSION", "SC-OPSSTOP", "SC-TERMINUS", "SC-COACH", "SC-FPLO"]) {
+  const OTHERS = ["SC-DIVERSION", "SC-OPSSTOP", "SC-TERMINUS", "SC-COACH", "SC-FPLO", "SC-EUROPE"];
+  for (const id of OTHERS) {
     const { context, page, errors } = await newPage(1280, 720);
     try {
       await toFinding(page, id);
@@ -340,7 +341,7 @@ if (wanted("scenarios")) {
     await context.close();
   }
   // Their findings at 1600×900, where the strip shows the station names.
-  for (const id of ["SC-DIVERSION", "SC-OPSSTOP", "SC-TERMINUS", "SC-COACH", "SC-FPLO"]) {
+  for (const id of OTHERS) {
     const { context, page, errors } = await newPage(1600, 900);
     try {
       await toFinding(page, id);
@@ -351,7 +352,7 @@ if (wanted("scenarios")) {
     problems.push(...errors.map((e) => `${id}: page error: ${e}`));
     await context.close();
   }
-  results.push({ name: "five more scenarios at 1280×720 (finding, options, outbox) and 1600×900 (finding), alignment view and timetables", ok: !problems.length, problems });
+  results.push({ name: "six more scenarios at 1280×720 (finding, options, outbox) and 1600×900 (finding), alignment view and timetables", ok: !problems.length, problems });
 }
 
 if (wanted("targets")) {

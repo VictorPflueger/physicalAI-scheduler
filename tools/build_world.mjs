@@ -5,7 +5,9 @@
 // What it writes:
 //   - the Köln – Dortmund corridor: real stations with their Ril 100 codes, a schematic position
 //     for the mirror's corridor strip, platform tracks with sectors (lengths and sector positions
-//     invented), and the lines that join them;
+//     invented), and the lines that join them; beyond it, the cross-border line from Köln through
+//     Aachen and the border to Liège and Brussels (real stations with their DS 100 codes, which the
+//     strip draws only for a train that runs there);
 //   - about forty trips (ICE, RE, S-Bahn, a replacement bus) with their base timetable (version 1)
 //     computed from segment running times, to a tenth of a minute as in a Betriebsfahrplan;
 //   - the operational changes of the morning (dispatch decisions, a construction timetable order,
@@ -34,7 +36,7 @@ const T = (s) => {
 const tenth = (sec) => Math.round(sec / 6) * 6;
 const MIN = (m) => tenth(m * 60);
 
-const WORLD_VERSION = "1.0.0";
+const WORLD_VERSION = "1.1.0";
 const NOW = T("07:28");
 
 // ---- the corridor --------------------------------------------------------------------------------
@@ -60,7 +62,15 @@ const POINTS = [
   P("KW", "Wuppertal Hbf", 48, 8, tracks(1, 2, 3, 4, track("Bus", { length_m: 0, bus: true, note: "Replacement-bus stop in front of the station." })), { hub: true }),
   P("KWO", "Wuppertal-Oberbarmen", 57, 8, tracks(1, 2, 3, 4, track("Bus", { length_m: 0, bus: true }))),
   P("EHG", "Hagen Hbf", 72, 8, tracks(2, 3, 4, 5, track("Bus", { length_m: 0, bus: true, note: "Replacement-bus stop, Graf-von-Galen-Ring exit." })), { hub: true }),
-  P("EWIT", "Witten Hbf", 85, 8, tracks(1, 2, 3))
+  P("EWIT", "Witten Hbf", 85, 8, tracks(1, 2, 3)),
+  // Beyond the corridor: the cross-border line to Brussels, drawn on the strip's upper lane to the left
+  // of Köln and only for a train that runs there (beyond). Aachen Süd Grenze is the border point
+  // (Germany | Belgium): an operating point without platforms. The codes are the directory's: foreign
+  // stations carry X codes (DATA_SOURCES.md §2).
+  P("KA", "Aachen Hbf", -7, 8, tracks(1, 2, 6, 7, 8, 9), { beyond: true }),
+  P("KXA", "Aachen Süd Grenze", -14, 8, {}, { beyond: true, border: { west: "BE", east: "DE" } }),
+  P("XBLIG", "Liège-Guillemins", -22, 8, tracks(1, 2, 3, 4, 5, 6, 7, 8, 9), { beyond: true, hub: true }),
+  P("XBB", "Bruxelles-Midi", -32, 8, tracks(11, 12, 13, 14, 15, 16, 17, 18), { beyond: true, hub: true })
 ];
 const POINT = new Map(POINTS.map((p) => [p.id, p]));
 
@@ -70,12 +80,16 @@ const SEGMENTS = [
   ["KK", "KKDZ", 3.4], ["KKDZ", "KKM", 2.8], ["KKM", "KLMI", 4.6], ["KLMI", "KD", 12.6], ["KD", "KDFF", 5.8],
   ["KDFF", "EDG", 7.6], ["EDG", "EMLR", 6.2], ["EMLR", "EE", 4.4], ["EE", "EBO", 9.4], ["EBO", "EDO", 9.8],
   ["KKM", "KSO", 12.2], ["KSO", "KW", 9.0], ["KW", "KWO", 4.4], ["KWO", "EHG", 10.4], ["EHG", "EWIT", 8.8], ["EWIT", "EDO", 9.6],
-  ["KD", "KW", 19.0] // Düsseldorf – Wuppertal (via Erkrath; the stations between are not modelled)
+  ["KD", "KW", 19.0], // Düsseldorf – Wuppertal (via Erkrath; the stations between are not modelled)
+  // The cross-border line: Köln – Aachen via Düren, the border at Aachen Süd, the high-speed line to
+  // Liège, and on to Brussels via Leuven (the stations between are not modelled).
+  ["KK", "KA", 35.6], ["KA", "KXA", 4.8], ["KXA", "XBLIG", 16.4], ["XBLIG", "XBB", 44.2]
 ];
 const LINES = [
   { id: "main", name: "Köln – Düsseldorf – Duisburg – Essen – Bochum – Dortmund", points: ["KK", "KKDZ", "KKM", "KLMI", "KD", "KDFF", "EDG", "EMLR", "EE", "EBO", "EDO"] },
   { id: "wupper", name: "Köln – Solingen – Wuppertal – Hagen – Witten – Dortmund", points: ["KKM", "KSO", "KW", "KWO", "EHG", "EWIT", "EDO"] },
-  { id: "dw", name: "Düsseldorf – Wuppertal", points: ["KD", "KW"] }
+  { id: "dw", name: "Düsseldorf – Wuppertal", points: ["KD", "KW"] },
+  { id: "west", name: "Köln – Aachen – Liège – Bruxelles (cross-border)", points: ["KK", "KA", "KXA", "XBLIG", "XBB"] }
 ];
 const FACTOR = { ICE: 1, IC: 1.05, RE: 1.22, S: 1.32, Bus: 1 };
 const BUS_MIN = { "EHG-KWO": 26, "KWO-KW": 12 };
@@ -268,6 +282,35 @@ const trains = TRIPS.map((trip) => {
     ...(trip.external_after ? { continues_beyond: true } : {})
   };
 });
+
+// ---- cross-border trips -----------------------------------------------------------------------------------
+// ICE 318 runs from Dortmund along the main line to Köln and on across the border to Liège and Brussels;
+// at Bruxelles-Midi two trains of the partner railway to Oostende stand for the connections there. Their
+// passengers are set here, not drawn: these trips must not move the random draws of the trips above.
+const ICE_WEST = [...ICE_MAIN_S, "KA", "KXA", "XBLIG", "XBB"];
+const CROSS_TRIPS = [
+  { id: "T-318", number: "ICE 318", category: "ICE", direction: "S", from: "Dortmund Hbf", to: "Bruxelles-Midi", route: ICE_WEST, start: "06:32",
+    stops: { EDO: { track: "16" }, EE: { dwell: 1.8, track: "4" }, EDG: { dwell: 1.6, track: "4" }, KD: { dwell: 1.8, track: "17" }, KK: { dwell: 4.0, track: "2" }, KA: { dwell: 2.0, track: "7" }, XBLIG: { dwell: 2.0, track: "3" }, XBB: { track: "14" } },
+    pax: {
+      EDO: { board: 96, alight: 0, reserved_board: 34 }, EE: { board: 64, alight: 6, reserved_board: 22 }, EDG: { board: 41, alight: 9, reserved_board: 14 },
+      KD: { board: 88, alight: 22, reserved_board: 30 }, KK: { board: 132, alight: 58, reserved_board: 45 }, KA: { board: 26, alight: 47, reserved_board: 9 },
+      XBLIG: { board: 18, alight: 71, reserved_board: 6 }, XBB: { board: 0, alight: 252, reserved_board: 0 }
+    } },
+  ...[["T-IC2117", "IC 2117", "09:42", 164], ["T-IC2119", "IC 2119", "10:42", 120]].map(([id, number, start, board]) => ({
+    id, number, line: "IC", category: "IC", direction: "W", from: "Bruxelles-Midi", to: "Oostende", route: ["XBB"], start, external_after: true,
+    stops: { XBB: { track: "16" } }, pax: { XBB: { board, alight: 0, reserved_board: 0 } }
+  }))
+];
+for (const trip of CROSS_TRIPS) {
+  trains.push({
+    id: trip.id, number: trip.number, line: trip.line || trip.number.split(" ")[0], category: trip.category, direction: trip.direction,
+    from: trip.from, to: trip.to, route_line: routeLine(trip.route),
+    base: generate(trip),
+    consist: trip.category === "ICE" ? { cars: ICE_CARS, order: "standard", length_m: 200, double: false } : null,
+    passengers: trip.pax,
+    ...(trip.external_after ? { continues_beyond: true } : {})
+  });
+}
 const TRAIN = new Map(trains.map((t) => [t.id, t]));
 
 function routeLine(route) {
@@ -342,6 +385,13 @@ const CHANGES = [
     id: "OPS-05", at: T("07:21"), source: "Fahrdienstleiter Köln Hbf", kind: "platform", trains: ["T-618"],
     text: "Zug 618: Gleiswechsel Köln Hbf, Abfahrt Gl. 7 statt Gl. 5 (Weichenstörung W 32, Fahrstraßen über W 32 gesperrt).",
     ops: [{ train: "T-618", op: "set_track", point: "KK", track: "7" }]
+  },
+  {
+    // The partner railway's delivery for its own section of a cross-border train: part of the source
+    // (each railway keeps the operational timetable of its section), recorded when it came in.
+    id: "OPS-06", at: T("06:12"), source: "Fahrplanlieferung Partnerbahn (Belgien)", kind: "partner_delivery", trains: ["T-318"],
+    text: "Zug 318 Dortmund Hbf – Bruxelles-Midi: Lieferung der Partnerbahn für den Abschnitt in Belgien, eingegangen 06:12. Bauarbeiten Liège-Guillemins – Bruxelles-Midi (eingleisiger Betrieb), gültig ab heute: Mehrfahrzeit +9,0 Min ab Liège-Guillemins. Abschnitt in Deutschland und Halt Liège-Guillemins unverändert.",
+    ops: [{ train: "T-318", op: "shift_after", point: "XBLIG", minutes: 9 }]
   }
 ];
 
@@ -366,7 +416,10 @@ const PUBLISHED = {
   "T-1025": { planner: { version: 1, at: T("05:30"), cause: "planner_queue" }, announcements: { version: 1, at: T("05:30"), cause: "announcement_feed" }, app_push: null },
   "T-516": { coach: { version: 1, at: T("05:30"), cause: "coach_feed" } },
   "T-612": { all: { version: 1, at: T("05:30"), cause: "fplo_daily" } },
-  "T-10109": { all: { version: 1, at: T("05:30"), cause: "fplo_daily" } }
+  "T-10109": { all: { version: 1, at: T("05:30"), cause: "fplo_daily" } },
+  // A cross-border train: the journey planner and the on-board announcements come from the European
+  // timetable merged at 04:00; the station displays take each railway's operational data directly.
+  "T-318": { planner: { version: 1, at: T("04:00"), cause: "european_merge" }, announcements: { version: 1, at: T("04:00"), cause: "european_merge" } }
 };
 
 const CAUSES = {
@@ -376,7 +429,8 @@ const CAUSES = {
   planner_queue: { title: "Journey-planner import queued", text: "Station displays take the dispatch feed directly; the journey planner imports in the half-hourly cycle at :00 and :30, which closes 15 minutes before. This change came at 07:17, after the 07:30 cycle had closed, so it goes with the 08:00 import.", auto_fix_at: CYCLE_NEXT },
   announcement_feed: { title: "On-board announcements on the old run", text: "The train's automatic announcements were loaded at departure from Hamburg with the planned run to Köln Hbf.", auto_fix_at: null },
   coach_feed: { title: "Coach order is a separate feed", text: "The coach order shown in the app and on the platform coach-position displays comes from the vehicle plan of 05:30 and is not refreshed when a set is turned.", auto_fix_at: null },
-  fplo_daily: { title: "Construction order after the daily run", text: "Fplo orders are processed in the daily generation at 05:30; this one was released at 06:50, and the half-hourly cycle processes dispatch changes only.", auto_fix_at: null }
+  fplo_daily: { title: "Construction order after the daily run", text: "Fplo orders are processed in the daily generation at 05:30; this one was released at 06:50, and the half-hourly cycle processes dispatch changes only.", auto_fix_at: null },
+  european_merge: { title: "European timetable merged before the change", text: "Cross-border trains reach the journey planner and app, and the on-board announcements loaded at departure, through the European timetable, which a central timetable office merges once a night, at 04:00, from every railway's delivery. The partner railway delivered this change at 06:12, after the merge: it waits for tonight's run, and the half-hourly cycle takes national changes only. The station displays take each railway's operational data directly. A cross-border train merged again by hand must be checked against both railways' deliveries before it is released.", auto_fix_at: null, needs_manual_release: true }
 };
 
 // ---- the physical layer ----------------------------------------------------------------------------------
@@ -407,7 +461,10 @@ const OBS = [
     values: { leading_car: "27", order: "reversed" } },
   { id: "PHY-09", at: T("07:25"), kind: "section_time", source: "Fahrzeitmessung aus der Zugortung", point: "EBO", trains: [], supports: ["OPS-02"],
     text: "Abschnitt Bochum Hbf – Dortmund Hbf heute: Züge 610 und 10105 mit +3,8 und +4,1 Minuten gegenüber Fahrplan (Langsamfahrstelle 70 km/h).",
-    values: { section: ["EBO", "EDO"], measured_min: [3.8, 4.1] } }
+    values: { section: ["EBO", "EDO"], measured_min: [3.8, 4.1] } },
+  { id: "PHY-10", at: T("06:05"), kind: "section_time", source: "Fahrzeitmessung aus der Zugortung (Bordgerät), Abschnitt der Partnerbahn", point: "XBLIG", trains: [], supports: ["OPS-06"],
+    text: "Abschnitt Liège-Guillemins – Bruxelles-Midi gestern: Züge 314 und 322 mit +8,6 und +9,3 Minuten gegenüber Fahrplan (eingleisiger Betrieb, Bauarbeiten).",
+    values: { section: ["XBLIG", "XBB"], measured_min: [8.6, 9.3] } }
 ];
 
 // Train positions now (07:28), for the corridor strip: where each running train is.
@@ -422,7 +479,8 @@ function positionNow(rows) {
 
 // ---- connections --------------------------------------------------------------------------------------
 const CONNECTIONS = [
-  { id: "CX-01", from_train: "T-612", to_train: "T-RE57-0957", at: "EDO", min_transfer_min: 4, passengers: 46, note: "Connection shown in the journey planner and on the train's connection display." }
+  { id: "CX-01", from_train: "T-612", to_train: "T-RE57-0957", at: "EDO", min_transfer_min: 4, passengers: 46, note: "Connection shown in the journey planner and on the train's connection display." },
+  { id: "CX-02", from_train: "T-318", to_train: "T-IC2117", at: "XBB", min_transfer_min: 6, passengers: 41, note: "Connection shown in the journey planner and in the on-board announcements." }
 ];
 
 // ---- channels and their reach -----------------------------------------------------------------------------
@@ -460,11 +518,11 @@ for (const t of trains) t.position_now = positionNow(t.base);
 const world = {
   meta: {
     world_version: WORLD_VERSION,
-    title: "Köln – Dortmund corridor, operating snapshot",
+    title: "Köln – Dortmund corridor and the cross-border line to Brussels, operating snapshot",
     now: NOW, now_label: "07:28",
     horizon_min: 180,
     snapshot_note: "A frozen snapshot of one morning at 07:28. The clock does not run on: every minute figure counts from 07:28.",
-    fiction_note: "Train numbers, times, tracks, passenger figures, operational changes and sensor readings are invented. The stations, their Ril 100 codes and the lines between them are real.",
+    fiction_note: "Train numbers, times, tracks, passenger figures, operational changes and sensor readings are invented. The stations, their Ril 100 (DS 100) codes and the lines between them are real.",
     operator_note: "No real railway's data, systems or rules are used; the publication rules are assumptions written for this demonstration."
   },
   points: POINTS,
@@ -481,7 +539,8 @@ const world = {
 };
 
 const header = `/*
- * TIMETABLE TRANSLATOR — synthetic operating snapshot of the Köln – Dortmund corridor.
+ * TIMETABLE TRANSLATOR — synthetic operating snapshot of the Köln – Dortmund corridor and the
+ * cross-border line from Köln to Brussels.
  * GENERATED by tools/build_world.mjs: do not edit by hand; change the generator and run
  * \`node tools/build_world.mjs\`.
  *
