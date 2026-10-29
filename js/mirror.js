@@ -10,7 +10,7 @@
 //                 the agent's check found (the sync monitor).
 // The mirror listens to the run events itself: it focuses the train the agent works on, pulses what a
 // lookup reads (the source column, a channel, the station of a sensor reading), badges what a result
-// confirmed, colours the contradictions of the agent's sim_sync results (red, or violet for a
+// confirmed, colours the contradictions of the agent's sim_sync results (red, or the AI's lilac for a
 // what-if), follows what alerts and marks (ui_mark_mirror) say, and turns the contradictions an
 // approved option re-publishes green (amber where it only informs, or where the risk is accepted).
 // Both producers emit the same events, so a simulated and a live run look the same. Every figure
@@ -18,13 +18,13 @@
 
 import { bus } from "./events.js";
 import { getModel, findTrain, findPoint, minuteLabel } from "./world.js";
-import { h } from "./dom.js";
+import { h, withTooltip } from "./dom.js";
 import { icon } from "./icons.js";
-import { sourceRows, channelRows, channelStates, stripData, monitorTrains } from "./mirror_data.js";
+import { sourceRows, channelRows, channelStates, stripData, monitorTrains, TAG_TONE } from "./mirror_data.js";
 import { alignmentData, sensorReadings } from "./align_data.js";
 import { createAlign } from "./mirror_align.js";
 import { createCard, worstState } from "./mirror_card.js";
-import { createStrip } from "./mirror_strip.js";
+import { createStrip, hexShape } from "./mirror_strip.js";
 import { createMonitor } from "./mirror_monitor.js";
 import { createPopover } from "./pop.js";
 import { sourceRowPopover, customerRowPopover, stationPopover } from "./popovers.js";
@@ -140,14 +140,21 @@ export function createMirror(container, { scenarios = [], initialScenario = null
 
   // ---- chrome: caption, view buttons, views, legend, popover ----------------------------------------
   const capTitle = h("strong", {}, "");
-  const capChip = h("span", { class: "chip cap-chip", hidden: true }, "");
+  const capChip = h("span", { class: "vc-tag cap-chip", hidden: true }, "");
   const capSub = h("span", { class: "cap-sub" }, "");
   const caption = h("div", { class: "mirror-caption" }, h("div", { class: "cap-line" }, capTitle, capChip), capSub);
-  const btnAlign = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "true", title: "One train at one stop: the source, the AI and what every channel tells passengers" }, icon("translate", 18), h("span", { class: "btn-text" }, "Alignment"));
-  const btnTrain = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "false", title: "One train: its source timetable beside what passengers are told, stop by stop" }, icon("timetable", 18), h("span", { class: "btn-text" }, "Timetables"));
-  const btnMonitor = h("button", { class: "btn btn-sm", type: "button", "aria-pressed": "false", title: "Every train in the window, first departure first" }, icon("list", 18), h("span", { class: "btn-text" }, "All trains"));
-  const btnLegend = h("button", { class: "btn btn-sm", type: "button", "aria-expanded": "false", "aria-controls": "mirror-legend", title: "What the marks and colours mean" }, icon("info", 18), h("span", { class: "btn-text" }, "Legend"));
-  const tools = h("div", { class: "mirror-tools" }, btnAlign, btnTrain, btnMonitor, btnLegend);
+  // The three views: a group of toggle buttons the mirror owns (aria-pressed), drawn like Vici's
+  // segmented control, the view shown in an ink frame; the legend's button beside them, with Vici's
+  // layers icon (the legend's toggles are the mirror's layers), so it never looks like the header's
+  // "How it works". On a narrow mirror they keep their icons only, and their tooltips name them then.
+  const btnAlign = h("button", { type: "button", "aria-pressed": "true", title: "One train at one stop: the source, the AI and what every channel tells passengers" }, icon("translate", 18), h("span", { class: "btn-text" }, "Alignment"));
+  const btnTrain = h("button", { type: "button", "aria-pressed": "false", title: "One train: its source timetable beside what passengers are told, stop by stop" }, icon("timetable", 18), h("span", { class: "btn-text" }, "Timetables"));
+  const btnMonitor = h("button", { type: "button", "aria-pressed": "false", title: "Every train in the window, first departure first" }, icon("list", 18), h("span", { class: "btn-text" }, "All trains"));
+  const btnLegend = h("button", { class: "vc-button vc-button--outline legend-btn", type: "button", "aria-expanded": "false", "aria-controls": "mirror-legend", title: "What the marks and colours mean" }, icon("layers", 18), h("span", { class: "btn-text" }, "Legend"));
+  const tools = h("div", { class: "mirror-tools" },
+    h("div", { class: "segmented mirror-views", role: "group", "aria-label": "Mirror views" },
+      withTooltip(btnAlign, "Alignment", { below: true }), withTooltip(btnTrain, "Timetables", { below: true }), withTooltip(btnMonitor, "All trains", { below: true })),
+    withTooltip(btnLegend, "Legend", { below: true }));
   btnAlign.addEventListener("click", () => showAlign());
   btnTrain.addEventListener("click", () => showTrain());
   btnMonitor.addEventListener("click", () => showMonitor());
@@ -581,6 +588,8 @@ export function createMirror(container, { scenarios = [], initialScenario = null
     const [label, tone] = chipKey ? BASIS_CHIP[chipKey] || [null, null] : [null, null];
     capChip.hidden = !label;
     capChip.textContent = label || "";
+    // A Vici tag in the tone of the figures' basis (TAG_TONE): lilac for the agent's own estimate.
+    capChip.className = ["vc-tag", TAG_TONE[tone] || "", "cap-chip"].filter(Boolean).join(" ");
     if (tone) capChip.dataset.tone = tone; else delete capChip.dataset.tone;
   }
 
@@ -739,7 +748,9 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   const sizeClass = () => {
     const wid = container.clientWidth;
     container.dataset.w = wid < 820 ? "narrow" : "wide";
-    container.dataset.tools = wid < 640 ? "icons" : "text";
+    // Below 900 px the view buttons keep their icons only, so the caption keeps the train's name (Inter
+    // and Bricolage run wider than the former fonts); their tooltips name them then.
+    container.dataset.tools = wid < 900 ? "icons" : "text";
     const docked = !legend.hidden && wid < 820 ? legend.offsetHeight + 12 : 0;
     const hgt = container.clientHeight - docked;
     container.dataset.h = hgt >= 600 ? "tall" : hgt >= 400 ? "mid" : hgt >= 300 ? "short" : "tiny";
@@ -747,6 +758,11 @@ export function createMirror(container, { scenarios = [], initialScenario = null
   if (typeof ResizeObserver === "function") {
     new ResizeObserver(() => { sizeClass(); render(); }).observe(container);
   }
+  // The mirror's colours come from Vici's tokens through its classes, so a new theme repaints it; it
+  // still redraws, so that anything drawn from a measured style follows the theme too.
+  document.addEventListener("vc:themechange", () => render());
+  // The corridor strip measures its names to keep them apart: it draws again once the fonts are in.
+  document.fonts?.ready?.then(() => render());
 
   // ---- legend --------------------------------------------------------------------------------------------
   function buildLegend() {
@@ -761,20 +777,21 @@ export function createMirror(container, { scenarios = [], initialScenario = null
       return btn;
     };
     const mark = (cls, label) => h("div", { class: "legend-row" }, h("span", { class: `legend-mark ${cls}` }), label);
-    // A status: its colour, and the mark the line labels carry, so it reads without the colour too.
-    const dot = (fill, stroke, label, cls = "", mk = null) => h("div", { class: "legend-row" },
-      h("span", { class: "legend-state" },
-        h("span", { class: `legend-swatch-dot ${cls}`, style: { background: fill, borderColor: stroke } }),
-        mk ? h("span", { class: "legend-state-mark", style: { color: stroke } }, icon(mk, 13)) : null),
+    // A state: a hexagon in its colour (css/mirror.css, by data-kind, as the corridor's rings), and the
+    // mark the line labels carry, so it reads without the colour too.
+    const dot = (kind, label, mk = null) => h("div", { class: "legend-row" },
+      h("span", { class: "legend-state", dataset: { kind } },
+        h("span", { class: "legend-swatch-dot" }, hexShape()),
+        mk ? h("span", { class: "legend-state-mark" }, icon(mk, 13)) : null),
       label);
     const line = (cls, label) => h("div", { class: "legend-row" }, h("span", { class: `legend-swatch-line ${cls}` }), label);
     const el = h("section", { class: "legend", id: "mirror-legend", "aria-label": "Mirror legend", tabindex: "-1", hidden: true });
-    const closeBtn = h("button", { class: "btn btn-ghost btn-icon", type: "button", "aria-label": "Close legend", title: "Close legend" }, icon("x", 18));
+    const closeBtn = h("button", { class: "vc-icon-button", type: "button" }, icon("x", 18));
     closeBtn.addEventListener("click", () => setLegend(false));
     el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); setLegend(false); } });
     passChip = toggle("Passes", "showPasses", "The points the train passes without stopping (Durchfahrten)");
     el.append(
-      h("div", { class: "legend-head" }, h("strong", {}, "Legend"), closeBtn),
+      h("div", { class: "legend-head" }, h("strong", {}, "Legend"), withTooltip(closeBtn, "Close legend")),
       h("div", { class: "legend-body" },
         h("div", { class: "legend-toggles", role: "group", "aria-label": "Show on the mirror", dataset: { only: "train" } },
           passChip,
@@ -791,15 +808,15 @@ export function createMirror(container, { scenarios = [], initialScenario = null
           line("route", "Route today (source)"),
           line("route dashed", "Route as published")),
         h("div", { class: "legend-group", dataset: { only: "monitor" } }, h("h4", {}, "Channels"),
-          h("div", { class: "legend-row" }, h("span", { class: "mon-chip" }, "2 channels behind"), "Generated from an older version (*: a conversion fault)"),
-          h("div", { class: "legend-row" }, h("span", { class: "mon-chip", dataset: { wrong: "true" } }, "Planner wrong"), "Contradicts the source, as the agent's check found")),
+          h("div", { class: "legend-row" }, h("span", { class: "vc-tag mon-chip" }, "2 channels behind"), "Generated from an older version (*: a conversion fault)"),
+          h("div", { class: "legend-row" }, h("span", { class: "vc-tag vc-tag--danger mon-chip", dataset: { wrong: "true" } }, "Planner wrong"), "Contradicts the source, as the agent's check found")),
         h("div", { class: "legend-group" }, h("h4", {}, "Status"),
-          dot("var(--affected-fill)", "var(--affected)", "Contradicts the source", "", "alert"),
-          dot("var(--violet-fill)", "var(--violet-line)", "What-if, not the source", "", "spark"),
-          dot("var(--at-risk-fill)", "var(--at-risk)", "Informed, data still behind", "", "clock"),
-          dot("var(--at-risk-fill)", "var(--at-risk)", "Risk accepted: nothing changed", "", "hand"),
-          dot("var(--resolved-fill)", "var(--resolved)", "Re-publication approved", "", "check"),
-          dot("", "", "Being checked by the agent", "pulse"))
+          dot("affected", "Contradicts the source", "alert"),
+          dot("what_if", "What-if, not the source", "spark"),
+          dot("at_risk", "Informed, data still behind", "clock"),
+          dot("accepted", "Risk accepted: nothing changed", "hand"),
+          dot("resolved", "Re-publication approved", "check"),
+          dot("checking", "Being checked by the agent"))
       )
     );
     return el;

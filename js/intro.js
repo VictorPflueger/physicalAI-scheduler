@@ -14,9 +14,10 @@ import { simulateSync, compactForModel } from "./sync.js";
 import { alignmentData } from "./align_data.js";
 import { int } from "./format.js";
 
-// The five steps are the same as the progress rail above the console. Their numbers use the
-// colours the app uses for the same moments: red for a finding, blue for verification, amber
-// for risk, burgundy for your decision, green for a resolved state.
+// The five steps are the same as the progress rail above the console, on Vici's stepper. Their
+// hexagons use the tones the app uses for the same moments: danger for a finding, fjord (info) for
+// verification, warning for risk, ink for your decision (merlot never sits among the state colours)
+// and success for a resolved state.
 const STEPS = [
   { tone: "spot", title: "Spot", text: "Notices a timetable change." },
   { tone: "check", title: "Check", text: "Compares every channel with source and sensors." },
@@ -105,26 +106,27 @@ function problemExample(ex) {
 export function openIntro({ startLabel = "Start agent", onStart = null } = {}) {
   return new Promise((resolve) => {
     let modal;
-    const steps = h("ol", { class: "intro-steps" }, STEPS.map((s, i) =>
-      h("li", { class: "intro-step", dataset: { tone: s.tone } },
-        h("span", { class: "intro-num", "aria-hidden": "true" }, String(i + 1)),
-        h("strong", { class: "intro-step-title" }, s.title),
-        h("span", { class: "intro-step-text" }, s.text))));
+    const steps = h("ol", { class: "vc-stepper intro-steps" }, STEPS.map((s, i) =>
+      h("li", { class: "vc-step intro-step", dataset: { tone: s.tone } },
+        h("span", { class: "vc-step__marker intro-num", "aria-hidden": "true" }, String(i + 1)),
+        h("strong", { class: "vc-step__label intro-step-title" }, s.title),
+        h("span", { class: "vc-step__hint intro-step-text" }, s.text))));
     const value = h("ul", { class: "intro-value" }, VALUE.map((v) =>
       h("li", {}, h("strong", {}, v.title), h("span", {}, v.text))));
 
     const footer = onStart
       ? [
-        h("span", { class: "left" }),
-        h("button", { class: "btn btn-ghost", type: "button", on: { click: () => modal.close(null) } }, "Close"),
-        h("button", { class: "btn btn-primary", type: "button", autofocus: true, on: { click: () => modal.close("start") } }, icon("play", 18), startLabel)
+        h("span", { class: "dialog-note" }),
+        h("button", { class: "vc-button vc-button--ghost", type: "button", on: { click: () => modal.close(null) } }, "Close"),
+        h("button", { class: "vc-button", type: "button", autofocus: true, on: { click: () => modal.close("start") } }, icon("play", 18), startLabel)
       ]
-      : [h("button", { class: "btn btn-primary", type: "button", autofocus: true, on: { click: () => modal.close(null) } }, "Close")];
+      : [h("button", { class: "vc-button", type: "button", autofocus: true, on: { click: () => modal.close(null) } }, "Close")];
 
     modal = openModal({
       title: "How the Timetable Translator works",
       intro: "An AI translator between the operational timetable (Betriebsfahrplan) and everything passengers are told (Kundenfahrplan). It keeps no timetable of its own.",
       className: "intro-modal",
+      size: "intro",
       body: [
         h("h3", {}, "What it does"),
         problemExample(pitchExample()) || h("p", { class: "intro-lead" }, "It finds where what passengers are told contradicts the operational timetable, works out who is affected and prepares the fix for your approval."),

@@ -1,12 +1,14 @@
-// Design checks and review captures (DESIGN.md §8):
+// Design checks and review captures (DESIGN.md §8), each in the light and the dark theme:
 //   states   the colour grammar in the running app: the alignment view's channel cards, the timetable
-//            mirror's rows, lines, line labels, corridor rings and monitor rows use the state tokens (red: contradicts the source; amber:
-//            informed, data still behind; green: re-publication approved; violet: a what-if), so does
-//            its legend; the status pill and the progress rail name the human step ("Your decision",
-//            then "Your approval"), the rail ends with every step done, and the AI labels open and close
+//            mirror's rows, lines, line labels, corridor rings and monitor rows use the state tokens of
+//            the theme on screen (danger: contradicts the source; warning: informed, data still behind;
+//            success: re-publication approved; lilac: a what-if), so does its legend; the status pill and
+//            the progress rail name the human step ("Your decision", then "Your approval"), the rail ends
+//            with every step done, and the AI labels open and close
 //   review   screenshots for a design review: the options at 1920×1080 as rendered and under a
 //            simulated projector washout, and the finished run as seen with protanopia,
-//            deuteranopia and tritanopia (Machado et al. 2009 matrices, applied in linear RGB)
+//            deuteranopia and tritanopia (Machado et al. 2009 matrices, applied in linear RGB);
+//            the dark theme's files end in -dark
 // Usage: node tests/design.mjs [case…]
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
@@ -16,8 +18,9 @@ const OUT = await outDir("design");
 const { base: BASE, close } = await serveStatic(APP_ROOT, 8770);
 const browser = await launchBrowser();
 const results = [];
+const suffix = (theme) => (theme === "light" ? "" : `-${theme}`);
 
-// Severity 1.0 (dichromacy). The same matrices as the palette check in tools/palette.mjs.
+// Severity 1.0 (dichromacy). The same matrices as the colour check in tests/tokens.mjs.
 const CVD = {
   "Normal vision": null,
   Protanopia: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]],
@@ -26,16 +29,21 @@ const CVD = {
 };
 // A projector in a lit room: lower contrast, brighter, less saturated.
 const WASHOUT = "contrast(0.62) brightness(1.18) saturate(0.8)";
+const THEMES = ["light", "dark"];
 
-async function newPage() {
-  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+/** A page in the given theme: the visitor's choice as Vici remembers it (vc-theme), read by js/theme.js. */
+async function newPage(theme = "light") {
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, colorScheme: theme });
   await context.addInitScript(SKIP_INTRO);
+  await context.addInitScript((t) => { try { localStorage.setItem("vc-theme", t); } catch { /* blocked storage */ } }, theme);
   await context.route(/^https?:\/\/(?!127\.0\.0\.1)/, (route) => route.abort("blockedbyclient"));
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e.message || e)));
   await page.goto(BASE);
   await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 });
+  const shown = await page.evaluate(() => document.documentElement.dataset.theme);
+  if (shown !== theme) errors.push(`the page shows the ${shown} theme, not the ${theme} one`);
   return { context, page, errors };
 }
 
@@ -63,7 +71,8 @@ function mirrorColours(page) {
     document.body.append(probe);
     const colour = (name) => { probe.style.color = `var(${name})`; return getComputedStyle(probe).color; };
     const first = (shadow) => (/rgba?\([^)]*\)/.exec(shadow || "") || ["none"])[0];
-    const TOKEN = { affected: "--affected", at_risk: "--at-risk", accepted: "--at-risk", resolved: "--resolved", what_if: "--violet-line" };
+    // The state tokens (Vici): danger, warning, success and lilac (the AI's what-if), as lines and outlines.
+    const TOKEN = { affected: "--vc-danger-solid", at_risk: "--vc-warning-text", accepted: "--vc-warning-text", resolved: "--vc-success-solid", what_if: "--vc-feature-solid" };
     // Only what is on screen counts (a hidden strip or view keeps its last drawing until shown again).
     const shown = (e) => e.getClientRects().length > 0 && !e.closest("[hidden]");
     const all = (sel) => [...document.querySelectorAll(sel)].filter(shown);
@@ -72,10 +81,11 @@ function mirrorColours(page) {
       const want = colour(name);
       const rows = all(`#mirror .mrow[data-side="customer"][data-state="${st}"]`).map((e) => [`row ${e.dataset.point}`, first(getComputedStyle(e).boxShadow)]);
       const lines = all(`#mirror .mc-links .ml[data-state="${st}"]`).map((e) => ["line", getComputedStyle(e).stroke]);
-      const pills = all(`#mirror .ml-pill[data-state="${st}"]`).map((e) => ["line label", getComputedStyle(e).borderTopColor]);
+      // A line's label is outlined by a ring in its state's tone (its ::after).
+      const pills = all(`#mirror .ml-pill[data-state="${st}"]`).map((e) => ["line label", getComputedStyle(e, "::after").backgroundColor]);
       const rings = all(`#mirror .strip .node[data-state="${st}"] .node-ring`).map((e) => ["strip ring", getComputedStyle(e).stroke]);
       const mon = all(`#mirror .mon-row[data-state="${st}"]`).map((e) => ["monitor row", getComputedStyle(e).borderLeftColor]);
-      // The alignment view's channel cards carry the state as their left bar (an accepted risk is amber, as at_risk).
+      // The alignment view's channel cards carry the state as their left bar (an accepted risk takes the warning tone, as at_risk).
       const tone = { affected: "affected", at_risk: "at-risk", resolved: "resolved", what_if: "what-if" }[st];
       const cards = tone ? all(`#mirror .al-channel[data-tone="${tone}"]`).map((e) => [`channel card ${e.dataset.channel}`, getComputedStyle(e).borderLeftColor]) : [];
       out.counted[st] = rows.length + lines.length + pills.length + rings.length + mon.length + cards.length;
@@ -83,9 +93,10 @@ function mirrorColours(page) {
     }
     const status = [...document.querySelectorAll("#mirror .legend-group")].find((g) => /Status/.test(g.querySelector("h4")?.textContent || ""));
     const rows = status ? [...status.querySelectorAll(".legend-row")] : [];
-    for (const [label, name] of [["Contradicts the source", "--affected"], ["What-if, not the source", "--violet-line"], ["Informed, data still behind", "--at-risk"], ["Re-publication approved", "--resolved"]]) {
+    for (const [label, name] of [["Contradicts the source", "--vc-danger-solid"], ["What-if, not the source", "--vc-feature-solid"], ["Informed, data still behind", "--vc-warning-text"], ["Risk accepted: nothing changed", "--vc-warning-text"], ["Re-publication approved", "--vc-success-solid"]]) {
       const row = rows.find((r) => r.textContent.trim() === label);
-      const got = row ? getComputedStyle(row.querySelector(".legend-swatch-dot")).borderTopColor : "missing";
+      // The swatch is a hexagon drawn in SVG: its outline is the state's tone.
+      const got = row ? getComputedStyle(row.querySelector(".legend-swatch-dot polygon")).stroke : "missing";
       if (got !== colour(name)) out.mismatches.push(`legend "${label}" ${got} ≠ ${colour(name)}`);
     }
     probe.remove();
@@ -98,10 +109,10 @@ async function toOptions(page) {
   await page.click("#btn-start");
   await page.waitForSelector(".mode-card");
   await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
-  await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 120000 });
+  await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 120000 });
 }
 async function toDrafts(page) {
-  await page.click('.option-card[data-recommended="true"] .btn-approve');
+  await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
   await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 120000 });
 }
 async function toDone(page) {
@@ -109,8 +120,8 @@ async function toDone(page) {
   await page.waitForSelector('button:has-text("Open management summary")', { state: "visible", timeout: 60000 });
 }
 
-if (wanted("states")) {
-  const { context, page, errors } = await newPage();
+for (const theme of wanted("states") ? THEMES : []) {
+  const { context, page, errors } = await newPage(theme);
   const problems = [];
   try {
     await toOptions(page);
@@ -135,7 +146,7 @@ if (wanted("states")) {
     if (!after.hidden || !after.focus) problems.push(`AI label after Escape: ${JSON.stringify(after)}`);
 
     // Approving the option hands the next step to the drafts.
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     await page.waitForFunction(() => document.querySelector(".status-pill .text")?.textContent.trim() !== "Awaiting your decision", null, { timeout: 5000 });
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 120000 });
     await waitPill(page, /^Awaiting your approval$/);
@@ -155,7 +166,7 @@ if (wanted("states")) {
     await page.waitForTimeout(1200);
     const after2 = await mirrorColours(page);
     problems.push(...after2.mismatches.map((m) => `after approval: ${m}`));
-    if (after2.counted.resolved < 4 || after2.counted.affected) problems.push(`the approval is not green on the mirror (${JSON.stringify(after2.counted)})`);
+    if (after2.counted.resolved < 4 || after2.counted.affected) problems.push(`the approval is not in the success tone on the mirror (${JSON.stringify(after2.counted)})`);
     await page.click('#mirror .mirror-tools button:has-text("All trains")');
     await page.waitForTimeout(400);
     const monitor = await mirrorColours(page);
@@ -165,27 +176,27 @@ if (wanted("states")) {
     await page.waitForTimeout(400);
     const timetables = await mirrorColours(page);
     problems.push(...timetables.mismatches.map((m) => `timetables: ${m}`));
-    if (timetables.counted.resolved < 4 || timetables.counted.affected) problems.push(`the approval is not green in the timetables (${JSON.stringify(timetables.counted)})`);
+    if (timetables.counted.resolved < 4 || timetables.counted.affected) problems.push(`the approval is not in the success tone in the timetables (${JSON.stringify(timetables.counted)})`);
     await page.click('#mirror .mirror-tools button:has-text("Alignment")');
     rail = await railNow(page);
     if (rail.states.some((s) => s !== "done")) problems.push(`done: rail states ${rail.states.join(", ")}`);
     if ((await pillText(page)) !== "Done") problems.push(`done: pill reads ${await pillText(page)}`);
     if (!(await page.$(".report-card .ai-label"))) problems.push("no AI label on the summary card");
-    await page.screenshot({ path: path.join(OUT, "states-done.png") });
+    await page.screenshot({ path: path.join(OUT, `states-done${suffix(theme)}.png`) });
 
-    // An option that only informs leaves the data behind: amber.
+    // An option that only informs leaves the data behind: the warning tone.
     await page.click("#btn-reset");
     await page.click("#dd-scenario");
-    await page.click('.menu-item[data-id="SC-OPSSTOP"]');
+    await page.click('.vc-menu__item[data-id="SC-OPSSTOP"]');
     await toOptions(page);
-    await page.click('.option-card[aria-label^="Option B:"] .btn-approve');
+    await page.click('.option-card[aria-label^="Option B:"] [data-action="approve"]');
     await page.waitForTimeout(800);
-    const amber = await mirrorColours(page);
-    problems.push(...amber.mismatches.map((m) => `informed only: ${m}`));
-    if (!amber.counted.at_risk || amber.counted.affected) problems.push(`option B is not amber on the mirror (${JSON.stringify(amber.counted)})`);
-    await page.screenshot({ path: path.join(OUT, "states-at-risk.png") });
+    const warning = await mirrorColours(page);
+    problems.push(...warning.mismatches.map((m) => `informed only: ${m}`));
+    if (!warning.counted.at_risk || warning.counted.affected) problems.push(`option B is not in the warning tone on the mirror (${JSON.stringify(warning.counted)})`);
+    await page.screenshot({ path: path.join(OUT, `states-at-risk${suffix(theme)}.png`) });
 
-    // A what-if (a hypothetical change the agent tests, not the source) is violet.
+    // A what-if (a hypothetical change the agent tests, not the source) is lilac.
     await page.click("#btn-abort").catch(() => {});
     await page.click("#btn-reset");
     await page.evaluate(async () => {
@@ -197,30 +208,31 @@ if (wanted("states")) {
       bus.emit("tool_result", { call_id: "design-what-if", name: "sim_sync", ok: true, result: compactForModel(simulateSync(getModel(), input)), server: false });
     });
     await page.waitForTimeout(500);
-    const violet = await mirrorColours(page);
-    problems.push(...violet.mismatches.map((m) => `what-if: ${m}`));
-    if (!violet.counted.what_if || violet.counted.affected) problems.push(`the what-if is not violet on the mirror (${JSON.stringify(violet.counted)})`);
+    const lilac = await mirrorColours(page);
+    problems.push(...lilac.mismatches.map((m) => `what-if: ${m}`));
+    if (!lilac.counted.what_if || lilac.counted.affected) problems.push(`the what-if is not lilac on the mirror (${JSON.stringify(lilac.counted)})`);
     const chip = await page.$eval("#mirror .cap-chip", (c) => `${c.textContent}|${c.dataset.tone}`);
     if (chip !== "What-if, not the source|ai") problems.push(`what-if chip reads ${chip}`);
-    await page.screenshot({ path: path.join(OUT, "states-what-if.png") });
+    await page.screenshot({ path: path.join(OUT, `states-what-if${suffix(theme)}.png`) });
   } catch (e) { problems.push(`exception: ${String(e.message).split("\n")[0]}`); }
   problems.push(...errors.map((e) => `page error: ${e}`));
-  results.push({ name: "colour grammar, handover labels, AI labels", ok: !problems.length, problems });
+  results.push({ name: `colour grammar, handover labels, AI labels (${theme} theme)`, ok: !problems.length, problems });
   await context.close();
 }
 
-if (wanted("review")) {
-  const { context, page, errors } = await newPage();
+for (const theme of wanted("review") ? THEMES : []) {
+  const { context, page, errors } = await newPage(theme);
   const problems = [];
   const files = [];
+  const file = (name) => `${name}${suffix(theme)}.png`;
   try {
     await toOptions(page);
     await page.waitForTimeout(900);
-    await page.screenshot({ path: path.join(OUT, "review-options.png") });
+    await page.screenshot({ path: path.join(OUT, file("review-options")) });
     await page.evaluate((f) => { document.documentElement.style.filter = f; }, WASHOUT);
-    await page.screenshot({ path: path.join(OUT, "review-options-washout.png") });
+    await page.screenshot({ path: path.join(OUT, file("review-options-washout")) });
     await page.evaluate(() => { document.documentElement.style.filter = ""; });
-    files.push("review-options.png", "review-options-washout.png");
+    files.push(file("review-options"), file("review-options-washout"));
 
     await toDrafts(page);
     await toDone(page);
@@ -257,14 +269,13 @@ if (wanted("review")) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px">${list.map(([n, b]) =>
           `<figure style="margin:0"><figcaption style="padding:2px 2px 6px">${n}</figcaption><img style="width:100%;display:block;border:1px solid #e5d9db" src="data:image/png;base64,${b}"></figure>`).join("")}</div></body></html>`);
       await sheet.waitForTimeout(200);
-      const file = `review-cvd-${kind}.png`;
-      await sheet.screenshot({ path: path.join(OUT, file), fullPage: true });
-      files.push(file);
+      await sheet.screenshot({ path: path.join(OUT, file(`review-cvd-${kind}`)), fullPage: true });
+      files.push(file(`review-cvd-${kind}`));
     }
     await sheet.close();
   } catch (e) { problems.push(`exception: ${String(e.message).split("\n")[0]}`); }
   problems.push(...errors.map((e) => `page error: ${e}`));
-  results.push({ name: `review captures (${files.length} files)`, ok: !problems.length && files.length === 4, problems });
+  results.push({ name: `review captures (${files.length} files, ${theme} theme)`, ok: !problems.length && files.length === 4, problems });
   await context.close();
 }
 

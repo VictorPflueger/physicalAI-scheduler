@@ -33,13 +33,13 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
     panel.appendChild(h("div", { class: "outbox-head" },
       h("span", { class: "outbox-safety", title: "The Timetable Translator is connected to no passenger information, timetable or dispatch system; approving marks a draft as cleared for publication." }, icon("shield", 18), "Drafts only: connected to no system, nothing is sent."),
       pending.length > 1
-        ? h("button", { class: "btn btn-approve btn-brand-outline btn-sm", type: "button", on: { click: () => pending.forEach((a) => decide(a.draft, "approved")) } }, icon("check", 16), `Approve all ${pending.length} pending`)
+        ? h("button", { class: "vc-button vc-button--secondary button-compact", type: "button", dataset: { action: "approve-all" }, on: { click: () => pending.forEach((a) => decide(a.draft, "approved")) } }, icon("check", 16), `Approve all ${pending.length} pending`)
         : null));
 
     if (!actions.size) {
-      panel.appendChild(h("div", { class: "empty" },
-        h("strong", {}, "Nothing drafted yet"),
-        h("span", {}, "After you approve an option, the agent drafts what it takes: the passenger message (German, then English), the re-publication order, override or hold requests, the staff briefing. Each draft waits here for your approval.")));
+      panel.appendChild(h("div", { class: "vc-empty empty" },
+        h("strong", { class: "vc-empty__title" }, "Nothing drafted yet"),
+        h("p", { class: "vc-empty__text" }, "After you approve an option, the agent drafts what it takes: the passenger message (German, then English), the re-publication order, override or hold requests, the staff briefing. Each draft waits here for your approval.")));
       return;
     }
 
@@ -49,7 +49,7 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
     if (refocus) {
       // The list was rebuilt: focus the next pending draft's Approve, or the list itself.
       refocus = false;
-      const next = panel.querySelector(".action-card[data-status=\"pending\"] .btn-approve");
+      const next = panel.querySelector(".action-card[data-status=\"pending\"] [data-action=\"approve\"]");
       if (next) next.focus();
       else { list.setAttribute("tabindex", "-1"); list.focus(); }
     }
@@ -57,27 +57,28 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
 
   function card(d, status) {
     const t = TYPE[d.type] || TYPE.memo;
-    const tone = status === "pending" ? "pending" : status;
+    // The status is a Vici tag: merlot while it waits for you, success once approved, plain otherwise.
+    const tone = status === "pending" ? "vc-tag--accent" : status === "approved" ? "vc-tag--success" : "";
     const statusText = status === "pending" ? "Pending approval"
       : status === "approved" ? "Approved — draft, not published"
         : status === "expired" ? "Not decided: the run ended" : "Rejected";
     const bodyText = d.body || (d.payload ? JSON.stringify(d.payload, null, 2) : "");
     // The text stays closed until asked for: the subject line says what the draft does.
-    const el = h("article", { class: "action-card", dataset: { status, expanded: "false", folded: "true" } },
-      h("span", { class: "action-type", "aria-hidden": "true" }, icon(t.icon, 20)),
+    const el = h("article", { class: "vc-card action-card", dataset: { status, expanded: "false", folded: "true" } },
+      h("span", { class: "vc-cell action-type", "aria-hidden": "true" }, icon(t.icon, 20)),
       h("div", {},
         h("div", { class: "action-meta" },
           h("span", {}, t.label),
           h("span", {}, `To: ${d.recipient}`),
-          h("span", { class: "chip", dataset: { tone } }, statusText),
+          h("span", { class: ["vc-tag", tone, "action-status"] }, statusText),
           Array.isArray(d.unchecked) && d.unchecked.length
-            ? h("span", { class: "chip", dataset: { tone: "risk" }, title: `Facts no tool returned: ${d.unchecked.join(", ")}` }, "Unchecked facts")
+            ? h("span", { class: "vc-tag vc-tag--warning", title: `Facts no tool returned: ${d.unchecked.join(", ")}` }, "Unchecked facts")
             : null,
           aiLabel("draft")),
         h("div", { class: "action-subject" }, d.subject),
         h("pre", { class: "action-body", id: `draft-${d.action_id}-body` }, bodyText),
         bodyText
-          ? h("button", { class: "btn btn-ghost btn-sm action-more", type: "button", "aria-expanded": "false", "aria-controls": `draft-${d.action_id}-body`, on: { click: (e) => {
+          ? h("button", { class: "vc-button vc-button--ghost button-compact action-more", type: "button", "aria-expanded": "false", "aria-controls": `draft-${d.action_id}-body`, on: { click: (e) => {
             const open = el.dataset.expanded !== "true";
             el.dataset.expanded = String(open);
             e.currentTarget.setAttribute("aria-expanded", String(open));
@@ -86,8 +87,8 @@ export function createOutbox(panel, { onDecision, onCount } = {}) {
           : null),
       status === "pending"
         ? h("div", { class: "action-buttons" },
-          h("button", { class: "btn btn-approve", type: "button", on: { click: () => decide(d, "approved") } }, icon("check", 18), "Approve"),
-          h("button", { class: "btn btn-reject", type: "button", on: { click: () => decide(d, "rejected") } }, "Reject"))
+          h("button", { class: "vc-button", type: "button", dataset: { action: "approve" }, on: { click: () => decide(d, "approved") } }, icon("check", 18), "Approve"),
+          h("button", { class: "vc-button vc-button--outline", type: "button", dataset: { action: "reject" }, on: { click: () => decide(d, "rejected") } }, "Reject"))
         : h("div", { class: "action-buttons" }));
     return el;
   }

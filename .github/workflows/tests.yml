@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   node:
-    name: Colour system, world, client, engine, hygiene, docs and parity (Node.js only)
+    name: Colour system, page icon, Vici's files, world, client, engine, hygiene, docs and parity (Node.js only)
     # Pinned image: Playwright 1.56's system dependencies are known to install on Ubuntu 24.04.
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -27,7 +27,7 @@ jobs:
           node-version: 22
       # The hygiene check reads its private term list from the HYGIENE_TERMS secret if the repository
       # has one; without it only the generic checks run (tests/hygiene.mjs).
-      - run: node tests/run-all.mjs tokens world unit engine hygiene docs
+      - run: node tests/run-all.mjs tokens page-icon vici-files world unit engine hygiene docs
         env:
           HYGIENE_TERMS: ${{ secrets.HYGIENE_TERMS }}
       # The shared shell is compared with the sister app's (public) repository.
@@ -50,7 +50,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-1.56.0-chromium-${{ runner.os }}
       - run: npm install -g playwright@1.56.0 && npx playwright install --with-deps chromium
-      - run: NODE_PATH="$(npm root -g)" node tests/run-all.mjs smoke sims live accept layout design pitch
+      - run: NODE_PATH="$(npm root -g)" node tests/run-all.mjs smoke sims live accept layout design pitch hexagon
         env:
           TT_TEST_OUT: ${{ runner.temp }}/timetable-translator-tests
       - if: failure()

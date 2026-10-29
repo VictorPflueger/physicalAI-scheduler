@@ -58,17 +58,17 @@ async function simulationRun() {
     await page.goto(URL_BASE, { waitUntil: "load" });
     await page.waitForSelector('html[data-boot="ready"]', { timeout: 30000 });
     await page.click("#dd-scenario");
-    await page.click('.menu-item[data-id="SC-PLATFORM"]');
+    await page.click('.vc-menu__item[data-id="SC-PLATFORM"]');
     await page.click('button[aria-label="Replay speed ×4"]');
     await page.click("#btn-start");
     await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 120000 });
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 120000 });
     const tile = await page.locator(".kpi").first().innerText();
     if (!/Misinformed passengers[\s\S]*312[\s\S]*verified against the source/.test(tile)) found.push(`the finding's tile reads "${tile.replace(/\s+/g, " ")}"`);
     // The alignment view (the mirror's first view) shows every channel contradicting the source.
     const tones = await page.$$eval("#mirror .al-channel", (els) => els.map((e) => e.dataset.tone).join(","));
     if (tones !== "affected,affected,affected,affected") found.push(`the alignment view's channels read "${tones}"`);
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 60000 });
     await page.click('button:has-text("Approve all")');
     await page.waitForSelector('button:has-text("Open management summary")', { state: "visible", timeout: 60000 });

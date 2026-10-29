@@ -40,9 +40,9 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
 
   function empty() {
     clear(panel);
-    panel.appendChild(h("div", { class: "empty" },
-      h("strong", {}, "No options yet"),
-      h("span", {}, "Once the agent has checked the trains against the source, its three costed responses and the do-nothing baseline appear here for your decision.")));
+    panel.appendChild(h("div", { class: "vc-empty empty" },
+      h("strong", { class: "vc-empty__title" }, "No options yet"),
+      h("p", { class: "vc-empty__text" }, "Once the agent has checked the trains against the source, its three costed responses and the do-nothing baseline appear here for your decision.")));
   }
 
   function render() {
@@ -69,7 +69,7 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
             r.base !== undefined
               ? h("span", { class: "compare-bar baseline", style: { width: `${(r.base / max) * 100}%` } })
               : h("span", { class: "compare-bar residual", style: { left: "0%", width: `${(r.res / max) * 100}%` } })),
-          h("span", { class: "compare-value num" }, int(r.res))))),
+          h("span", { class: "compare-value vc-tabular" }, int(r.res))))),
       h("div", { class: "compare-legend" },
         h("span", { class: "k-res" }, "Still misinformed"),
         h("span", { class: "k-base" }, "Do nothing")));
@@ -81,7 +81,7 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
     if (refocus) {
       // The cards were rebuilt: put focus on the next decision, or on the decided card's status.
       refocus = false;
-      const next = panel.querySelector(".option-actions .btn");
+      const next = panel.querySelector(".option-actions button");
       const target = next || panel.querySelector(".option-status")?.closest(".option-card");
       if (target) {
         if (!next) target.setAttribute("tabindex", "-1");
@@ -98,17 +98,17 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
       plain(o.description),
       `Staff effort ${int(o.effort_min)} min; the right information reaches passengers after ${plus(o.correct_info_from_min)}.`
     ].filter(Boolean).join("\n");
-    const card = h("article", { class: "option-card", dataset: { recommended: String(!!o.recommended), status: st, kind: "option" }, "aria-label": `Option ${o.letter}: ${o.title}`, title: tip },
+    const card = h("article", { class: "vc-card option-card", dataset: { recommended: String(!!o.recommended), status: st, kind: "option" }, "aria-label": `Option ${o.letter}: ${o.title}`, title: tip },
       h("div", { class: "option-top" },
         h("span", { class: "option-letter", "aria-hidden": "true" }, o.letter),
         h("h4", { class: "option-title" }, o.title),
-        o.recommended ? h("span", { class: "chip", dataset: { tone: "recommended" } }, "Recommended") : null),
+        o.recommended ? h("span", { class: "vc-tag vc-tag--solid" }, "Recommended") : null),
       h("dl", { class: "option-figures" },
         h("dt", {}, "All channels aligned"), h("dd", { title: "When every channel shows what the source says again" }, after(o.time_to_sync_min, H)),
         ...(o.manual_overrides ? [h("dt", {}, "Kept by hand"), h("dd", { title: "Manual overrides: values kept by hand on displays or announcements, a second truth the source does not know" }, `${int(o.manual_overrides)} ${o.manual_overrides === 1 ? "value" : "values"} (second truth)`)] : []),
         ...(o.hold ? [h("dt", {}, "Connection held"), h("dd", { title: `${o.hold.train} waits ${int(o.hold.wait_min)} min if dispatch agrees: ${int(o.held_pax)} passengers keep the connection, ${int(o.hold.delayed_pax)} on ${o.hold.train} are delayed. ${o.hold.note || ""}`.trim() }, `${int(o.held_pax)} keep it, ${o.hold.train} +${int(o.hold.wait_min)} min`)] : [])),
       h("div", { class: "option-total", title: `${int(o.protected_pax)} passengers protected; the right information reaches them after ${plus(o.correct_info_from_min)}` },
-        h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value num" }, int(o.misinformed_pax))),
+        h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value vc-tabular" }, int(o.misinformed_pax))),
       o.residual_risk ? renderInline(o.residual_risk, h("p", { class: "option-risk", title: "Residual risk: who is still misinformed with this option, and why" })) : null,
       actionsFor(o, st));
     return card;
@@ -118,7 +118,7 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
     const st = status.get("baseline") || (locked ? "not_selected" : ended ? "expired" : "");
     // When, on the card; where (the train and stop) in its tooltip, as the KPI tile above shows it too.
     const first = b?.first_event_min === null || b?.first_event_min === undefined ? `none within ${H} min` : `in ${int(b.first_event_min)} min`;
-    return h("article", { class: "option-card", dataset: { kind: "baseline", status: st }, "aria-label": "Do nothing", title: plain(b?.description) || "Publish nothing and wait for the publication cycles." },
+    return h("article", { class: "vc-card option-card", dataset: { kind: "baseline", status: st }, "aria-label": "Do nothing", title: plain(b?.description) || "Publish nothing and wait for the publication cycles." },
       h("div", { class: "option-top" },
         h("span", { class: "option-letter", "aria-hidden": "true" }, "–"),
         h("h4", { class: "option-title" }, "Do nothing")),
@@ -127,24 +127,28 @@ export function createOptionsPanel(panel, { onDecision, onCount } = {}) {
       h("dl", { class: "option-figures", title: `${int(b?.affected_pax)} passengers rely on a wrong fact; every channel aligned ${after(b?.time_to_sync_min, H)}` },
         h("dt", {}, "First affected"), h("dd", b?.first_event_label ? { title: b.first_event_label } : {}, first),
         h("dt", {}, "Next cycle"), h("dd", b?.next_cycle_note ? { title: b.next_cycle_note } : {}, b?.next_cycle_label ? `${b.next_cycle_label}${b.time_to_sync_min === null || b.time_to_sync_min === undefined ? ", does not fix it" : ""}` : "—")),
-      h("div", { class: "option-total" }, h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value num" }, int(b?.misinformed_pax))),
+      h("div", { class: "option-total" }, h("span", { class: "label" }, "Still misinformed"), h("span", { class: "value vc-tabular" }, int(b?.misinformed_pax))),
       actionsFor({ id: "baseline", letter: "–", title: "Do nothing" }, st, true));
   }
 
   function actionsFor(o, st, isBaseline = false) {
-    if (st === "approved") return h("div", { class: "option-status mark-pass" }, icon("check", 20), isBaseline ? "Risk accepted" : "Approved");
-    if (st === "rejected") return h("div", { class: "option-status mark-fail" }, icon("x", 20), "Rejected");
-    if (st === "not_selected") return h("div", { class: "option-status mark-skip" }, "Not selected");
-    if (st === "expired") return h("div", { class: "option-status mark-skip" }, "No decision: the run ended");
+    // The decided state is a Vici tag in its tone, with its icon and its word: an accepted risk in the
+    // warning tone with the hand, as on the mirror and in its legend.
+    if (st === "approved") return h("div", { class: "option-status" }, isBaseline
+      ? h("span", { class: "vc-tag vc-tag--warning" }, icon("hand", 20), "Risk accepted")
+      : h("span", { class: "vc-tag vc-tag--success" }, icon("check", 20), "Approved"));
+    if (st === "rejected") return h("div", { class: "option-status" }, h("span", { class: "vc-tag vc-tag--danger" }, icon("x", 20), "Rejected"));
+    if (st === "not_selected") return h("div", { class: "option-status" }, h("span", { class: "vc-tag" }, "Not selected"));
+    if (st === "expired") return h("div", { class: "option-status" }, h("span", { class: "vc-tag" }, "No decision: the run ended"));
     if (isBaseline) {
       return h("div", { class: "option-actions" },
-        h("button", { class: "btn", type: "button", on: { click: () => decide(o, "approved") } }, "Accept the risk"));
+        h("button", { class: "vc-button vc-button--outline", type: "button", dataset: { action: "approve" }, on: { click: () => decide(o, "approved") } }, "Accept the risk"));
     }
     return h("div", { class: "option-actions" },
-      // The recommended option's Approve is the one solid brand button; the others stay available
-      // as outlined brand buttons. Reject is a neutral decision, not an alarm.
-      h("button", { class: `btn btn-approve${o.recommended ? "" : " btn-brand-outline"}`, type: "button", on: { click: () => decide(o, "approved") } }, icon("check", 18), "Approve"),
-      h("button", { class: "btn btn-reject", type: "button", on: { click: () => decide(o, "rejected") } }, "Reject"));
+      // The recommended option's Approve is the one solid merlot button; the others stay available as
+      // Vici's secondary (soft merlot) buttons. Reject is a neutral decision, not an alarm.
+      h("button", { class: `vc-button${o.recommended ? "" : " vc-button--secondary"}`, type: "button", dataset: { action: "approve" }, on: { click: () => decide(o, "approved") } }, icon("check", 18), "Approve"),
+      h("button", { class: "vc-button vc-button--outline", type: "button", dataset: { action: "reject" }, on: { click: () => decide(o, "rejected") } }, "Reject"));
   }
 
   function decide(o, decision) {

@@ -10,6 +10,12 @@
 //                and of a station (Escape returns the focus), the channel chips, the legend and its
 //                toggles, focus kept across a redraw, all trains (a row opens its train and the focus
 //                follows); every control at least 40 px; nothing loads from outside
+//   byline       Vici's byline in the drawer bar: Built by, the portrait, LinkedIn's logo and the
+//                website as 44 px links in new tabs; no link to the source code anywhere in the app
+//   once         every control does its job exactly once: the theme toggle, Larger text, the mirror's views,
+//                the legend's button and a legend toggle, the replay speed, a drawer tab, a dialog's backdrop
+//                and Escape, the tooltips, Show key (vici.js acts on some controls by itself, the app on the
+//                others)
 //   motion       reduced motion: a Simulation run shows the mirror's final state at once, no motion
 //   file         opened from file://: the page explains how to start a server
 //   missing-data a data file is missing: the boot screen names it
@@ -57,9 +63,25 @@ async function finish(name, { context, page, log }, checks, expectations, allowC
 
 const shot = (page, file) => page.screenshot({ path: path.join(OUT, file) });
 const boot = async (page) => { await page.goto(BASE); await page.waitForSelector('html[data-boot="ready"]', { timeout: 20000 }); };
-const pickScenario = async (page, id) => { await page.click("#dd-scenario"); await page.click(`.menu-item[data-id="${id}"]`); await page.waitForTimeout(500); };
-/** The keyboard focus ring (the shared --focus shadow) on an element after a keyboard focus. */
-const RING = / 0px 0px 0px 4px/;
+const pickScenario = async (page, id) => { await page.click("#dd-scenario"); await page.click(`.vc-menu__item[data-id="${id}"]`); await page.waitForTimeout(500); };
+/**
+ * Vici's keyboard focus ring on the element a selector names (the index-th match), focused first: an
+ * outline of 2 px or more in the focus colour (--vc-focus), or, on a hexagon, a hexagonal ring that its
+ * ::after draws. Runs in the page: page.evaluate(viciRing, [selector, index]). Returns "selector:true".
+ */
+function viciRing([sel, index = 0]) {
+  const el = document.querySelectorAll(sel)[index];
+  if (!el) return `${sel}:missing`;
+  el.focus();
+  const hex = getComputedStyle(document.documentElement).getPropertyValue("--vc-focus").trim();
+  const n = parseInt(hex.slice(1), 16);
+  const focus = `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+  const cs = getComputedStyle(el);
+  const ring = getComputedStyle(el, "::after");
+  const outline = cs.outlineStyle === "solid" && parseFloat(cs.outlineWidth) >= 2 && cs.outlineColor === focus;
+  const hexRing = ring.content !== "none" && ring.opacity === "1" && ring.backgroundColor === focus;
+  return `${sel}:${outline || hexRing}`;
+}
 
 // ---- sim: full simulation of ICE 618's platform change ---------------------------------------------------
 if (wanted("sim")) {
@@ -83,13 +105,13 @@ if (wanted("sim")) {
     await page.waitForTimeout(2500);
     checks.badgeSim = (await page.textContent("#mode-badge")).trim();
     checks.watermarkVisible = await page.isVisible(".sim-watermark");
-    await page.waitForSelector('.option-card[data-recommended="true"] .btn-approve', { state: "visible", timeout: 180000 });
+    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 180000 });
     await page.waitForTimeout(800);
     await shot(page, "03-options.png");
     checks.optionCards = await page.$$eval(".option-card", (els) => els.map((e) => `${e.dataset.kind}:${e.querySelector(".option-total .value")?.textContent}`));
     checks.approveButtonsVisibleWithoutScroll = await page.evaluate(() => {
       const body = document.querySelector(".drawer-body").getBoundingClientRect();
-      return [...document.querySelectorAll(".option-actions .btn")].every((b) => { const r = b.getBoundingClientRect(); return r.top >= body.top && r.bottom <= body.bottom; });
+      return [...document.querySelectorAll(".option-actions button")].every((b) => { const r = b.getBoundingClientRect(); return r.top >= body.top && r.bottom <= body.bottom; });
     });
     // The finding on the alignment view: every channel contradicts the source, the impact is the
     // verified figure, and the caption says the result was verified against the source.
@@ -110,9 +132,10 @@ if (wanted("sim")) {
     }));
     // A flagged source row keeps its keyboard focus ring with its bar.
     await page.keyboard.press("Shift");
-    checks.flagRing = await page.evaluate(() => { const b = document.querySelector('#mirror .mrow[data-side="source"][data-flag]'); b.focus(); return getComputedStyle(b).boxShadow; });
+    checks.flagRing = await page.evaluate(viciRing, ['#mirror .mrow[data-side="source"][data-flag]']);
+    checks.flagBar = await page.evaluate(() => getComputedStyle(document.querySelector('#mirror .mrow[data-side="source"][data-flag]')).boxShadow);
     await page.click('#mirror .mirror-tools button:has-text("Alignment")');
-    await page.click('.option-card[data-recommended="true"] .btn-approve');
+    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
     // The mirror follows the decision: the re-published channels turn green, the tiles show what is left.
     await page.waitForSelector('#mirror .al-channel[data-tone="resolved"]', { timeout: 15000 });
     checks.payoff = await page.evaluate(() => ({
@@ -180,7 +203,7 @@ if (wanted("sim")) {
       `the alignment view shows the verified finding (${JSON.stringify(checks.finding)})`],
     [checks.findingTimetables?.kk === "affected" && checks.findingTimetables?.flag === "affected" && /^Platform/.test(checks.findingTimetables?.pill || ""),
       `the timetables show the same finding (${JSON.stringify(checks.findingTimetables)})`],
-    [RING.test(checks.flagRing || ""), `a flagged source row shows the focus ring (${checks.flagRing})`],
+    [checks.flagRing?.endsWith(":true") && /inset/.test(checks.flagBar || ""), `a flagged source row shows the focus ring beside its bar (${checks.flagRing}; ${checks.flagBar})`],
     [checks.payoff?.pax === "7" && /was 312/.test(checks.payoff?.paxSub || "") && /^info in 2 min, aligned in 8 min$/.test(checks.payoff?.firstSub || "") && checks.payoff?.tones === "resolved,resolved,resolved,resolved" && checks.payoff?.pill === "resolved",
       `the approval's payoff on the tiles, the alignment view and the timetables (${JSON.stringify(checks.payoff)})`],
     [checks.drafts > 0, "approval must produce drafts"],
@@ -268,11 +291,11 @@ if (wanted("diag")) {
     await page.waitForFunction(() => document.querySelectorAll('.diag-status[data-s="pass"]').length >= 2, null, { timeout: 10000 });
     await shot(page, "12-diagnostics.png");
     checks.localRows = await page.$$eval(".diag-table tbody tr", (rows) => rows.map((r) => `${r.querySelector("strong")?.textContent}:${r.querySelector(".diag-status")?.dataset.s}`).filter((x) => /World|privacy/.test(x)));
-    checks.footer = await page.$eval(".modal-foot .left", (e) => e.textContent.trim());
+    checks.footer = await page.$eval(".vc-dialog__footer .dialog-note", (e) => e.textContent.trim());
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
     await page.click("#dd-scenario");
-    await page.click('.menu-item[data-id="custom"]');
+    await page.click('.vc-menu__item[data-id="custom"]');
     await page.waitForSelector("#custom-scenario");
     await page.fill("#custom-scenario", "Does RE 10109 still stop at Leverkusen Mitte this morning, as the journey planner says?");
     await page.click('button:has-text("Use this scenario")');
@@ -311,7 +334,7 @@ if (wanted("intro")) {
     await page.waitForTimeout(200);
     checks.focus = await page.evaluate(() => document.activeElement?.textContent?.trim());
     await shot(page, "20-intro.png");
-    await page.click('.intro-modal .modal-foot button:has-text("Close")');
+    await page.click('.intro-modal .vc-dialog__footer button:has-text("Close")');
     await page.waitForSelector(".intro-modal", { state: "detached", timeout: 3000 });
     checks.flag = await page.evaluate((k) => localStorage.getItem(k), KEYS.introSeen);
     await page.reload();
@@ -324,7 +347,7 @@ if (wanted("intro")) {
     await page.keyboard.press("Escape");
     await page.waitForSelector(".intro-modal", { state: "detached", timeout: 3000 });
     await page.click("#btn-about");
-    await page.click('.intro-modal .modal-foot button:has-text("Start agent")');
+    await page.click('.intro-modal .vc-dialog__footer button:has-text("Start agent")');
     await page.waitForSelector(".mode-card", { timeout: 5000 });
     checks.startOpensModeChoice = await page.$$eval(".mode-card", (els) => els.map((e) => e.dataset.mode).join(","));
     // During a run the window only explains: Close is its only button and the run carries on.
@@ -332,7 +355,7 @@ if (wanted("intro")) {
     await page.waitForTimeout(1200);
     await page.click("#btn-about");
     await page.waitForSelector(".intro-modal", { timeout: 3000 });
-    checks.duringRunButtons = await page.$$eval(".intro-modal .modal-foot button", (els) => els.map((e) => e.textContent.trim()));
+    checks.duringRunButtons = await page.$$eval(".intro-modal .vc-dialog__footer button", (els) => els.map((e) => e.textContent.trim()));
     await page.keyboard.press("Escape");
     checks.statusAfterClose = (await page.textContent(".status-pill .text")).trim();
     await page.click("#btn-abort");
@@ -364,11 +387,8 @@ if (wanted("mirror")) {
     await pickScenario(page, "SC-DIVERSION");
     // The alignment view opens first; its cards are buttons with the focus ring, and a card opens the timetables.
     await page.keyboard.press("Shift");
-    checks.alignRings = await page.evaluate(() => ["#mirror .al-source", "#mirror .al-channel"].map((sel) => {
-      const el = document.querySelector(sel);
-      el.focus();
-      return `${sel}:${/ 0px 0px 0px 4px/.test(getComputedStyle(el).boxShadow)}`;
-    }));
+    checks.alignRings = [];
+    for (const sel of ["#mirror .al-source", "#mirror .al-channel"]) checks.alignRings.push(await page.evaluate(viciRing, [sel]));
     checks.alignView = `${await page.$eval("#mirror", (m) => m.dataset.view)}:${(await page.textContent("#mirror .mirror-caption strong")).trim()}`;
     await page.click('#mirror .mirror-tools button:has-text("Timetables")');
     await page.waitForSelector('#mirror .mrow[data-side="source"]', { timeout: 5000 });
@@ -446,13 +466,11 @@ if (wanted("mirror")) {
     await page.keyboard.press("Escape");
     await page.waitForTimeout(200);
     checks.focusBackAfterRedraw = await active();
-    // A visible focus ring on the mirror's own buttons (their shadows must not hide it).
+    // A visible focus ring on the mirror's own buttons: Vici's ring in the focus colour, an outline on
+    // rectangles and a hexagonal ring (::after) on hexagons; their shadows must not hide it.
     await page.keyboard.press("Shift");
-    checks.rings = await page.evaluate(() => ['#mirror .mirror-tools .btn', '#mirror .mrow[data-side="source"]', '#mirror .mrow[data-side="customer"]', "#mirror .ch-chip", "#mirror .strip-hit"].map((sel) => {
-      const el = document.querySelector(sel);
-      el.focus();
-      return `${sel}:${/ 0px 0px 0px 4px/.test(getComputedStyle(el).boxShadow)}`;
-    }));
+    checks.rings = [];
+    for (const sel of ["#mirror .mirror-tools button", '#mirror .mrow[data-side="source"]', '#mirror .mrow[data-side="customer"]', "#mirror .ch-chip", "#mirror .strip-hit"]) checks.rings.push(await page.evaluate(viciRing, [sel]));
     // The sync monitor: every train in the window, first departure first; a row opens its train and
     // the keyboard focus moves into the card.
     await page.click('#mirror .mirror-tools button:has-text("All trains")');
@@ -465,8 +483,7 @@ if (wanted("mirror")) {
     });
     await shot(page, "17-mirror-monitor.png");
     await page.keyboard.press("Shift");
-    const ring = await page.evaluate(() => { const b = [...document.querySelectorAll("#mirror .mon-row")][3]; b.focus(); return / 0px 0px 0px 4px/.test(getComputedStyle(b).boxShadow); });
-    checks.rings.push(`.mon-row:${ring}`);
+    checks.rings.push(await page.evaluate(viciRing, ["#mirror .mon-row", 3]));
     const row1026 = await page.evaluateHandle(() => [...document.querySelectorAll("#mirror .mon-row")].find((r) => r.querySelector(".mon-train strong")?.textContent === "ICE 1026"));
     await row1026.focus();
     await page.keyboard.press("Enter");
@@ -500,6 +517,176 @@ if (wanted("mirror")) {
     [checks.afterRow === "train:ICE 1026 · Berlin Hbf → Köln Hbf" && /mrow\|source\|/.test(checks.focusAfterRow || ""), `a monitor row opens its train and the focus follows (${checks.afterRow}; ${checks.focusAfterRow})`],
     [(checks.small || []).length === 0, `every mirror control is at least 40 px (${checks.small})`],
     [(checks.external || []).length === 0, `nothing loads from outside (${checks.external})`]
+  ]);
+}
+
+// ---- byline: Vici's byline in the drawer bar ---------------------------------------------------------
+if (wanted("byline")) {
+  const t = await newPage();
+  const { page } = t;
+  const checks = {};
+  try {
+    await boot(page);
+    await page.waitForFunction(() => [...document.querySelectorAll(".drawer-tabs .vc-byline img")].every((i) => i.complete), null, { timeout: 5000 });
+    checks.byline = await page.evaluate(() => {
+      const b = document.querySelector(".drawer-tabs .vc-byline");
+      if (!b) return null;
+      const img = (sel) => b.querySelector(sel);
+      return {
+        label: b.querySelector(".vc-byline__label")?.textContent,
+        name: b.querySelector(".vc-byline__person .vc-byline__name")?.textContent,
+        portrait: img(".vc-byline__person .vc-avatar.vc-avatar--xs > img")?.getAttribute("src"),
+        portraitShown: img(".vc-avatar > img")?.naturalWidth || 0,
+        mark: img(".vc-byline__links a .vc-platform-mark")?.getAttribute("src"),
+        markShown: img(".vc-byline__links a .vc-platform-mark")?.naturalWidth || 0,
+        globe: !!b.querySelector('.vc-byline__links a .vc-icon.vc-icon--globe-hex[aria-hidden="true"]'),
+        links: [...b.querySelectorAll("a")].map((a) => {
+          const r = a.getBoundingClientRect();
+          return { href: a.getAttribute("href"), target: a.target, rel: a.rel, label: a.getAttribute("aria-label"), w: Math.round(r.width), h: Math.round(r.height) };
+        })
+      };
+    });
+    // The app links to its author, never to its own source code.
+    checks.sourceLinks = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")).filter((href) => /github\.com/i.test(href)));
+    await shot(page, "22-byline.png");
+  } catch (err) {
+    checks.FAILED = String(err.message).split("\n")[0];
+    await shot(page, "byline-fail.png");
+  }
+  const b = checks.byline || {};
+  const links = b.links || [];
+  await finish("byline: Vici's byline in the drawer bar", t, checks, [
+    [b.label === "Built by" && b.name === "Victor Pflüger", "Built by, then Victor's name"],
+    [b.portrait === "vici/assets/brand/portrait-96.jpg" && b.portraitShown > 0, "his hexagon portrait, Vici's file"],
+    [b.mark === "vici/assets/marks/linkedin.png" && b.markShown > 0 && b.globe, "LinkedIn's own logo file and the website's globe"],
+    [links.length === 2 && links[0].href === "https://www.linkedin.com/in/victorpflueger" && links[1].href === "https://victorpflueger.github.io/VIP/index.html"
+      && links.every((l) => l.target === "_blank" && l.rel === "author noopener" && /\(opens in a new tab\)$/.test(l.label || "")), "LinkedIn and the website, each in a new tab and named for screen readers"],
+    [links.length === 2 && links.every((l) => l.w >= 44 && l.h >= 44), `both links are 44 px targets (${links.map((l) => `${l.w}×${l.h}`).join(", ")})`],
+    [Array.isArray(checks.sourceLinks) && !checks.sourceLinks.length, `no link to the source code in the app (${checks.sourceLinks})`]
+  ]);
+}
+
+// ---- once: every control does its job exactly once ----------------------------------------------------
+// vici.js acts on some controls by itself (the theme toggle, tooltips, a dialog's backdrop, toggle
+// classes); the app owns the others. A control both act on would flip twice and look unchanged, which
+// a plain click test misses: each control is clicked once, then again, and must change exactly once.
+if (wanted("once")) {
+  const t = await newPage();
+  const { page } = t;
+  const checks = {};
+  // Each state is read in one go after two frames, so a redraw the click scheduled has happened and a
+  // second flip would show.
+  const settled = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const read = async (fn) => { await settled(); return page.evaluate(fn); };
+  try {
+    await boot(page);
+    // The theme toggle (vici.js's): light, then dark, then light, remembered under vc-theme.
+    const theme = () => read(() => `${document.documentElement.dataset.theme}:${document.querySelector("[data-vc-theme-toggle]").getAttribute("aria-pressed")}:${localStorage.getItem("vc-theme")}`);
+    checks.theme = [await theme()];
+    await page.click("[data-vc-theme-toggle]");
+    checks.theme.push(await theme());
+    await page.click("[data-vc-theme-toggle]");
+    checks.theme.push(await theme());
+    // Larger text (the app's): on, then off.
+    const text = () => read(() => `${document.querySelector("#console").dataset.text}:${document.querySelector("#console .text-size").getAttribute("aria-pressed")}`);
+    checks.text = [await text()];
+    await page.click("#console .text-size");
+    checks.text.push(await text());
+    await page.click("#console .text-size");
+    checks.text.push(await text());
+    // The mirror's views (the mirror's): the timetables, all trains, then the alignment view again.
+    const view = () => read(() => `${document.querySelector("#mirror").dataset.view}:${[...document.querySelectorAll("#mirror .mirror-views button")].map((b) => b.getAttribute("aria-pressed")).join(":")}`);
+    checks.view = [await view()];
+    for (const name of ["Timetables", "All trains", "Alignment"]) {
+      await page.click(`#mirror .mirror-views button:has-text("${name}")`);
+      checks.view.push(await view());
+    }
+    // The legend's button opens and closes the legend, and a legend toggle (the mirror's) switches the
+    // lines between the timetables off and on again.
+    await page.click('#mirror .mirror-views button:has-text("Timetables")');
+    const legendBtn = '#mirror .mirror-tools button[aria-controls="mirror-legend"]';
+    const legend = () => read(() => `${document.querySelector('#mirror .mirror-tools button[aria-controls="mirror-legend"]').getAttribute("aria-expanded")}:${document.querySelector("#mirror-legend").hidden ? "hidden" : "shown"}`);
+    checks.legend = [await legend()];
+    // The legend may open by itself where it fits beside the views: then it is closed and opened again.
+    const openAtStart = checks.legend[0].startsWith("true");
+    if (!openAtStart) { await page.click(legendBtn); checks.legend.push(await legend()); }
+    const lines = () => read(() => {
+      const chip = [...document.querySelectorAll("#mirror .legend-chip")].find((b) => /Lines/.test(b.textContent));
+      return `${chip?.getAttribute("aria-pressed")}:${document.querySelector("#mirror .mc-links")?.dataset.links}`;
+    });
+    checks.lines = [await lines()];
+    await page.click('#mirror .legend-chip:has-text("Lines")');
+    checks.lines.push(await lines());
+    await page.click('#mirror .legend-chip:has-text("Lines")');
+    checks.lines.push(await lines());
+    await page.click(legendBtn);
+    checks.legend.push(await legend());
+    if (openAtStart) { await page.click(legendBtn); checks.legend.push(await legend()); }
+    // The replay speed (the app's group of toggle buttons): one pressed, the one clicked.
+    await page.click('button[aria-label="Replay speed ×2"]');
+    checks.speed = await read(() => [...document.querySelectorAll(".controls .segmented button")].filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.textContent));
+    // A drawer tab opens the drawer; the open tab, clicked again, closes it (and is no longer selected).
+    const drawer = () => read(() => `${document.querySelector("#drawer").dataset.open}:${document.querySelector("#tab-audit").getAttribute("aria-selected")}`);
+    await page.click("#tab-audit");
+    checks.drawer = [await drawer()];
+    await page.click("#tab-audit");
+    checks.drawer.push(await drawer());
+    // A dialog is the app's, not vici.js's (data-vc-dismissable="false"): a press on its backdrop closes
+    // and removes it (had vici.js closed it, the closed dialog would stay in the page); so does Escape,
+    // which gives the focus back to the button that opened it.
+    await page.click("#btn-diagnostics");
+    await page.waitForSelector("dialog.vc-dialog[open]");
+    checks.owner = await page.$eval("dialog.vc-dialog[open]", (d) => d.dataset.vcDismissable);
+    await page.mouse.click(8, 540);
+    await page.waitForTimeout(300);
+    checks.backdrop = await read(() => document.querySelectorAll("dialog.vc-dialog").length);
+    await page.click("#btn-about");
+    await page.waitForSelector(".intro-modal[open]");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    checks.escape = await read(() => `${document.querySelectorAll("dialog.vc-dialog").length}:${document.activeElement?.id}`);
+    // Tooltips: each anchor has one tooltip, and vici.js has bound every one (it makes a bound tooltip a
+    // manual popover, and binds each only once), the app's own included; a hover opens exactly one.
+    checks.tooltips = await page.evaluate(() => {
+      const anchors = [...document.querySelectorAll(".vc-tooltip-anchor")];
+      const tips = anchors.map((a) => a.querySelectorAll(":scope > .vc-tooltip"));
+      return { anchors: anchors.length, single: tips.every((t) => t.length === 1), bound: tips.filter((t) => t[0]?.getAttribute("popover") === "manual").length };
+    });
+    await page.hover("[data-vc-theme-toggle]");
+    await page.waitForTimeout(400);
+    checks.tooltipOpen = await page.evaluate(() => [...document.querySelectorAll(".vc-tooltip")].filter((t) => t.matches(":popover-open")).map((t) => t.textContent));
+    await page.mouse.move(960, 700);
+    // The key field's Show key button (the app's): shown, then masked again.
+    await page.click("#btn-start");
+    await page.waitForSelector(".mode-card");
+    await page.click('.mode-card[data-mode="live"] .mode-cta button');
+    await page.waitForSelector("#api-key-input");
+    const field = () => read(() => document.querySelector("#api-key-input").type);
+    const show = page.locator(".input-row .vc-icon-button");
+    checks.keyField = [await field()];
+    await show.click();
+    checks.keyField.push(await field());
+    await show.click();
+    checks.keyField.push(await field());
+    await page.keyboard.press("Escape");
+  } catch (err) {
+    checks.FAILED = String(err.message).split("\n")[0];
+    await shot(page, "once-fail.png");
+  }
+  const seq = (xs, want) => JSON.stringify(xs) === JSON.stringify(want);
+  await finish("once: every control does its job exactly once", t, checks, [
+    [seq(checks.theme, ["light:false:null", "dark:true:dark", "light:false:light"]), `the theme toggle switches once per click and remembers it (${checks.theme})`],
+    [seq(checks.text, ["standard:false", "large:true", "standard:false"]), `Larger text switches once per click (${checks.text})`],
+    [seq(checks.view, ["align:true:false:false", "train:false:true:false", "monitor:false:false:true", "align:true:false:false"]), `the view buttons switch once (${checks.view})`],
+    [checks.legend?.length === 3 && checks.legend[1] === (checks.legend[0] === "true:shown" ? "false:hidden" : "true:shown") && checks.legend[2] === checks.legend[0],
+      `the legend's button opens and closes it once (${checks.legend})`],
+    [seq(checks.lines, ["true:on", "false:off", "true:on"]), `a legend toggle switches once (${checks.lines})`],
+    [seq(checks.speed, ["×2"]), `one replay speed pressed, the one clicked (${checks.speed})`],
+    [seq(checks.drawer, ["true:true", "false:false"]), `a tab opens the drawer, the open tab closes it (${checks.drawer})`],
+    [checks.owner === "false" && checks.backdrop === 0 && checks.escape === "0:btn-about", `a dialog closes once, by the app, on its backdrop or Escape, and Escape gives the focus back (${checks.owner}, ${checks.backdrop}, ${checks.escape})`],
+    [checks.tooltips?.anchors > 0 && checks.tooltips.single && checks.tooltips.bound === checks.tooltips.anchors && seq(checks.tooltipOpen, ["Dark theme"]),
+      `every tooltip is bound, and a hover opens one (${JSON.stringify(checks.tooltips)}, ${checks.tooltipOpen})`],
+    [seq(checks.keyField, ["password", "text", "password"]), `Show key shows and hides once per click (${checks.keyField})`]
   ]);
 }
 

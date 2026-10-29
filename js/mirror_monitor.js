@@ -43,7 +43,8 @@ export function createMonitor({ onRow }) {
       const wrong = r.channels.filter((c) => res?.wrong.has(c.channel));
       const rest = lagging.filter((c) => !res?.wrong.has(c.channel));
       const describe = (list) => list.map((c) => `${c.label} v${c.version}${c.faulty ? " (conversion fault)" : ""}`).join(", ");
-      const chip = (list, isWrong) => h("span", { class: "mon-chip", dataset: { wrong: String(isWrong) }, title: describe(list) },
+      // A Vici tag: plain for a channel behind the source (a fact), danger for one the check found wrong.
+      const chip = (list, isWrong) => h("span", { class: ["vc-tag", isWrong ? "vc-tag--danger" : "", "mon-chip"], dataset: { wrong: String(isWrong) }, title: describe(list) },
         isWrong
           ? (list.length === 1 ? `${list[0].label} wrong` : `${list.length} channels wrong`)
           : list.every((c) => !c.behind)
@@ -70,6 +71,8 @@ export function createMonitor({ onRow }) {
       if (!state) delete b.dataset.state;
       b.dataset.checking = String(checking);
       b.dataset.focus = String(r.id === ctx.focus);
+      // The train in focus is the current one (its frame is ink: css/mirror.css).
+      if (r.id === ctx.focus) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current");
       b.setAttribute("aria-label", `${r.number}, ${r.run}; source version ${r.source_version}; ${lagging.length ? `behind: ${describe(lagging)}` : "all channels current"}${wrong.length ? `; wrong: ${describe(wrong)}` : ""}; ${check.textContent}`);
       if (list.children[i] !== b) list.insertBefore(b, list.children[i] || null);
     });

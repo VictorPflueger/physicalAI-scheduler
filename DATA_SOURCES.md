@@ -1,6 +1,6 @@
 # Timetable Translator — data sources
 
-What the Timetable Translator reads, what is real and what is invented, and every assumption the sync engine makes. World and engine version 1.0.0, 18 October 2026, unchanged in app versions 1.1.0 and 1.2.0.
+What the Timetable Translator reads, what is real and what is invented, and every assumption the sync engine makes. World and engine version 1.0.0, 18 October 2026, unchanged in app versions 1.1.0 to 1.3.0.
 
 **In one paragraph.** The stations, their Ril 100 codes and the lines between them are real public facts. Everything that happens on them is invented: every train number, time, track, passenger figure, operational change, publication state, sensor reading and connection. No railway's data, systems or rules are used, and the publication rules are assumptions written for this demonstration. The only outside service the app talks to is the Anthropic API, for the live agent.
 
@@ -81,5 +81,5 @@ The kinds of failure are realistic for any railway's passenger information (shor
 ## 7. What the Timetable Translator does **not** use
 
 - No railway's timetable data, published channels, interfaces or business rules.
-- No web search, no open-data APIs, no maps, no analytics, no fonts or scripts from a third party.
+- No web search, no open-data APIs, no maps, no analytics, no fonts or scripts loaded from a third party. The only front-end assets are Victor Pflüger's design system Vici, copied into `vici/` (`vici/README.md`): its stylesheet, script and tokens (MIT), its fonts Bricolage Grotesque, Inter and JetBrains Mono (SIL Open Font License 1.1), his portrait for the byline and LinkedIn's own logo file, all served from the app itself.
 - No personal data: drafts address teams by function, and the agent is told not to write names, phone numbers or e-mail addresses.

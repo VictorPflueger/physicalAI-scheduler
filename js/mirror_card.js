@@ -3,15 +3,16 @@
 // channel publishes for it (Kundenfahrplan: passenger stops, whole minutes, platforms); between them
 // the translation: a line from every customer row to the source row of its point. A passenger stop
 // where the train only waits (Betriebshalt) or passes, a stop the source no longer serves and a stop
-// the customer timetable misses show as lines that do not meet a passenger stop. The engine's
-// contradictions colour the lines and the customer rows (red: contradicts the source; violet: a
-// what-if; amber: informed, data still behind; green: re-publication approved). The customer rows
+// the customer timetable misses show as lines that end in a hexagon with a cross or a plus. The
+// engine's contradictions colour the lines and the customer rows (danger: contradicts the source;
+// lilac: a what-if; warning: informed, data still behind; success: re-publication approved). The customer rows
 // sit level with their source rows (mirror_data.placeRight); the card scrolls when a train has more
 // rows than the mirror has room for.
 
 import { h } from "./dom.js";
 import { icon } from "./icons.js";
 import { mirrorLinks, placeRight } from "./mirror_data.js";
+import { hexPoints } from "./mirror_strip.js";
 
 const SVG = "http://www.w3.org/2000/svg";
 function s(tag, attrs = {}) {
@@ -76,8 +77,9 @@ export function createCard({ onSource, onCustomer, onChannel }) {
   let lastStates = new Map();
   let current = null;
 
+  // What the agent read: a Vici tag in fjord, the tone of checking.
   function checkTag(text, kind) {
-    return h("span", { class: "check-tag", dataset: { kind } }, icon("check", 12), text);
+    return h("span", { class: "vc-tag vc-tag--info check-tag", dataset: { kind } }, icon("check", 12), text);
   }
 
   function renderHead(view, ctx) {
@@ -108,6 +110,8 @@ export function createCard({ onSource, onCustomer, onChannel }) {
       }
       const info = ctx.channelInfo(c.channel);
       b.replaceChildren(...[
+        // The chip's edge: a ring in the capsule's shape (css/mirror.css), dashed for a channel behind.
+        h("span", { class: "ch-edge", "aria-hidden": "true" }),
         h("span", { class: "ch-name" }, c.label),
         h("span", { class: "ch-v" }, `v${c.version}`),
         info.n ? h("span", { class: "ch-n" }, String(info.n)) : null
@@ -298,7 +302,7 @@ export function createCard({ onSource, onCustomer, onChannel }) {
 
   function endMark(x, y, kind, attrs) {
     const g = s("g", { class: "ml-end", "data-kind": attrs["data-kind"], "data-state": attrs["data-state"] });
-    g.append(s("circle", { cx: x, cy: y, r: 7 }));
+    g.append(s("polygon", { points: hexPoints(x, y, 7.7) }));
     if (kind === "x") g.append(s("path", { d: `M${x - 3.2} ${y - 3.2} L ${x + 3.2} ${y + 3.2} M${x + 3.2} ${y - 3.2} L ${x - 3.2} ${y + 3.2}` }));
     else g.append(s("path", { d: `M${x - 3.6} ${y} L ${x + 3.6} ${y} M${x} ${y - 3.6} L ${x} ${y + 3.6}` }));
     return g;

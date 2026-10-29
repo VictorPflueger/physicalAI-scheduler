@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect x="1" y="1" width="30" height="30" rx="8" fill="#7a1e3a"/>
-  <path d="M8.5 9v14M8.5 9h14M8.5 16h14M8.5 23h14" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="8.5" cy="9" r="2.5" fill="#ffffff"/>
-  <circle cx="8.5" cy="16" r="2.5" fill="#ffffff"/>
-  <circle cx="8.5" cy="23" r="2.5" fill="#ffffff"/>
-  <circle cx="22.5" cy="16" r="4.5" fill="none" stroke="#f2cfd5" stroke-width="2.2"/>
-  <circle cx="22.5" cy="9" r="2.1" fill="#7a1e3a" stroke="#ffffff" stroke-width="1.9"/>
-  <circle cx="22.5" cy="16" r="2.1" fill="#7a1e3a" stroke="#ffffff" stroke-width="1.9"/>
-  <circle cx="22.5" cy="23" r="2.1" fill="#7a1e3a" stroke="#ffffff" stroke-width="1.9"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 103.92">
+  <!-- Timetable Translator's page icon: Vici's clock icon in a lilac hexagon cell, the same as its card
+       on Victor Pflüger's website (icon and kind: VictorPflueger/VIP, data/prototypes.js). Vici's
+       lilac 100 (#f2e9fd) and lilac 900 (#372544); the icon is drawn larger and bolder
+       than on the card so that it still reads at 16 px. -->
+  <polygon points="120,51.96 90,103.92 30,103.92 0,51.96 30,0 90,0" fill="#f2e9fd"/>
+  <g transform="translate(18 9.96) scale(3.5)" fill="none" stroke="#372544" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20.4 13 L16.2 20.27 L7.8 20.27 L3.6 13 L7.8 5.73 L16.2 5.73 Z"/>
+    <path d="M12 8.4 V13 L15.2 15"/>
+    <path d="M9.6 2.6 H14.4 M12 2.6 V4.6"/>
+  </g>
 </svg>

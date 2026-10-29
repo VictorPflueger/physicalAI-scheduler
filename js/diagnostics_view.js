@@ -9,6 +9,8 @@ import { APP } from "./config.js";
 
 const STATUS_TEXT = { pass: "Pass", fail: "Fail", warn: "Check", skip: "Skipped", running: "Testing", idle: "Not run" };
 const STATUS_ICON = { pass: "check", fail: "x", warn: "alert", skip: "info", idle: "info" };
+// Each status is a Vici tag in its tone, with its icon and its word; skipped and not run are plain.
+const STATUS_TAG = { pass: "vc-tag--success", fail: "vc-tag--danger", warn: "vc-tag--warning", running: "vc-tag--info", skip: "", idle: "" };
 
 export function openDiagnostics() {
   const rows = new Map();
@@ -16,7 +18,7 @@ export function openDiagnostics() {
   const tbody = h("tbody");
   for (const t of TESTS) {
     const statusCell = h("td", { class: "status" });
-    const msCell = h("td", { class: "ms num" }, "");
+    const msCell = h("td", { class: "ms vc-tabular" }, "");
     const detailCell = h("td", { class: "detail" }, t.purpose);
     tbody.appendChild(h("tr", {},
       h("td", {}, h("strong", {}, t.label), h("span", { class: "host" }, t.host)),
@@ -32,19 +34,22 @@ export function openDiagnostics() {
     const row = rows.get(id);
     if (!row) return;
     const s = r.status || "idle";
-    clear(row.statusCell).appendChild(h("span", { class: "diag-status", dataset: { s } },
-      s === "running" ? h("span", { class: "spinner" }) : icon(STATUS_ICON[s] || "info", 16), STATUS_TEXT[s] || s));
+    clear(row.statusCell).appendChild(h("span", { class: ["vc-tag", STATUS_TAG[s] || "", "diag-status"], dataset: { s } },
+      s === "running" ? h("span", { class: "vc-spinner vc-spinner--sm", "aria-hidden": "true" }) : icon(STATUS_ICON[s] || "info", 16), STATUS_TEXT[s] || s));
     row.msCell.textContent = r.ms ? `${r.ms} ms` : "";
     if (r.detail) row.detailCell.textContent = r.detail;
     if (id === "world" && r.checks) {
       clear(worldList);
       for (const c of r.checks) {
-        worldList.appendChild(h("li", {}, h("span", { class: c.ok ? "mark-pass" : "mark-fail" }, icon(c.ok ? "check" : "x", 16)), h("span", {}, `${c.name}${c.detail ? ` — ${c.detail}` : ""}`)));
+        const s = c.ok ? "pass" : "fail";
+        worldList.appendChild(h("li", { dataset: { ok: String(!!c.ok) } },
+          h("span", { class: ["vc-tag", STATUS_TAG[s], "world-mark"] }, icon(STATUS_ICON[s], 14), STATUS_TEXT[s]),
+          h("span", {}, `${c.name}${c.detail ? ` — ${c.detail}` : ""}`)));
       }
     }
   }
 
-  const runBtn = h("button", { class: "btn btn-primary", type: "button", autofocus: true }, icon("pulse", 18), "Run all tests");
+  const runBtn = h("button", { class: "vc-button", type: "button", autofocus: true }, icon("pulse", 18), "Run all tests");
   runBtn.addEventListener("click", async () => {
     if (runBtn.getAttribute("aria-disabled") === "true") return;
     runBtn.setAttribute("aria-disabled", "true");
@@ -57,16 +62,17 @@ export function openDiagnostics() {
     intro: "Tests the one external service the app uses (the Anthropic API, for the live agent) from this browser, and checks the operating snapshot locally. The live agent reads no open data and has no web search: the world model and its physical layer are its only sources.",
     size: "wide",
     body: [
-      h("table", { class: "diag-table" },
-        h("thead", {}, h("tr", {}, h("th", {}, "Service"), h("th", {}, "Status"), h("th", {}, "Time"), h("th", {}, "Details"))),
-        tbody),
+      h("div", { class: "vc-table-wrap diag-wrap" },
+        h("table", { class: "vc-table diag-table" },
+          h("thead", {}, h("tr", {}, h("th", {}, "Service"), h("th", {}, "Status"), h("th", {}, "Time"), h("th", {}, "Details"))),
+          tbody)),
       h("div", { class: "diag-section" },
         h("h3", {}, "World data integrity"),
         h("p", {}, "Checks run locally on the operating snapshot: every trip on the network and forwards in time, every operational change corroborated by the physical layer, the customer projection, scenario coverage and honest sweep negatives, the reference cases and the simulation scripts."),
         worldList)
     ],
     footer: [
-      h("span", { class: "left" }, `${APP.name} ${APP.version}. Run this on the presentation laptop and network before going on stage.`),
+      h("span", { class: "dialog-note" }, `${APP.name} ${APP.version}. Run this on the presentation laptop and network before going on stage.`),
       runBtn
     ]
   });
