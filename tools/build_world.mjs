@@ -462,8 +462,8 @@ const OBS = [
   { id: "PHY-09", at: T("07:25"), kind: "section_time", source: "Fahrzeitmessung aus der Zugortung", point: "EBO", trains: [], supports: ["OPS-02"],
     text: "Abschnitt Bochum Hbf – Dortmund Hbf heute: Züge 610 und 10105 mit +3,8 und +4,1 Minuten gegenüber Fahrplan (Langsamfahrstelle 70 km/h).",
     values: { section: ["EBO", "EDO"], measured_min: [3.8, 4.1] } },
-  { id: "PHY-10", at: T("06:05"), kind: "section_time", source: "Fahrzeitmessung aus der Zugortung (Bordgerät), Abschnitt der Partnerbahn", point: "XBLIG", trains: [], supports: ["OPS-06"],
-    text: "Abschnitt Liège-Guillemins – Bruxelles-Midi gestern: Züge 314 und 322 mit +8,6 und +9,3 Minuten gegenüber Fahrplan (eingleisiger Betrieb, Bauarbeiten).",
+  { id: "PHY-10", at: T("06:05"), kind: "section_time", source: "Fahrzeitmessung aus der Zugortung, Abschnitt der Partnerbahn", point: "XBLIG", trains: [], supports: ["OPS-06"],
+    text: "Abschnitt Liège-Guillemins – Bruxelles-Midi heute früh: die ersten beiden Züge der Partnerbahn mit +8,6 und +9,3 Minuten gegenüber Fahrplan (eingleisiger Betrieb, Bauarbeiten seit Betriebsbeginn).",
     values: { section: ["XBLIG", "XBB"], measured_min: [8.6, 9.3] } }
 ];
 

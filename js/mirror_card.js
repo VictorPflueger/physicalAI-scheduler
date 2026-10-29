@@ -283,9 +283,15 @@ export function createCard({ onSource, onCustomer, onChannel }) {
     pillAt.sort((a, b) => a.y - b.y || (b.c.passengers || 0) - (a.c.passengers || 0));
     let floor = -Infinity;
     const ph = 22;
-    for (const p of pillAt) {
-      const y = Math.max(p.y, floor + ph + 3);
-      floor = y;
+    const ys = pillAt.map((p) => (floor = Math.max(p.y, floor + ph + 3)));
+    // A stack that would run past the last row (two wrong facts at the last stop) moves up instead,
+    // so its last label stays inside the card, still never on top of another.
+    let ceil = height - ph / 2 - 1;
+    for (let i = ys.length - 1; i >= 0; i--) { ys[i] = Math.min(ys[i], ceil); ceil = ys[i] - ph - 3; }
+    // …but never above the card's top: a stack taller than the card keeps its spacing and runs down.
+    for (let i = 0; i < ys.length; i++) ys[i] = Math.max(ys[i], i ? ys[i - 1] + ph + 3 : ph / 2 + 1);
+    for (const [i, p] of pillAt.entries()) {
+      const y = ys[i];
       const label = TYPE_SHORT[p.c.type] || p.c.type;
       const pax = p.c.passengers || 0;
       const st = p.c.state || "affected";

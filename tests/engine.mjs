@@ -488,7 +488,7 @@ const GOLDEN = {
   const now = customerView(model, "T-318").rows;
   assert.deepEqual(before.filter((r) => r.point !== "XBB"), now.filter((r) => r.point !== "XBB"));
   assert.equal(now.find((r) => r.point === "XBB").arr - before.find((r) => r.point === "XBB").arr, 9 * 60);
-  // The change and its physical evidence: the partner's delivery in the log, yesterday's section times.
+  // The change and its physical evidence: the partner's delivery in the log, this morning's section times.
   assert.deepEqual(OPS_TOOLS.ops_list_changes(model, { train: "ICE 318" }).changes.map((c) => `${c.id}:${c.time}:${c.kind}`), ["OPS-06:06:12:partner_delivery"]);
   assert.deepEqual(OPS_TOOLS.phys_observe(model, { point: "XBLIG" }).observations.map((o) => `${o.id}:${o.kind}`), ["PHY-10:section_time"]);
   // The strip: the line beyond the corridor, with its border point, only for trains on that line.
