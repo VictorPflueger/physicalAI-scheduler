@@ -8,7 +8,8 @@
 //          and options are the engine's own (js/sync.js on the scenario's reference case)
 //   names  no state the presenter draws on any path of the seven scenarios (tests/lib/pages.mjs)
 //          shows an id where a name belongs, a German team title, a placeholder, a broken value or a
-//          screen that 2.0.0 cut; every scenario's train has a name for the stage's heading
+//          screen that 2.0.0 cut, and no draft's full text an id, a placeholder or a broken value;
+//          every scenario's train has a name for the stage's heading
 //   docs   README.md and DEMO_SCRIPT.md name the five steps and the four key figures, and every
 //          passenger count, minute, euro amount and option in them is the one the app computes
 // Each rule is first tried on a planted example that must break it.
@@ -155,11 +156,17 @@ async function namesChecks() {
   "control: the patterns catch an id, a German title, a placeholder, a broken value and a cut screen, and leave a plain sentence alone");
   const { states, paths } = await renderAll();
   const scenarioTexts = app.SCENARIOS.flatMap((s) => [s.title, app.plain.plain(s.seed)]);
+  // A draft's full text (in a <pre>) may be German, so German words stay there; ids, placeholders and
+  // broken values may not.
+  const draftsOf = (html) => [...html.matchAll(/<pre>([\s\S]*?)<\/pre>/g)].map((m) => m[1].replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&"));
+  const inDrafts = (what) => !/German|cut/.test(what);
   for (const [re, what] of FORBIDDEN) {
     let hit = null;
     for (const s of states) {
       const line = visibleText(s.html).split("\n").find((l) => re.test(l));
       if (line) { hit = `"${line.trim().slice(0, 120)}" (${s.where})`; break; }
+      const draft = inDrafts(what) && draftsOf(s.html).flatMap((d) => d.split("\n")).find((l) => re.test(l));
+      if (draft) { hit = `"${draft.trim().slice(0, 120)}" (${s.where}, a draft)`; break; }
     }
     const t = scenarioTexts.find((x) => re.test(x));
     if (!hit && t) hit = `"${t.slice(0, 120)}" (a scenario's title or lead)`;
