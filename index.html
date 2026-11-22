@@ -1,34 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- The browser enforces where this page may connect: the API key can only ever reach api.anthropic.com,
-       the one outside host (TECH_NOTES §6). Scripts, styles, fonts and images come from this site only:
-       the app loads nothing from a third party. -->
+  <!-- Everything comes from this site. The page may connect to one host, api.anthropic.com, and only
+       when a visitor starts a live run on their own key: the simulation connects nowhere. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://api.anthropic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="The Timetable Translator is an AI agent between the operational timetable and the customer timetable: it derives what passengers should be told from the single source, finds where published information contradicts it, confirms it with the physical layer, and proposes costed responses for human approval.">
-  <title>Timetable Translator — two timetables, one truth</title>
+  <meta name="description" content="The Timetable Translator shows an AI agent finding where railway passenger information contradicts the operational timetable, checking it against the track's sensors, counting who acts on the wrong information and drafting the fix for a person to approve. Fictional trains on real lines.">
+  <title>Timetable Translator · Agentic AI prototype</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-
-  <!-- The look comes from Victor's design system Vici, copied unchanged into vici/ (vici/README.md).
-       It sits in cascade layers, so the app's own stylesheets below refine it without !important. -->
   <link rel="stylesheet" href="vici/dist/vici.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/mirror.css">
-  <link rel="stylesheet" href="css/align.css">
-  <link rel="stylesheet" href="css/console.css">
-  <link rel="stylesheet" href="css/drawer.css">
-  <link rel="stylesheet" href="css/modals.css">
-
-  <!-- The theme before the page is drawn (light unless the visitor chose dark), then Vici's script. -->
+  <link rel="stylesheet" href="css/app.css">
   <script src="js/theme.js"></script>
   <script src="vici/dist/vici.js" defer></script>
-
-  <!-- Operating snapshot and scripted replays: plain scripts that set window globals (no fetch needed). -->
   <script src="data/world.js" defer></script>
   <script src="data/scenarios.js" defer></script>
   <script src="data/reference_cases.js" defer></script>
@@ -36,63 +22,218 @@
   <script type="module" src="js/main.js"></script>
 </head>
 <body class="app-shell">
-  <a class="vc-skip-link skip-link" href="#console">Skip to the agent console</a>
+  <a class="vc-skip-link" href="#story">Skip to the story</a>
 
   <header class="app-header">
     <div class="brand">
       <span class="vc-cell vc-cell--lilac" aria-hidden="true"><span class="vc-icon vc-icon--clock"></span></span>
-      <div class="brand-text">
-        <span class="brand-name">Timetable Translator</span>
-        <span class="brand-sub">Two timetables, one truth (synthetic operating day)</span>
+      <span class="brand-name">Timetable Translator</span>
+    </div>
+
+    <div class="header-actions">
+      <span class="vc-tooltip-anchor">
+        <span class="vc-tag vc-tag--lg mode-tag" id="mode-tag" data-mode="simulation" tabindex="0" aria-describedby="tip-mode"><span id="mode-text">SIMULATION</span></span>
+        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-mode">A replay of the agent's run through its own tools: the engine computes every figure and no model is called. Start agent offers a live run.</span>
+      </span>
+      <button type="button" class="vc-button vc-button--secondary" data-vc-guide-open="guide"><span class="vc-icon vc-icon--info" aria-hidden="true"></span>How it works</button>
+      <span class="vc-tooltip-anchor">
+        <button type="button" class="vc-icon-button" data-vc-theme-toggle aria-labelledby="tip-theme"><span class="vc-icon vc-icon--moon vc-when-light" aria-hidden="true"></span><span class="vc-icon vc-icon--sun vc-when-dark" aria-hidden="true"></span></button>
+        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-theme">Dark or light theme</span>
+      </span>
+    </div>
+
+    <div class="kpis" role="group" aria-label="Key figures">
+      <div class="kpi vc-stat" data-vc-kpi="Misinformed passengers" data-tone="affected">
+        <p class="vc-stat__label">Misinformed passengers</p>
+        <p class="vc-stat__value kpi-value" data-fig="pax">312</p>
+        <p class="vc-stat__note kpi-note">if nothing is done</p>
+      </div>
+      <div class="kpi vc-stat" data-vc-kpi="First passenger acts in" data-tone="affected">
+        <p class="vc-stat__label">First passenger acts in</p>
+        <p class="vc-stat__value kpi-value" data-fig="first">14 min</p>
+        <p class="vc-stat__note kpi-note">at <span data-fig="first-where">Köln Hbf</span></p>
+      </div>
+      <div class="kpi vc-stat" data-vc-kpi="Detection → decision">
+        <p class="vc-stat__label">Detection → decision</p>
+        <p class="vc-stat__value kpi-value">0:00</p>
+        <p class="vc-stat__note kpi-note">starts with the lead</p>
+      </div>
+      <div class="kpi vc-stat" data-vc-kpi="Session cost">
+        <p class="vc-stat__label">Session cost</p>
+        <p class="vc-stat__value kpi-value">≈&nbsp;<span data-fig="estimate">€0.09</span></p>
+        <p class="vc-stat__note kpi-note">estimated for a live run</p>
       </div>
     </div>
-
-    <div class="header-badges">
-      <span id="mode-badge" class="vc-tag mode-badge" data-mode="none" role="status" aria-live="polite" title="Choose a mode with Start agent">No run active</span>
-      <!-- Vici's theme toggle (vici.js switches the theme and remembers the choice). -->
-      <span class="vc-tooltip-anchor">
-        <button type="button" class="vc-icon-button theme-toggle" data-vc-theme-toggle aria-labelledby="tip-theme"><span class="vc-icon vc-icon--moon vc-when-light" aria-hidden="true"></span><span class="vc-icon vc-icon--sun vc-when-dark" aria-hidden="true"></span></button>
-        <span class="vc-tooltip vc-tooltip--bottom" role="tooltip" id="tip-theme">Dark theme</span>
-      </span>
-      <span class="vc-tag vc-tag--feature ai-disclosure" title="The Timetable Translator is an AI system. Its analysis can be wrong. Every action is a draft that waits for your approval, and nothing is ever published to passengers or sent to a real railway system.">
-        <span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>
-        <span><span class="long">You are interacting with an </span>AI system</span>
-      </span>
-    </div>
-
-    <div id="kpis" class="kpis" role="group" aria-label="Key figures for the current run"></div>
   </header>
 
-  <nav id="controls" class="controls" aria-label="Run controls"></nav>
+  <div class="intro">
+    <p class="intro-text">An AI agent finds where passengers of fictional trains are told a wrong platform or time, and drafts the fix for your approval.</p>
+    <p class="vc-byline">
+      <span class="vc-byline__label">Built by</span>
+      <a class="vc-byline__person" href="https://www.linkedin.com/in/victorpflueger" rel="author noopener" target="_blank">
+        <span class="vc-avatar vc-avatar--xs"><img src="vici/assets/brand/portrait-96.jpg" alt="" width="96" height="96"></span>
+        <span class="vc-byline__name">Victor Pflüger</span>
+        <img class="vc-platform-mark" src="vici/assets/marks/linkedin.png" alt="" width="840" height="779">
+        <span class="vc-visually-hidden"> on LinkedIn (opens in a new tab)</span>
+      </a>
+      <span class="vc-tooltip-anchor">
+        <a class="vc-byline__icon" href="https://victorpflueger.github.io/VIP/index.html" rel="author noopener" target="_blank" aria-label="Victor Pflüger's website (opens in a new tab)"><span class="vc-icon vc-icon--globe-hex" aria-hidden="true"></span></a>
+        <span class="vc-tooltip vc-tooltip--bottom" aria-hidden="true">Website</span>
+      </span>
+    </p>
+  </div>
+
+  <nav class="talk-track" aria-label="Talk track">
+    <button type="button" class="vc-button vc-button--secondary play" id="play" data-state="play"><span class="vc-icon vc-icon--play" aria-hidden="true"></span><span id="play-text">Play</span></button>
+    <ol class="vc-stepper steps" id="steps">
+      <li class="vc-step" data-step="spot"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">1</span><span class="vc-step__label">Spot<span class="vc-step__hint">the lead</span></span></button></li>
+      <li class="vc-step" data-step="check"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">2</span><span class="vc-step__label">Check<span class="vc-step__hint">every channel</span></span></button></li>
+      <li class="vc-step" data-step="calculate"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">3</span><span class="vc-step__label">Calculate<span class="vc-step__hint">who is misled</span></span></button></li>
+      <li class="vc-step" data-step="propose"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">4</span><span class="vc-step__label">Propose<span class="vc-step__hint">your decision</span></span></button></li>
+      <li class="vc-step" data-step="prepare"><button type="button" class="vc-step__button"><span class="vc-step__marker" aria-hidden="true">5</span><span class="vc-step__label">Prepare<span class="vc-step__hint">the drafts</span></span></button></li>
+    </ol>
+    <div class="scenario">
+      <button type="button" class="vc-button vc-button--ghost scenario-button" id="scenario-button" aria-haspopup="menu" aria-expanded="false" aria-controls="scenario-menu"><span class="vc-visually-hidden">Scenario: </span><span id="scenario-name">Platform change</span><span class="vc-icon vc-icon--chevron-down" aria-hidden="true"></span></button>
+      <div class="vc-menu scenario-menu" id="scenario-menu" role="menu" aria-labelledby="scenario-button" hidden></div>
+    </div>
+    <button type="button" class="vc-button vc-button--secondary start" id="start" data-vc-live><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>Start agent</button>
+    <span class="vc-tag vc-tag--feature ai-notice"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>You are interacting with an AI system</span>
+  </nav>
+
+  <p class="vc-visually-hidden" id="announce" aria-live="polite"></p>
 
   <main class="workspace">
-    <!-- The workspace's first panel (layout class shared with the sister apps, where it holds the map
-         and the board) holds the timetable mirror: first the alignment of one train (the source, the AI
-         and every channel), then the two timetables side by side and every train in the window. -->
-    <section class="map-panel" aria-label="Timetable mirror: the source against what every channel tells passengers">
-      <div id="mirror"></div>
+    <section class="stage" aria-labelledby="stage-title">
+      <div class="stage-head">
+        <h2 id="stage-title">ICE 618 to Hamburg-Altona</h2>
+        <p class="stage-sub" id="stage-sub">The source, the AI translator and what passengers are told</p>
+      </div>
+      <div class="diagram-frame" id="diagram"></div>
     </section>
-    <section id="console" class="console-panel" aria-label="Agent console" tabindex="-1"></section>
+
+    <section class="story" id="story" aria-labelledby="story-title" tabindex="-1">
+      <h2 class="story-title" id="story-title" tabindex="-1">Short-notice platform change at Köln Hbf</h2>
+      <p class="story-lead" id="story-lead">A lead reaches the agent. It goes to the source, the operations log, before it trusts the lead.</p>
+      <div class="story-card" id="story-card"></div>
+      <figure class="agent" id="agent">
+        <figcaption><span class="vc-tag vc-tag--feature vc-tag--sm"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>Agent</span><span class="agent-note" id="agent-note">replayed, not live</span></figcaption>
+        <div class="agent-words" id="agent-words"></div>
+      </figure>
+      <!-- The request for interaction: right under what just happened, in words, with its one action. -->
+      <div class="story-foot">
+        <div class="move" id="move" data-tone="working" role="group" aria-label="What to do next">
+          <p class="move-text" id="move-text"><strong>Ready.</strong> The story plays when you close the guide.</p>
+          <div class="move-actions" id="move-actions"></div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <section id="drawer" class="drawer" aria-label="Options, outbox and audit log"></section>
+  <!-- How it works: Vici's guide. vici.js builds the chapter rail and opens it once per browser tab;
+       ?guide=0 keeps it closed, ?guide=present opens the talk track. Every figure in it comes from the
+       engine: js/main.js writes them again from the default scenario's run, and tests/figures.mjs checks
+       that the ones written here are equal. -->
+  <dialog class="vc-dialog vc-guide" id="guide" aria-labelledby="guide-title" data-vc-guide data-vc-guide-auto data-vc-guide-count="{n} of {total}">
+    <header class="vc-dialog__header">
+      <h2 class="vc-dialog__title" id="guide-title">How the prototype works</h2>
+      <button type="button" class="vc-icon-button" data-vc-close aria-label="Close"><span class="vc-icon vc-icon--close" aria-hidden="true"></span></button>
+    </header>
+    <div class="vc-guide__chapters">
+      <section class="vc-guide__chapter" data-vc-chapter="what" data-vc-nav="What it does">
+        <h3><span data-fig="pax">312</span> passengers are about to go to the wrong platform</h3>
+        <p class="vc-guide__lead">An AI agent stands between the operational timetable, which operations keep, and what passengers are told. It finds where the two disagree, has an engine count who is misled and drafts the fix. You decide.</p>
+        <div class="vc-table-wrap"><table class="vc-table vc-table--compact">
+          <caption>This demo: a platform change at Köln Hbf</caption>
+          <tbody>
+            <tr><th scope="row">The lead</th><td>A radio message: ICE 618 leaves from another platform, the app still says the old one</td></tr>
+            <tr><th scope="row">The source</th><td>Platform <span data-fig="platform-source">7</span> since <span data-fig="changed">07:21</span>, after a points failure</td></tr>
+            <tr><th scope="row">What passengers are told</th><td>Platform <span data-fig="platform-told">5</span>, in the app, on the displays, in the announcements and in the coach order</td></tr>
+            <tr><th scope="row">If nothing is done</th><td><span data-fig="pax">312</span> passengers go to the wrong platform, the first in <span data-fig="first">14 min</span></td></tr>
+          </tbody>
+        </table></div>
+      </section>
+      <section class="vc-guide__chapter" data-vc-chapter="how" data-vc-nav="How it works">
+        <h3>What the agent does, step by step</h3>
+        <p class="vc-guide__lead">The agent reads the source and every channel, asks the track's sensors, lets an engine count who is misled, proposes three responses and drafts the one you approve. Four figures say what that is worth.</p>
+        <div class="vc-table-wrap"><table class="vc-table vc-table--compact guide-figures">
+          <thead><tr><th scope="col">Figure</th><th scope="col">What it measures</th><th scope="col" class="vc-num">Value</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Misinformed passengers</th><td>Who would act on wrong information in the next three hours; after your decision, who is left</td><td class="vc-num" data-fig="pax">312</td></tr>
+            <tr><th scope="row">First passenger acts in</th><td>Minutes until the first of them acts on it</td><td class="vc-num" data-fig="first">14 min</td></tr>
+            <tr><th scope="row">Detection → decision</th><td>From the lead on screen to your approval, timed on this page</td><td class="vc-num"><span data-fig="decision-min">4 min</span> on the talk track</td></tr>
+            <tr><th scope="row">Session cost</th><td>The agent's model fees: estimated in the replay, measured live</td><td class="vc-num">≈&nbsp;<span data-fig="estimate">€0.09</span></td></tr>
+          </tbody>
+        </table></div>
+      </section>
+      <section class="vc-guide__chapter" data-vc-chapter="real" data-vc-nav="What is real">
+        <h3>What is real and what is invented</h3>
+        <p class="vc-guide__lead">The stations and lines are real. Trains, times, passengers and sensor readings are invented. In this replay the agent's words are scripted, and an engine computes every figure.</p>
+        <div class="vc-table-wrap"><table class="vc-table vc-table--compact">
+          <caption>Where everything comes from</caption>
+          <tbody>
+            <tr><th scope="row">Scripted</th><td>The agent's words in the replay, played through its real tools</td></tr>
+            <tr><th scope="row">Computed</th><td>Every passenger and every minute, by a deterministic engine from the operating snapshot; the AI recommends one of the costed options, and you decide</td></tr>
+            <tr><th scope="row">A live run</th><td>Start agent runs Claude <span data-fig="model">Sonnet 5.5</span> on your own API key. You are interacting with an AI system</td></tr>
+            <tr><th scope="row">Nothing is published</th><td>Drafts stay drafts, approved or not: the page is connected to no railway system</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+      <section class="vc-guide__chapter" data-vc-chapter="present" data-vc-nav="How to present">
+        <h3>Show it in five minutes</h3>
+        <p class="vc-guide__lead">The story plays by itself and stops where you decide.</p>
+        <ol class="vc-guide__path">
+          <li><strong>Spot: it plays by itself; point at the four figures.</strong> <span class="vc-guide__say">“<span data-fig="pax">312</span> passengers go to the wrong platform, the first in <span data-fig="first">14 min</span>.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>Check: point at the sensors.</strong> <span class="vc-guide__say">“Every channel says platform <span data-fig="platform-told">5</span>, and the interlocking confirms platform <span data-fig="platform-source">7</span>.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>Calculate: point at the first estimate.</strong> <span class="vc-guide__say">“The app alone looked like <span data-fig="hyp-pax">8</span> passengers; every channel together, <span data-fig="pax">312</span>.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>Propose: press Approve option <span data-fig="rec">A</span>.</strong> <span class="vc-guide__say">“Re-publishing from the source leaves <span data-fig="rec-left">7</span>; a person decides in about <span data-fig="decision-min">4 min</span>.”</span> <span class="vc-guide__time">1 min</span></li>
+          <li><strong>Prepare: press Approve both drafts.</strong> <span class="vc-guide__say">“Nothing is published. Live, the agent's run costs about <span data-fig="estimate">€0.09</span>.”</span> <span class="vc-guide__time">1 min</span></li>
+        </ol>
+      </section>
+    </div>
+    <footer class="vc-dialog__footer vc-guide__footer">
+      <span class="vc-guide__count"></span>
+      <button type="button" class="vc-button vc-button--ghost" data-vc-guide-back><span class="vc-icon vc-icon--chevron-left" aria-hidden="true"></span>Back</button>
+      <button type="button" class="vc-button" data-vc-guide-next data-vc-guide-done="Start">Next<span class="vc-icon vc-icon--chevron-right" aria-hidden="true"></span></button>
+    </footer>
+  </dialog>
 
-  <div id="banners" class="banner-stack"></div>
+  <!-- Start agent: the free simulation first, or a live run on the visitor's own key. -->
+  <dialog class="vc-dialog start-dialog" id="start-dialog" aria-labelledby="start-title">
+    <header class="vc-dialog__header">
+      <h2 class="vc-dialog__title" id="start-title">Start the agent</h2>
+      <button type="button" class="vc-icon-button" data-vc-close aria-label="Close"><span class="vc-icon vc-icon--close" aria-hidden="true"></span></button>
+    </header>
+    <div class="vc-dialog__body start-choices">
+      <section class="start-card" aria-labelledby="start-sim-title">
+        <h3 id="start-sim-title"><span class="vc-icon vc-icon--cube" aria-hidden="true"></span>Simulation</h3>
+        <p>A scripted replay of the agent's run through its own tools, on the same data. It costs nothing, needs no key and works offline.</p>
+        <button type="button" class="vc-button" id="start-sim"><span class="vc-icon vc-icon--play" aria-hidden="true"></span>Run the simulation</button>
+      </section>
+      <section class="start-card start-card--live" aria-labelledby="start-live-title">
+        <h3 id="start-live-title"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>Live run</h3>
+        <p class="vc-tag vc-tag--feature ai-notice-full"><span class="vc-icon vc-icon--sparkle" aria-hidden="true"></span>You are interacting with an AI system</p>
+        <p>Claude <span data-fig="model">Sonnet 5.5</span> takes the same five steps on your own Anthropic API key, for about <span data-fig="estimate">€0.09</span>. A run stops at <span data-fig="max-calls">40</span> model calls or <span data-fig="budget">€3</span>. The key stays in this tab and goes only to api.anthropic.com. Nothing is published.</p>
+        <form class="key-form" id="key-form" novalidate>
+          <label class="vc-label" for="key-input">Your API key</label>
+          <input class="vc-input" id="key-input" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+          <p class="vc-help key-error" id="key-error" role="alert" hidden></p>
+          <div class="key-actions">
+            <button type="submit" class="vc-button vc-button--secondary" id="start-live" data-vc-live><span class="vc-icon vc-icon--key" aria-hidden="true"></span>Check key and start</button>
+            <button type="button" class="vc-button vc-button--ghost" id="key-forget" hidden>Forget key</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </dialog>
 
-  <!-- Boot screen: removed by js/main.js once the workspace is running. Without JavaScript modules
-       (for example when opened from disk via file://) it stays and explains what to do. -->
+  <!-- Boot screen: removed by js/main.js once the run is built. Opened from disk (file://), where
+       browsers block program modules, it stays and says what to do. -->
   <div id="boot" class="boot" data-state="loading">
     <div class="boot-card">
-      <div class="boot-brand">
-        <span class="vc-cell vc-cell--lilac vc-cell--xl" aria-hidden="true"><span class="vc-icon vc-icon--clock"></span></span>
-        <span class="brand-name">Timetable Translator</span>
-      </div>
-      <p class="boot-status" role="status" aria-live="polite"><span class="vc-spinner" aria-hidden="true"></span><span id="boot-status">Starting the Timetable Translator…</span></p>
+      <p class="boot-brand"><span class="vc-cell vc-cell--lilac vc-cell--xl" aria-hidden="true"><span class="vc-icon vc-icon--clock"></span></span>Timetable Translator</p>
+      <p class="boot-status" role="status"><span class="vc-spinner" aria-hidden="true"></span><span id="boot-status">Building the run…</span></p>
       <p id="boot-detail" class="vc-alert vc-alert--danger boot-detail" hidden></p>
-      <div class="boot-help">
-        <p>Still on this screen? The Timetable Translator has to be served over http or https. Browsers block its program modules when <code>index.html</code> is opened straight from disk, at an address starting with <code>file://</code>.</p>
-        <p>To run it on your computer, open a terminal in this folder, run <code>python -m http.server 8000</code>, then open <code>http://localhost:8000</code>. Published on GitHub Pages, it works as is. Use a current Chrome or Edge.</p>
-      </div>
+      <p class="boot-help">Still on this screen? Serve the folder over http, for example with <code>python -m http.server 8000</code>, and open <code>http://localhost:8000</code>. Browsers don't run its modules from a file.</p>
       <noscript><p class="boot-detail">The Timetable Translator needs JavaScript. Allow it for this site and reload the page.</p></noscript>
     </div>
   </div>

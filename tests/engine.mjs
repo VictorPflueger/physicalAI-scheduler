@@ -15,8 +15,6 @@
 //   tools       the live toolbox: options only from a full-scope result from the source with three
 //               variants, drafts only after a decision and only of what the option contains, the
 //               fact audit on texts, the evidence rule on alerts
-//   mirror      the mirror's data: links between the timetables, row placement, published rows with
-//               cancelled stops, the corridor strip, the sync monitor, and what a lookup touches
 //   texts       placeholders, journeys in German and English, draft safety lines, decision payoff
 //   alignment   the alignment view's data for all seven scenarios: the stop of the most urgent
 //               contradiction, the source's values there, each channel's value and the verdict the
@@ -45,8 +43,6 @@ const { OPS_TOOLS } = await mod("js/ops.js");
 const { extractFacts, collectFacts, unknownFacts, FactSet } = await mod("js/facts.js");
 const { EvidenceLog, FactLedger, verifiedAlertError, draftError, reportOutcome, distinctSources } = await mod("js/guards.js");
 const { createToolbox } = await mod("js/tools.js");
-const { mirrorLinks, placeRight, channelRows, stripData, monitorTrains, sourceRows, positionNow } = await mod("js/mirror_data.js");
-const { callTrains, callPoints, resultChecks, contradictionsOf } = await mod("js/mirror.js");
 const { syncVars, journeyText, fillTemplate, unresolvedKeys } = await mod("js/sim_vars.js");
 const { finalizeDraft, sourceReference, DRAFT_FOOTER, MOCK_LINES } = await mod("js/drafts.js");
 const { decisionEffects, optionFigures, baselineFigures } = await mod("js/payoff.js");
@@ -429,50 +425,6 @@ const GOLDEN = {
   ok("audit: facts by train, outdated values only beside the source's, sectors, mirror marks, options after a verified alert, retries per text, no drafts after the summary");
 }
 
-// ---- mirror data ------------------------------------------------------------------------------------------------------
-{
-  const left = sourceRows(model, "T-1022").filter((r) => r.activity !== "pass");
-  const right = channelRows(model, "T-1022", "planner").rows;
-  const links = mirrorLinks(left, right);
-  const kind = (p) => links.find((l) => (l.right !== null && right[l.right].point === p) || (l.left !== null && left[l.left].point === p))?.kind;
-  assert.equal(kind("EHG"), "not_in_source");
-  assert.equal(kind("KW"), "not_in_source");
-  assert.equal(kind("EE"), "missing");
-  assert.equal(kind("KD"), "missing");
-  assert.equal(kind("EDG"), "hidden", "a Betriebshalt the customer timetable rightly leaves out");
-  assert.equal(kind("KK"), "stop");
-  // The Betriebshalt published as a stop links to an operational stop.
-  const l27 = sourceRows(model, "T-1027");
-  const r27 = channelRows(model, "T-1027", "planner").rows;
-  assert.equal(mirrorLinks(l27, r27).find((l) => l.right !== null && r27[l.right].point === "KKM").kind, "ops_stop");
-  // Placement: in order, never closer than a row, as close as possible to the source row.
-  const tops = placeRight(left.map((_, i) => i * 44), links, right.length, 44, left.length * 44);
-  for (let j = 1; j < tops.length; j++) assert.ok(tops[j] - tops[j - 1] >= 44, "rows never overlap");
-  const anchored = links.filter((l) => l.left !== null && l.right !== null);
-  for (const l of anchored) if (right[l.right].point === "EDO") assert.equal(tops[l.right], l.left * 44);
-  // Published rows include the stops a channel shows as cancelled, in time order.
-  assert.deepEqual(channelRows(model, "T-1025", "displays").rows.map((r) => `${r.point}:${r.status}`).slice(-2), ["KKDZ:added", "KK:cancelled"]);
-  // The strip: today's route (main line) and the published one (Wuppertal line) for ICE 1022.
-  const strip = stripData(model, "T-1022");
-  assert.ok(strip.route.includes("EE") && !strip.route.includes("KW") && strip.published.includes("KW") && strip.opsStops.includes("EDG"));
-  assert.deepEqual(positionNow(model, sourceState(model, "T-1022").rows), { at: "EDO", between: null, state: "waiting" });
-  // The monitor: no S-Bahn shuttles, first departure first, created trips named.
-  const mon = monitorTrains(model);
-  assert.ok(mon.length === 36 && mon.every((r) => r.category !== "S"));
-  for (let i = 1; i < mon.length; i++) assert.ok(mon[i].first_min >= mon[i - 1].first_min);
-  assert.equal(mon.find((r) => r.id === "T-SEV1").created_by, "OPS-03");
-  // What a lookup touches, and what its result confirmed.
-  assert.deepEqual(callTrains(model, "sim_sync", { train_ids: ["ICE 1022", "T-1026", "nope"] }), ["T-1022", "T-1026"]);
-  assert.deepEqual(callPoints(model, "ops_find_alternatives", { from: "Wuppertal Hbf", to: "KK" }), ["KW", "KK"]);
-  const rc = resultChecks(model, "phys_observe", OPS_TOOLS.phys_observe(model, { train: "ICE 1022" }));
-  assert.deepEqual(rc.checks, [{ train: "T-1022", kind: "physical" }]);
-  assert.deepEqual(rc.points.sort(), ["EDO", "KWO"]);
-  assert.deepEqual(resultChecks(model, "phys_observe", OPS_TOOLS.phys_observe(model, { point: "KD" })), { checks: [], points: [] }, "a reading that found nothing confirms nothing");
-  const compact = compactForModel(simulateSync(model, structuredClone(REF["SC-DIVERSION"].finding)));
-  assert.equal(contradictionsOf(compact, "T-1026").length, 5);
-  ok("mirror data: links, placement, cancelled rows, strip routes and position, the monitor, lookups and their confirmations");
-}
-
 // ---- cross-border: the European timetable --------------------------------------------------------------
 {
   // ICE 318 runs on beyond the corridor to Bruxelles-Midi. The partner railway's delivery (06:12) came
@@ -491,16 +443,7 @@ const GOLDEN = {
   // The change and its physical evidence: the partner's delivery in the log, this morning's section times.
   assert.deepEqual(OPS_TOOLS.ops_list_changes(model, { train: "ICE 318" }).changes.map((c) => `${c.id}:${c.time}:${c.kind}`), ["OPS-06:06:12:partner_delivery"]);
   assert.deepEqual(OPS_TOOLS.phys_observe(model, { point: "XBLIG" }).observations.map((o) => `${o.id}:${o.kind}`), ["PHY-10:section_time"]);
-  // The strip: the line beyond the corridor, with its border point, only for trains on that line.
-  const abroad = ["KA", "KXA", "XBLIG", "XBB"];
-  const s318 = stripData(model, "T-318");
-  assert.deepEqual(s318.nodes.filter((n) => abroad.includes(n.id)).map((n) => n.id), abroad);
-  assert.deepEqual(s318.nodes.find((n) => n.id === "KXA").border, { west: "BE", east: "DE" });
-  assert.deepEqual(s318.route.slice(-4), abroad);
-  assert.deepEqual(stripData(model, "T-IC2117").nodes.filter((n) => abroad.includes(n.id)).map((n) => n.id), abroad, "a train starting abroad gets the whole line, not a loose dot");
-  for (const id of [null, "T-618", "T-1022"]) assert.ok(!stripData(model, id).nodes.some((n) => abroad.includes(n.id)), `${id}: the corridor as it was`);
-  assert.equal(stripData(model, "T-318").edges.length, stripData(model, "T-618").edges.length + 4);
-  ok("cross-border: the stop abroad and its connection behind on two channels, the rest unchanged, the change and its evidence, the line beyond the corridor on the strip");
+  ok("cross-border: the stop abroad and its connection behind on two channels, the rest unchanged, the change and its evidence");
 }
 
 // ---- texts: placeholders, journeys, drafts, payoff ---------------------------------------------------------------------
