@@ -209,7 +209,7 @@ try {
     await page.click("#move-actions #approve");
     await page.waitForTimeout(300);
     const t = await kpis(page);
-    check(t["Misinformed passengers"].value === "7" && t["Misinformed passengers"].was === "312" && t["Misinformed passengers"].struck && t["Detection → decision"].note === "until your decision", `the decision moves the figures: ${t["Misinformed passengers"].was} → ${t["Misinformed passengers"].value}, the clock stops (${t["Detection → decision"].value})`);
+    check(t["Misinformed passengers"].value === "7" && t["Misinformed passengers"].was === "312" && t["Misinformed passengers"].struck && t["Detection → decision"].note === "stopped at your decision", `the decision moves the figures: ${t["Misinformed passengers"].was} → ${t["Misinformed passengers"].value}, the clock stops (${t["Detection → decision"].value})`);
     const row = await page.$eval('.option[data-recommended="true"]', (e) => e.dataset.state);
     check(row === "approved", `the recommended option reads approved (${row})`);
     await page.waitForSelector("#move-actions #next", { timeout: 10000 });
@@ -500,9 +500,11 @@ try {
     s = await state();
     check(s.step === "prepare" && s.play === "Pause", `after the approval Play goes on to the drafts (${s.step})`);
     await page.click("#move-actions #approve-drafts");
+    const t1 = Date.now();
     await page.waitForFunction(() => document.getElementById("play-text").textContent === "Replay", null, { timeout: 20000 });
+    const ended = Date.now() - t1;
     s = await state();
-    check(s.play === "Replay" && /^Done\./.test(s.bar), `the story ends on Replay ("${s.bar.slice(0, 60)}")`);
+    check(s.play === "Replay" && /^Done\./.test(s.bar) && ended < 4000, `once the drafts are approved Play ends at once on Replay, as the bar does (${(ended / 1000).toFixed(1)} s; "${s.bar.slice(0, 60)}")`);
     await page.click("#play");
     await page.waitForFunction(() => document.getElementById("play-text").textContent === "Pause" && document.querySelector('#steps [aria-current="step"]')?.closest("li").dataset.step === "spot", null, { timeout: 15000 });
     check(true, "Replay starts the story again from Spot");

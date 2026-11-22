@@ -314,7 +314,7 @@ if (wanted("full")) {
     [x.barAfterReject?.buttons?.join() === "approve*", `after the rejection the bar still asks for the decision (got ${JSON.stringify(x.barAfterReject)})`],
     [x.paxAfter?.value === "7" && x.paxAfter?.was === "312" && x.paxAfter?.note === "with option A", `approving option A moves the tile to 7, with 312 struck through (got ${JSON.stringify(x.paxAfter)})`],
     [x.firstAfter?.value === "14 min" && x.firstAfter?.note === "right information in 2 min", `the first passenger gets the right information in 2 min (got ${JSON.stringify(x.firstAfter)})`],
-    [x.clockAfter?.note === "until your decision", `the clock stops at the decision (got ${JSON.stringify(x.clockAfter)})`],
+    [x.clockAfter?.note === "stopped at your decision", `the clock stops at the decision (got ${JSON.stringify(x.clockAfter)})`],
     [x.step5 === "prepare" && JSON.stringify(x.drafts) === JSON.stringify(["Re-publication order to Timetable publication team (customer timetable)", "Passenger message to Passenger information desk"]), `step 5 shows the two drafts (got ${x.step5}, ${JSON.stringify(x.drafts)})`],
     [x.draftTyped === false && /^Guardrail: A draft was refused\. These timetable facts match nothing this text may quote: 07:44\.$/.test(x.refusal || ""), `the draft with the typed time was refused in view and never reached step 5 (got ${x.refusal})`],
     [x.done?.tone === "done" && /Nothing was published/.test(x.done?.text || "") && x.done?.buttons?.includes("back"), `the run ends Done, nothing published, with a way back to the simulation (got ${JSON.stringify(x.done)})`],

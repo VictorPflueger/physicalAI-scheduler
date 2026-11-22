@@ -74,7 +74,7 @@ async function start() {
   // Detection → decision: from the lead on screen to your approval, measured on this page.
   clock = shell.createClock((text, running) => shell.setKpi("Detection → decision", {
     value: text,
-    note: running ? "running since the lead" : S.r?.decision ? "until your decision" : "starts with the lead",
+    note: running ? "running since the lead" : S.r?.decision ? "stopped at your decision" : "starts with the lead",
     tone: S.r?.decision && !running ? "decided" : ""
   }));
 
@@ -206,7 +206,7 @@ function draw() {
   if (S.mode === "live" && S.follow && S.step < r.reached) { shell.go(STEP_IDS[r.reached], "play"); return; }
   if (!v.steps[S.step].ready) S.step = last;
   if (r.decision && clock.running()) clock.stop();
-  shell.setKpi("Detection → decision", { note: clock.running() ? "running since the lead" : r.decision ? "until your decision" : "starts with the lead", tone: r.decision && !clock.running() ? "decided" : "" });
+  shell.setKpi("Detection → decision", { note: clock.running() ? "running since the lead" : r.decision ? "stopped at your decision" : "starts with the lead", tone: r.decision && !clock.running() ? "decided" : "" });
   const train = S.scenario.train_id;
   const t = model.trains.get(train);
   $("stage-title").textContent = t ? `${t.number} to ${t.to}` : S.scenario.title;
@@ -269,6 +269,8 @@ function frame(now) {
     if (P.step !== S.step) { P.step = S.step; P.at = 0; }
     const st = S.view.steps[S.step];
     const next = S.view.steps[S.step + 1];
+    // Once the person has done the last step's action, Play ends at once and offers Replay.
+    if (!next && S.r?.end && !st.waits) { pause(); return; }
     if (st.waits) P.at = 0; // the person's turn: once they have acted, the step's new words get their time
     else if (!covered()) {
       P.at = Math.min(P.at + dt, st.read);
