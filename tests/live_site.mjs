@@ -3,18 +3,19 @@
 // "live site" workflow does this on every Pages build) or by hand.
 //   files   index.html, the config, the engine, the world and the scripts as served equal this
 //           checkout (Pages caches for up to ten minutes, so it retries for up to twelve)
-//   run     scenario 1 in Simulation mode to the end: the verified finding on the KPI tile, the
-//           approval, the drafts approved, Done; no page error, nothing loaded from another host
-//           (up to three runs a minute apart, for a deployment the CDN is still taking up)
+//   run     the platform change on the presenter to the end: the guide, the verified finding on its tile,
+//           the approval from the Your turn bar, both drafts approved, Done; no page error, nothing
+//           loaded from another host (up to three runs a minute apart, for a deployment the CDN is
+//           still taking up)
 // In GitHub Actions every problem is also printed as an annotation (::error / ::warning).
 // Usage: node tests/live_site.mjs [url]   (default: the repository's GitHub Pages address; LIVE_URL)
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { APP_ROOT, launchBrowser, SKIP_INTRO } from "./lib/harness.mjs";
+import { APP_ROOT, launchBrowser } from "./lib/harness.mjs";
 
 const URL_BASE = (process.argv[2] || process.env.LIVE_URL || "https://victorpflueger.github.io/physicalAI-scheduler/").replace(/\/?$/, "/");
-const FILES = ["index.html", "js/config.js", "js/sync.js", "js/tools.js", "data/world.js", "data/sim_runs.js"];
+const FILES = ["index.html", "js/config.js", "js/main.js", "js/sync.js", "js/tools.js", "css/app.css", "vici/dist/vici.js", "data/world.js", "data/sim_runs.js"];
 const WAIT_MS = Number(process.env.LIVE_WAIT_MS || 12 * 60 * 1000);
 const sha = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 const problems = [];
@@ -46,8 +47,7 @@ else console.log(`PASS  files: ${FILES.length} files as served equal this checko
 async function simulationRun() {
   const found = [];
   const browser = await launchBrowser();
-  const context = await browser.newContext({ viewport: { width: 1600, height: 900 } });
-  await context.addInitScript(SKIP_INTRO);
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await context.newPage();
   const errors = [];
   const hosts = new Set();
@@ -57,25 +57,21 @@ async function simulationRun() {
   try {
     await page.goto(URL_BASE, { waitUntil: "load" });
     await page.waitForSelector('html[data-boot="ready"]', { timeout: 30000 });
-    await page.click("#dd-scenario");
-    await page.click('.vc-menu__item[data-id="SC-PLATFORM"]');
-    await page.click('button[aria-label="Replay speed ×4"]');
-    await page.click("#btn-start");
-    await page.click('.mode-card[data-mode="simulation"] .mode-cta button');
-    await page.waitForSelector('.option-card[data-recommended="true"] [data-action="approve"]', { state: "visible", timeout: 120000 });
-    const tile = await page.locator(".kpi").first().innerText();
-    if (!/Misinformed passengers[\s\S]*312[\s\S]*verified against the source/.test(tile)) found.push(`the finding's tile reads "${tile.replace(/\s+/g, " ")}"`);
-    // The alignment view (the mirror's first view) shows every channel contradicting the source.
-    const tones = await page.$$eval("#mirror .al-channel", (els) => els.map((e) => e.dataset.tone).join(","));
-    if (tones !== "affected,affected,affected,affected") found.push(`the alignment view's channels read "${tones}"`);
-    await page.click('.option-card[data-recommended="true"] [data-action="approve"]');
-    await page.waitForFunction(() => /Waiting for your approval of \d+ draft/.test(document.querySelector("#console").innerText), null, { timeout: 60000 });
-    await page.click('button:has-text("Approve all")');
-    await page.waitForSelector('button:has-text("Open management summary")', { state: "visible", timeout: 60000 });
-    // The run ends a moment after the summary appears (the player's last step), so wait for it to end.
-    await page.waitForFunction(() => /Done/.test(document.querySelector(".status-pill")?.innerText || ""), null, { timeout: 15000 }).catch(() => {});
-    const status = (await page.locator(".status-pill").innerText()).trim();
-    if (!/Done/.test(status)) found.push(`the run ends as "${status}"`);
+    // A fresh tab: the guide opens by itself; closing it plays the story.
+    await page.waitForSelector("#guide[open]", { timeout: 10000 });
+    await page.keyboard.press("Escape");
+    const tile = (await page.locator('[data-vc-kpi="Misinformed passengers"]').innerText()).replace(/\s+/g, " ");
+    if (!/Misinformed passengers 312 if nothing is done/.test(tile)) found.push(`the first tile reads "${tile}"`);
+    await page.keyboard.press("4");
+    await page.waitForSelector("#move-actions #approve", { timeout: 15000 });
+    await page.click("#move-actions #approve");
+    await page.waitForSelector('#steps [data-step="prepare"] button:not([disabled])', { timeout: 15000 });
+    await page.keyboard.press("5");
+    await page.waitForSelector("#move-actions #approve-drafts", { timeout: 30000 });
+    await page.click("#move-actions #approve-drafts");
+    await page.waitForFunction(() => /^Done\./.test(document.getElementById("move-text").textContent.trim()), null, { timeout: 30000 });
+    const after = (await page.locator('[data-vc-kpi="Misinformed passengers"]').innerText()).replace(/\s+/g, " ");
+    if (!/312 now 7 with option A/.test(after)) found.push(`after the approval the first tile reads "${after}"`);
   } catch (e) {
     found.push(`the run did not complete: ${String(e.message || e).split("\n")[0]}`);
   }
@@ -93,7 +89,7 @@ const annotate = (level, text) => { if (process.env.GITHUB_ACTIONS === "true") c
 if (!stale.length) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const found = await simulationRun();
-    if (!found.length) { console.log(`PASS  run: scenario 1 in Simulation mode completes on the published site${attempt > 1 ? ` (run ${attempt})` : ""}`); break; }
+    if (!found.length) { console.log(`PASS  run: the platform change plays from the guide to Done on the published site${attempt > 1 ? ` (run ${attempt})` : ""}`); break; }
     if (attempt === 3) { problems.push(...found); break; }
     for (const f of found) { console.log(`WARN  run ${attempt}: ${f}`); annotate("warning", `run ${attempt}: ${f}`); }
     await new Promise((r) => setTimeout(r, 60000));

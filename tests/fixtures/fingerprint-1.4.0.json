@@ -1,0 +1,3105 @@
+{
+ "commit": "04006b60c79ce6e9896d4eaa008c9bbf8300f496",
+ "version": "1.4.0",
+ "files": {
+  "js/agent.js": "6095bae327af3751c4e96b4638fe61bec4a44df03ee43f22006f5aff58b5ad0b",
+  "js/align_data.js": "ede1c315d795b22926525c7771f16b592a999e72f54fbae834a9082606e0551d",
+  "js/anthropic.js": "f3aad6b3872daede09f9d8ae251f4f7989a0121d86ee5ae6e66cada132cf0495",
+  "js/audit.js": "50ea9bf4056fa24e3ef76ceca325c41d9209273c6cf43df74af20e542d66c90f",
+  "js/clock.js": "a3ba8ff80aea253d327320b94bb28646924f2c32cbd7e4e6a3508145152e4785",
+  "js/cost.js": "21afb140e7c7cbcab7b7597cf504643a6b63eb3168d0650df79875b200a18d69",
+  "js/drafts.js": "8f7b851273c9c6689146daa4c7ba6330583ec0bac834975b0b5728e65d4c1f2a",
+  "js/events.js": "9bdba66785b2714765ff6f1f8da6eacf3cf0ece4b9b857c1478c69af6cea3186",
+  "js/facts.js": "80351d56ad6a15c3ca101a7dc0f5c7370a492d10201ebf9406db37744b61406a",
+  "js/format.js": "193c8447e16f48c0ef27aac0e40c9034e0793bc7a2be9944eda55a198caeffa5",
+  "js/guards.js": "01f597acd599d83744ae07d8e822bc34e0385671294e21e63d34bb8b5157960a",
+  "js/keystore.js": "026d329c385f010267c071abaa1868f00850bd7810c8321236bde499ac16bd9b",
+  "js/labels.js": "db64dd46a5f26378e81699617f156f79cb5e8f5d3f115b919b5a12c09f5ec433",
+  "js/ops.js": "e0084d2631c1c8020c87abfef3988d91267f09daf818eee7cf8a18dde5fddb24",
+  "js/payoff.js": "cd0a430ef65f6c93f88d4cd9ba87dd16c99a7b34c5e438d588ae80fce0f34628",
+  "js/prompt.js": "8f906601aaf56dbd01f8e6bc88910aea794f37801c1d3817808062c414db58ee",
+  "js/run_facts.js": "a67be1e618888dd2f95382c32a6c7200edcd3bed9c621395413e173718f10bee",
+  "js/sim_check.js": "cbb6a68d1ae5b88933fb1caa7e4eeaa9d0bf3642e0ad2ccda6443824ac13807d",
+  "js/sim_vars.js": "8fa4035ceabe231487dc6749714dd18182a171eb8dd10e992c5ce240fe4bf1a6",
+  "js/simulation.js": "f0a91b76a8b29ab784e4e59f1553ba73655ac3982d3f9fcc94b7c9fde326b5bd",
+  "js/sse.js": "56c0ab34b2f7041129700c0e99c8e37aa663529b8c3c57bb0247937519330fab",
+  "js/summaries.js": "26a09c2359bbceb22fa674dc9bf0ae442a9949f74b6f8725cc8e85acd2e59a45",
+  "js/sync.js": "3c905293c91be5dc927909f849d2fbf8819f4a80806d44b454b0833c3f246c4c",
+  "js/theme.js": "1241175350a2fbdc7eab4ee1f727d9da420574d37db95425fdc235815264feb3",
+  "js/tool_plain.js": "5f660ff8bf6abc6e3e988f42eea057e8c1cba3d856d79d6b9a342702ecea7bec",
+  "js/tools.js": "47dd90d0a12b8bccf6c21589cc211a2cca0537f679feda2eca21cd71ca5a00bb",
+  "js/world.js": "34737dd920ebf6e8453b90d1cce5fc8b144e28f72b0526fa9f2190aef06ea98e",
+  "js/world_check.js": "ca6fb2bd6c4d14c45a06e0b1f5d4910eae049b004d7f2de0254d082046647c22",
+  "data/world.js": "4c3efe24344f5ea4e306a6b54e04fd45f5bd0f74e43cbf1844ca1fa086792409",
+  "data/scenarios.js": "7d8c34ed614bef32bb13247c5b12580d411fcf91432b97d7d9c6fd5d83141d94",
+  "data/reference_cases.js": "78e288e55978b7fa8ca588925db19b443b562a8045061313e57b81b58c3026f5",
+  "data/sim_runs.js": "8cd1305b6d8dfa3d88f6f0481d09c40d15f4bdd41c7de6d516255c4bfeadf626",
+  "tools/build_world.mjs": "53e3afa7d32da5400062064550c0e603efda7f075c5ed7571cc8ab052b288eea",
+  "tools/check_world.mjs": "4aa1811f1797aad3c59efd3428630476bb90903f3fb0c28b6270af5791ef1ece",
+  "js/config.js (version masked)": "15036da0e4ea24d5d742eee2c07670929d810a3513e5b1ee7585c9624ab9dd11"
+ },
+ "paths": {
+  "SC-PLATFORM recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 618: every channel shows platform 5, the train leaves from platform 7"
+   ],
+   "kpis": [
+    "estimate/partial: 8 of 312, first 14 min at ICE 618, Köln Hbf",
+    "verified/source: 312 of 312, first 14 min at ICE 618, Köln Hbf",
+    "decided option A: 7 of 312, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     305,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     15,
+     297,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     72,
+     240,
+     2,
+     null,
+     2,
+     2,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    312,
+    14
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 618 to Hamburg-Altona, 07:42: today from platform 7",
+    "republish_order: Release ICE 618 from the source to every channel now"
+   ],
+   "report": "## ICE 618: platform change at Köln Hbf"
+  },
+  "SC-PLATFORM recommended, drafts rejected": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 618: every channel shows platform 5, the train leaves from platform 7"
+   ],
+   "kpis": [
+    "estimate/partial: 8 of 312, first 14 min at ICE 618, Köln Hbf",
+    "verified/source: 312 of 312, first 14 min at ICE 618, Köln Hbf",
+    "decided option A: 7 of 312, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     305,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     15,
+     297,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     72,
+     240,
+     2,
+     null,
+     2,
+     2,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    312,
+    14
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 618 to Hamburg-Altona, 07:42: today from platform 7",
+    "republish_order: Release ICE 618 from the source to every channel now"
+   ],
+   "report": "## ICE 618: platform change at Köln Hbf"
+  },
+  "SC-PLATFORM approve V2": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 618: every channel shows platform 5, the train leaves from platform 7"
+   ],
+   "kpis": [
+    "estimate/partial: 8 of 312, first 14 min at ICE 618, Köln Hbf",
+    "verified/source: 312 of 312, first 14 min at ICE 618, Köln Hbf",
+    "decided option B: 15 of 312, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     305,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     15,
+     297,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     72,
+     240,
+     2,
+     null,
+     2,
+     2,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    312,
+    14
+   ],
+   "decided": [
+    "V2:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 618 to Hamburg-Altona, 07:42: today from platform 7",
+    "staff_brief: ICE 618, 07:42: send passengers from platform 5 to platform 7"
+   ],
+   "report": "## ICE 618: platform change at Köln Hbf"
+  },
+  "SC-PLATFORM approve V3": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 618: every channel shows platform 5, the train leaves from platform 7"
+   ],
+   "kpis": [
+    "estimate/partial: 8 of 312, first 14 min at ICE 618, Köln Hbf",
+    "verified/source: 312 of 312, first 14 min at ICE 618, Köln Hbf",
+    "decided option C: 72 of 312, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     305,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     15,
+     297,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     72,
+     240,
+     2,
+     null,
+     2,
+     2,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    312,
+    14
+   ],
+   "decided": [
+    "V3:approved"
+   ],
+   "drafts": [
+    "override_request: Override for ICE 618, 07:42: platform 7 on displays and announcements",
+    "passenger_message: ICE 618 to Hamburg-Altona, 07:42: today from platform 7"
+   ],
+   "report": "## ICE 618: platform change at Köln Hbf"
+  },
+  "SC-PLATFORM reject V2, then the recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 618: every channel shows platform 5, the train leaves from platform 7"
+   ],
+   "kpis": [
+    "estimate/partial: 8 of 312, first 14 min at ICE 618, Köln Hbf",
+    "verified/source: 312 of 312, first 14 min at ICE 618, Köln Hbf",
+    "decided option A: 7 of 312, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     305,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     15,
+     297,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     72,
+     240,
+     2,
+     null,
+     2,
+     2,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    312,
+    14
+   ],
+   "decided": [
+    "V2:rejected",
+    "V1:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 618 to Hamburg-Altona, 07:42: today from platform 7",
+    "republish_order: Release ICE 618 from the source to every channel now"
+   ],
+   "report": "## ICE 618: platform change at Köln Hbf"
+  },
+  "SC-PLATFORM accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 618: every channel shows platform 5, the train leaves from platform 7"
+   ],
+   "kpis": [
+    "estimate/partial: 8 of 312, first 14 min at ICE 618, Köln Hbf",
+    "verified/source: 312 of 312, first 14 min at ICE 618, Köln Hbf",
+    "decided Do nothing: undefined of 312, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     305,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     15,
+     297,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     72,
+     240,
+     2,
+     null,
+     2,
+     2,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    312,
+    14
+   ],
+   "decided": [
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 618, 07:42: risk accepted, no publication"
+   ],
+   "report": "## ICE 618: platform change at Köln Hbf"
+  },
+  "SC-PLATFORM reject all, then accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 618: every channel shows platform 5, the train leaves from platform 7"
+   ],
+   "kpis": [
+    "estimate/partial: 8 of 312, first 14 min at ICE 618, Köln Hbf",
+    "verified/source: 312 of 312, first 14 min at ICE 618, Köln Hbf",
+    "decided Do nothing: undefined of 312, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     305,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     15,
+     297,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     72,
+     240,
+     2,
+     null,
+     2,
+     2,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    312,
+    14
+   ],
+   "decided": [
+    "V1:rejected",
+    "V2:rejected",
+    "V3:rejected",
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 618, 07:42: risk accepted, no publication"
+   ],
+   "report": "## ICE 618: platform change at Köln Hbf"
+  },
+  "SC-DIVERSION recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make"
+   ],
+   "kpis": [
+    "estimate/partial: 454 of 454, first 19 min at ICE 1022, Dortmund Hbf",
+    "verified/source: 856 of 856, first 19 min at ICE 1022, Dortmund Hbf",
+    "decided option A: 7 of 856, right information 2 min, in sync 20 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     849,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     7,
+     849,
+     2,
+     null,
+     10,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     40,
+     816,
+     2,
+     null,
+     10,
+     20,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    856,
+    19
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Release the rejected update for ICE 1022 and ICE 1026 (OPS-03) and re-publish both trains",
+    "passenger_message: ICE 1022 and ICE 1026 diverted via Essen and Düsseldorf: no stops at Hagen and Wuppertal",
+    "staff_brief: ICE 1022 and ICE 1026 diverted: no stops at Hagen and Wuppertal, extra stops at Essen and Düsseldorf"
+   ],
+   "report": "## ICE 1022 and ICE 1026: diversion via Essen and Düsseldorf"
+  },
+  "SC-DIVERSION recommended, drafts rejected": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make"
+   ],
+   "kpis": [
+    "estimate/partial: 454 of 454, first 19 min at ICE 1022, Dortmund Hbf",
+    "verified/source: 856 of 856, first 19 min at ICE 1022, Dortmund Hbf",
+    "decided option A: 7 of 856, right information 2 min, in sync 20 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     849,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     7,
+     849,
+     2,
+     null,
+     10,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     40,
+     816,
+     2,
+     null,
+     10,
+     20,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    856,
+    19
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Release the rejected update for ICE 1022 and ICE 1026 (OPS-03) and re-publish both trains",
+    "passenger_message: ICE 1022 and ICE 1026 diverted via Essen and Düsseldorf: no stops at Hagen and Wuppertal",
+    "staff_brief: ICE 1022 and ICE 1026 diverted: no stops at Hagen and Wuppertal, extra stops at Essen and Düsseldorf"
+   ],
+   "report": "## ICE 1022 and ICE 1026: diversion via Essen and Düsseldorf"
+  },
+  "SC-DIVERSION approve V2": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make"
+   ],
+   "kpis": [
+    "estimate/partial: 454 of 454, first 19 min at ICE 1022, Dortmund Hbf",
+    "verified/source: 856 of 856, first 19 min at ICE 1022, Dortmund Hbf",
+    "decided option B: 7 of 856, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     849,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     7,
+     849,
+     2,
+     null,
+     10,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     40,
+     816,
+     2,
+     null,
+     10,
+     20,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    856,
+    19
+   ],
+   "decided": [
+    "V2:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 1022 and ICE 1026 diverted via Essen and Düsseldorf: no stops at Hagen and Wuppertal",
+    "staff_brief: ICE 1022 and ICE 1026 diverted: no stops at Hagen and Wuppertal"
+   ],
+   "report": "## ICE 1022 and ICE 1026: diversion via Essen and Düsseldorf"
+  },
+  "SC-DIVERSION approve V3": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make"
+   ],
+   "kpis": [
+    "estimate/partial: 454 of 454, first 19 min at ICE 1022, Dortmund Hbf",
+    "verified/source: 856 of 856, first 19 min at ICE 1022, Dortmund Hbf",
+    "decided option C: 40 of 856, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     849,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     7,
+     849,
+     2,
+     null,
+     10,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     40,
+     816,
+     2,
+     null,
+     10,
+     20,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    856,
+    19
+   ],
+   "decided": [
+    "V3:approved"
+   ],
+   "drafts": [
+    "override_request: Overrides for ICE 1022 and ICE 1026: cancelled stops and new arrival times",
+    "passenger_message: ICE 1022 and ICE 1026 diverted: no stops at Hagen and Wuppertal"
+   ],
+   "report": "## ICE 1022 and ICE 1026: diversion via Essen and Düsseldorf"
+  },
+  "SC-DIVERSION reject V2, then the recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make"
+   ],
+   "kpis": [
+    "estimate/partial: 454 of 454, first 19 min at ICE 1022, Dortmund Hbf",
+    "verified/source: 856 of 856, first 19 min at ICE 1022, Dortmund Hbf",
+    "decided option A: 7 of 856, right information 2 min, in sync 20 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     849,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     7,
+     849,
+     2,
+     null,
+     10,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     40,
+     816,
+     2,
+     null,
+     10,
+     20,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    856,
+    19
+   ],
+   "decided": [
+    "V2:rejected",
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Release the rejected update for ICE 1022 and ICE 1026 (OPS-03) and re-publish both trains",
+    "passenger_message: ICE 1022 and ICE 1026 diverted via Essen and Düsseldorf: no stops at Hagen and Wuppertal",
+    "staff_brief: ICE 1022 and ICE 1026 diverted: no stops at Hagen and Wuppertal, extra stops at Essen and Düsseldorf"
+   ],
+   "report": "## ICE 1022 and ICE 1026: diversion via Essen and Düsseldorf"
+  },
+  "SC-DIVERSION accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make"
+   ],
+   "kpis": [
+    "estimate/partial: 454 of 454, first 19 min at ICE 1022, Dortmund Hbf",
+    "verified/source: 856 of 856, first 19 min at ICE 1022, Dortmund Hbf",
+    "decided Do nothing: undefined of 856, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     849,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     7,
+     849,
+     2,
+     null,
+     10,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     40,
+     816,
+     2,
+     null,
+     10,
+     20,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    856,
+    19
+   ],
+   "decided": [
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 1022 and ICE 1026: risk accepted, no publication"
+   ],
+   "report": "## ICE 1022 and ICE 1026: diversion via Essen and Düsseldorf"
+  },
+  "SC-DIVERSION reject all, then accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1022 and ICE 1026: customer information shows stops the diverted trains will not make"
+   ],
+   "kpis": [
+    "estimate/partial: 454 of 454, first 19 min at ICE 1022, Dortmund Hbf",
+    "verified/source: 856 of 856, first 19 min at ICE 1022, Dortmund Hbf",
+    "decided Do nothing: undefined of 856, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     849,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     7,
+     849,
+     2,
+     null,
+     10,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     40,
+     816,
+     2,
+     null,
+     10,
+     20,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    856,
+    19
+   ],
+   "decided": [
+    "V1:rejected",
+    "V2:rejected",
+    "V3:rejected",
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 1022 and ICE 1026: risk accepted, no publication"
+   ],
+   "report": "## ICE 1022 and ICE 1026: diversion via Essen and Düsseldorf"
+  },
+  "SC-OPSSTOP recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1027: every channel lists a stop at Köln-Mülheim that is a Betriebshalt"
+   ],
+   "kpis": [
+    "estimate/partial: 6 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "verified/source: 58 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "decided option A: 2 of 58, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     2,
+     56,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     55,
+     2,
+     null,
+     1,
+     2,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     1,
+     57,
+     2,
+     null,
+     1,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    58,
+    57
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 1027 with the Betriebshalt at Köln-Mülheim",
+    "memo: Conversion rule drops the Betriebshalt flag on stops of 1.5 minutes or more",
+    "passenger_message: ICE 1027 does not stop at Köln-Mülheim"
+   ],
+   "report": "## ICE 1027: a Betriebshalt published as a passenger stop"
+  },
+  "SC-OPSSTOP recommended, drafts rejected": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1027: every channel lists a stop at Köln-Mülheim that is a Betriebshalt"
+   ],
+   "kpis": [
+    "estimate/partial: 6 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "verified/source: 58 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "decided option A: 2 of 58, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     2,
+     56,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     55,
+     2,
+     null,
+     1,
+     2,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     1,
+     57,
+     2,
+     null,
+     1,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    58,
+    57
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 1027 with the Betriebshalt at Köln-Mülheim",
+    "memo: Conversion rule drops the Betriebshalt flag on stops of 1.5 minutes or more",
+    "passenger_message: ICE 1027 does not stop at Köln-Mülheim"
+   ],
+   "report": "## ICE 1027: a Betriebshalt published as a passenger stop"
+  },
+  "SC-OPSSTOP approve V2": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1027: every channel lists a stop at Köln-Mülheim that is a Betriebshalt"
+   ],
+   "kpis": [
+    "estimate/partial: 6 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "verified/source: 58 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "decided option B: 3 of 58, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     2,
+     56,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     55,
+     2,
+     null,
+     1,
+     2,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     1,
+     57,
+     2,
+     null,
+     1,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    58,
+    57
+   ],
+   "decided": [
+    "V2:approved"
+   ],
+   "drafts": [
+    "override_request: Override: remove ICE 1027 (08:44) from the displays and announcements at Köln-Mülheim",
+    "passenger_message: ICE 1027 does not stop at Köln-Mülheim"
+   ],
+   "report": "## ICE 1027: a Betriebshalt published as a passenger stop"
+  },
+  "SC-OPSSTOP approve V3": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1027: every channel lists a stop at Köln-Mülheim that is a Betriebshalt"
+   ],
+   "kpis": [
+    "estimate/partial: 6 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "verified/source: 58 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "decided option C: 1 of 58, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     2,
+     56,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     55,
+     2,
+     null,
+     1,
+     2,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     1,
+     57,
+     2,
+     null,
+     1,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    58,
+    57
+   ],
+   "decided": [
+    "V3:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 1027 does not stop at Köln-Mülheim",
+    "staff_brief: Köln-Mülheim is a Betriebshalt: announce it before Düsseldorf"
+   ],
+   "report": "## ICE 1027: a Betriebshalt published as a passenger stop"
+  },
+  "SC-OPSSTOP reject V2, then the recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1027: every channel lists a stop at Köln-Mülheim that is a Betriebshalt"
+   ],
+   "kpis": [
+    "estimate/partial: 6 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "verified/source: 58 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "decided option A: 2 of 58, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     2,
+     56,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     55,
+     2,
+     null,
+     1,
+     2,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     1,
+     57,
+     2,
+     null,
+     1,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    58,
+    57
+   ],
+   "decided": [
+    "V2:rejected",
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 1027 with the Betriebshalt at Köln-Mülheim",
+    "memo: Conversion rule drops the Betriebshalt flag on stops of 1.5 minutes or more",
+    "passenger_message: ICE 1027 does not stop at Köln-Mülheim"
+   ],
+   "report": "## ICE 1027: a Betriebshalt published as a passenger stop"
+  },
+  "SC-OPSSTOP accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1027: every channel lists a stop at Köln-Mülheim that is a Betriebshalt"
+   ],
+   "kpis": [
+    "estimate/partial: 6 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "verified/source: 58 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "decided Do nothing: undefined of 58, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     2,
+     56,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     55,
+     2,
+     null,
+     1,
+     2,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     1,
+     57,
+     2,
+     null,
+     1,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    58,
+    57
+   ],
+   "decided": [
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 1027 at Köln-Mülheim: risk accepted, no publication"
+   ],
+   "report": "## ICE 1027: a Betriebshalt published as a passenger stop"
+  },
+  "SC-OPSSTOP reject all, then accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1027: every channel lists a stop at Köln-Mülheim that is a Betriebshalt"
+   ],
+   "kpis": [
+    "estimate/partial: 6 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "verified/source: 58 of 58, first 57 min at ICE 1027, Düsseldorf Hbf",
+    "decided Do nothing: undefined of 58, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     2,
+     56,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     55,
+     2,
+     null,
+     1,
+     2,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     1,
+     57,
+     2,
+     null,
+     1,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    58,
+    57
+   ],
+   "decided": [
+    "V1:rejected",
+    "V2:rejected",
+    "V3:rejected",
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 1027 at Köln-Mülheim: risk accepted, no publication"
+   ],
+   "report": "## ICE 1027: a Betriebshalt published as a passenger stop"
+  },
+  "SC-TERMINUS recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf"
+   ],
+   "kpis": [
+    "estimate/partial: 24 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "verified/source: 157 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "decided option A: 13 of 157, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     13,
+     144,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     17,
+     140,
+     2,
+     null,
+     1,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     13,
+     144,
+     2,
+     null,
+     1,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    157,
+    98
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 1025 (OPS-04, terminus Köln Messe/Deutz) and reload the on-board announcements",
+    "passenger_message: ICE 1025 ends at Köln Messe/Deutz today"
+   ],
+   "report": "## ICE 1025: terminus moved to Köln Messe/Deutz"
+  },
+  "SC-TERMINUS recommended, drafts rejected": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf"
+   ],
+   "kpis": [
+    "estimate/partial: 24 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "verified/source: 157 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "decided option A: 13 of 157, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     13,
+     144,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     17,
+     140,
+     2,
+     null,
+     1,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     13,
+     144,
+     2,
+     null,
+     1,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    157,
+    98
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 1025 (OPS-04, terminus Köln Messe/Deutz) and reload the on-board announcements",
+    "passenger_message: ICE 1025 ends at Köln Messe/Deutz today"
+   ],
+   "report": "## ICE 1025: terminus moved to Köln Messe/Deutz"
+  },
+  "SC-TERMINUS approve V2": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf"
+   ],
+   "kpis": [
+    "estimate/partial: 24 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "verified/source: 157 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "decided option B: 17 of 157, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     13,
+     144,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     17,
+     140,
+     2,
+     null,
+     1,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     13,
+     144,
+     2,
+     null,
+     1,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    157,
+    98
+   ],
+   "decided": [
+    "V2:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 1025 ends at Köln Messe/Deutz today",
+    "staff_brief: Announce the new terminus Köln Messe/Deutz before arrival"
+   ],
+   "report": "## ICE 1025: terminus moved to Köln Messe/Deutz"
+  },
+  "SC-TERMINUS approve V3": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf"
+   ],
+   "kpis": [
+    "estimate/partial: 24 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "verified/source: 157 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "decided option C: 13 of 157, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     13,
+     144,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     17,
+     140,
+     2,
+     null,
+     1,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     13,
+     144,
+     2,
+     null,
+     1,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    157,
+    98
+   ],
+   "decided": [
+    "V3:approved"
+   ],
+   "drafts": [
+    "override_request: Override the on-board announcements of ICE 1025: terminus Köln Messe/Deutz",
+    "passenger_message: ICE 1025 ends at Köln Messe/Deutz today"
+   ],
+   "report": "## ICE 1025: terminus moved to Köln Messe/Deutz"
+  },
+  "SC-TERMINUS reject V2, then the recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf"
+   ],
+   "kpis": [
+    "estimate/partial: 24 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "verified/source: 157 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "decided option A: 13 of 157, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     13,
+     144,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     17,
+     140,
+     2,
+     null,
+     1,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     13,
+     144,
+     2,
+     null,
+     1,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    157,
+    98
+   ],
+   "decided": [
+    "V2:rejected",
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 1025 (OPS-04, terminus Köln Messe/Deutz) and reload the on-board announcements",
+    "passenger_message: ICE 1025 ends at Köln Messe/Deutz today"
+   ],
+   "report": "## ICE 1025: terminus moved to Köln Messe/Deutz"
+  },
+  "SC-TERMINUS accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf"
+   ],
+   "kpis": [
+    "estimate/partial: 24 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "verified/source: 157 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "decided Do nothing: undefined of 157, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     13,
+     144,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     17,
+     140,
+     2,
+     null,
+     1,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     13,
+     144,
+     2,
+     null,
+     1,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    157,
+    98
+   ],
+   "decided": [
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 1025 terminus Köln Messe/Deutz: risk accepted, no publication"
+   ],
+   "report": "## ICE 1025: terminus moved to Köln Messe/Deutz"
+  },
+  "SC-TERMINUS reject all, then accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 1025 ends at Köln Messe/Deutz, but the planner and the on-board announcements say Köln Hbf"
+   ],
+   "kpis": [
+    "estimate/partial: 24 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "verified/source: 157 of 268, first 98 min at ICE 1025, on board before Köln Messe/Deutz",
+    "decided Do nothing: undefined of 157, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     13,
+     144,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     17,
+     140,
+     2,
+     null,
+     1,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     13,
+     144,
+     2,
+     null,
+     1,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    157,
+    98
+   ],
+   "decided": [
+    "V1:rejected",
+    "V2:rejected",
+    "V3:rejected",
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 1025 terminus Köln Messe/Deutz: risk accepted, no publication"
+   ],
+   "report": "## ICE 1025: terminus moved to Köln Messe/Deutz"
+  },
+  "SC-COACH recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 516: the coach-position displays show first class at the wrong end, at every stop"
+   ],
+   "kpis": [
+    "estimate/partial: 112 of 112, first 44 min at ICE 516, Köln Hbf",
+    "verified/source: 225 of 225, first 44 min at ICE 516, Köln Hbf",
+    "decided option A: 7 of 225, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     218,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     26,
+     199,
+     2,
+     null,
+     5,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     56,
+     169,
+     3,
+     null,
+     5,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    225,
+    44
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Refresh the coach order of ICE 516 from the source (OPS-01, reversed)",
+    "passenger_message: ICE 516 runs in reverse order today"
+   ],
+   "report": "## ICE 516: reversed coach order"
+  },
+  "SC-COACH recommended, drafts rejected": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 516: the coach-position displays show first class at the wrong end, at every stop"
+   ],
+   "kpis": [
+    "estimate/partial: 112 of 112, first 44 min at ICE 516, Köln Hbf",
+    "verified/source: 225 of 225, first 44 min at ICE 516, Köln Hbf",
+    "decided option A: 7 of 225, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     218,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     26,
+     199,
+     2,
+     null,
+     5,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     56,
+     169,
+     3,
+     null,
+     5,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    225,
+    44
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Refresh the coach order of ICE 516 from the source (OPS-01, reversed)",
+    "passenger_message: ICE 516 runs in reverse order today"
+   ],
+   "report": "## ICE 516: reversed coach order"
+  },
+  "SC-COACH approve V2": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 516: the coach-position displays show first class at the wrong end, at every stop"
+   ],
+   "kpis": [
+    "estimate/partial: 112 of 112, first 44 min at ICE 516, Köln Hbf",
+    "verified/source: 225 of 225, first 44 min at ICE 516, Köln Hbf",
+    "decided option B: 26 of 225, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     218,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     26,
+     199,
+     2,
+     null,
+     5,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     56,
+     169,
+     3,
+     null,
+     5,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    225,
+    44
+   ],
+   "decided": [
+    "V2:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 516 runs in reverse order today",
+    "staff_brief: ICE 516 in reverse order: the coach-position displays are wrong"
+   ],
+   "report": "## ICE 516: reversed coach order"
+  },
+  "SC-COACH approve V3": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 516: the coach-position displays show first class at the wrong end, at every stop"
+   ],
+   "kpis": [
+    "estimate/partial: 112 of 112, first 44 min at ICE 516, Köln Hbf",
+    "verified/source: 225 of 225, first 44 min at ICE 516, Köln Hbf",
+    "decided option C: 56 of 225, right information 3 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     218,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     26,
+     199,
+     2,
+     null,
+     5,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     56,
+     169,
+     3,
+     null,
+     5,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    225,
+    44
+   ],
+   "decided": [
+    "V3:approved"
+   ],
+   "drafts": [
+    "passenger_message: Platform announcement: ICE 516 in reverse order"
+   ],
+   "report": "## ICE 516: reversed coach order"
+  },
+  "SC-COACH reject V2, then the recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 516: the coach-position displays show first class at the wrong end, at every stop"
+   ],
+   "kpis": [
+    "estimate/partial: 112 of 112, first 44 min at ICE 516, Köln Hbf",
+    "verified/source: 225 of 225, first 44 min at ICE 516, Köln Hbf",
+    "decided option A: 7 of 225, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     218,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     26,
+     199,
+     2,
+     null,
+     5,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     56,
+     169,
+     3,
+     null,
+     5,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    225,
+    44
+   ],
+   "decided": [
+    "V2:rejected",
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Refresh the coach order of ICE 516 from the source (OPS-01, reversed)",
+    "passenger_message: ICE 516 runs in reverse order today"
+   ],
+   "report": "## ICE 516: reversed coach order"
+  },
+  "SC-COACH accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 516: the coach-position displays show first class at the wrong end, at every stop"
+   ],
+   "kpis": [
+    "estimate/partial: 112 of 112, first 44 min at ICE 516, Köln Hbf",
+    "verified/source: 225 of 225, first 44 min at ICE 516, Köln Hbf",
+    "decided Do nothing: undefined of 225, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     218,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     26,
+     199,
+     2,
+     null,
+     5,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     56,
+     169,
+     3,
+     null,
+     5,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    225,
+    44
+   ],
+   "decided": [
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 516 reversed coach order: risk accepted, no publication"
+   ],
+   "report": "## ICE 516: reversed coach order"
+  },
+  "SC-COACH reject all, then accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 516: the coach-position displays show first class at the wrong end, at every stop"
+   ],
+   "kpis": [
+    "estimate/partial: 112 of 112, first 44 min at ICE 516, Köln Hbf",
+    "verified/source: 225 of 225, first 44 min at ICE 516, Köln Hbf",
+    "decided Do nothing: undefined of 225, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     7,
+     218,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     26,
+     199,
+     2,
+     null,
+     5,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     56,
+     169,
+     3,
+     null,
+     5,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    225,
+    44
+   ],
+   "decided": [
+    "V1:rejected",
+    "V2:rejected",
+    "V3:rejected",
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 516 reversed coach order: risk accepted, no publication"
+   ],
+   "report": "## ICE 516: reversed coach order"
+  },
+  "SC-FPLO recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost"
+   ],
+   "kpis": [
+    "estimate/partial: 118 of 118, first 137 min at ICE 612, Bochum Hbf",
+    "verified/source: 234 of 234, first 126 min at RE 10109, Bochum Hbf",
+    "decided option A: 11 of 234, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     11,
+     223,
+     2,
+     8,
+     0,
+     0,
+     46
+    ],
+    [
+     "V2",
+     "B",
+     13,
+     221,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     15,
+     219,
+     2,
+     null,
+     3,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    234,
+    126
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
+    "hold_request: Request: hold RE 57 (10:01) at Dortmund Hbf for ICE 612",
+    "passenger_message: ICE 612 and RE 10109: later arrival at Dortmund Hbf (construction works)"
+   ],
+   "report": "## ICE 612 and RE 10109: construction order Bochum – Dortmund"
+  },
+  "SC-FPLO recommended, drafts rejected": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost"
+   ],
+   "kpis": [
+    "estimate/partial: 118 of 118, first 137 min at ICE 612, Bochum Hbf",
+    "verified/source: 234 of 234, first 126 min at RE 10109, Bochum Hbf",
+    "decided option A: 11 of 234, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     11,
+     223,
+     2,
+     8,
+     0,
+     0,
+     46
+    ],
+    [
+     "V2",
+     "B",
+     13,
+     221,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     15,
+     219,
+     2,
+     null,
+     3,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    234,
+    126
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
+    "hold_request: Request: hold RE 57 (10:01) at Dortmund Hbf for ICE 612",
+    "passenger_message: ICE 612 and RE 10109: later arrival at Dortmund Hbf (construction works)"
+   ],
+   "report": "## ICE 612 and RE 10109: construction order Bochum – Dortmund"
+  },
+  "SC-FPLO approve V2": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost"
+   ],
+   "kpis": [
+    "estimate/partial: 118 of 118, first 137 min at ICE 612, Bochum Hbf",
+    "verified/source: 234 of 234, first 126 min at RE 10109, Bochum Hbf",
+    "decided option B: 13 of 234, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     11,
+     223,
+     2,
+     8,
+     0,
+     0,
+     46
+    ],
+    [
+     "V2",
+     "B",
+     13,
+     221,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     15,
+     219,
+     2,
+     null,
+     3,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    234,
+    126
+   ],
+   "decided": [
+    "V2:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
+    "passenger_message: ICE 612: connection to RE 57 at Dortmund Hbf lost"
+   ],
+   "report": "## ICE 612 and RE 10109: construction order Bochum – Dortmund"
+  },
+  "SC-FPLO approve V3": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost"
+   ],
+   "kpis": [
+    "estimate/partial: 118 of 118, first 137 min at ICE 612, Bochum Hbf",
+    "verified/source: 234 of 234, first 126 min at RE 10109, Bochum Hbf",
+    "decided option C: 15 of 234, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     11,
+     223,
+     2,
+     8,
+     0,
+     0,
+     46
+    ],
+    [
+     "V2",
+     "B",
+     13,
+     221,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     15,
+     219,
+     2,
+     null,
+     3,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    234,
+    126
+   ],
+   "decided": [
+    "V3:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 612 and RE 10109: later arrival at Dortmund Hbf"
+   ],
+   "report": "## ICE 612 and RE 10109: construction order Bochum – Dortmund"
+  },
+  "SC-FPLO reject V2, then the recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost"
+   ],
+   "kpis": [
+    "estimate/partial: 118 of 118, first 137 min at ICE 612, Bochum Hbf",
+    "verified/source: 234 of 234, first 126 min at RE 10109, Bochum Hbf",
+    "decided option A: 11 of 234, right information 2 min, in sync 8 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     11,
+     223,
+     2,
+     8,
+     0,
+     0,
+     46
+    ],
+    [
+     "V2",
+     "B",
+     13,
+     221,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     15,
+     219,
+     2,
+     null,
+     3,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    234,
+    126
+   ],
+   "decided": [
+    "V2:rejected",
+    "V1:approved"
+   ],
+   "drafts": [
+    "republish_order: Re-publish ICE 612 and RE 10109 with Fplo 1187 (OPS-02)",
+    "hold_request: Request: hold RE 57 (10:01) at Dortmund Hbf for ICE 612",
+    "passenger_message: ICE 612 and RE 10109: later arrival at Dortmund Hbf (construction works)"
+   ],
+   "report": "## ICE 612 and RE 10109: construction order Bochum – Dortmund"
+  },
+  "SC-FPLO accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost"
+   ],
+   "kpis": [
+    "estimate/partial: 118 of 118, first 137 min at ICE 612, Bochum Hbf",
+    "verified/source: 234 of 234, first 126 min at RE 10109, Bochum Hbf",
+    "decided Do nothing: undefined of 234, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     11,
+     223,
+     2,
+     8,
+     0,
+     0,
+     46
+    ],
+    [
+     "V2",
+     "B",
+     13,
+     221,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     15,
+     219,
+     2,
+     null,
+     3,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    234,
+    126
+   ],
+   "decided": [
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: Fplo 1187 (ICE 612, RE 10109): risk accepted, no publication"
+   ],
+   "report": "## ICE 612 and RE 10109: construction order Bochum – Dortmund"
+  },
+  "SC-FPLO reject all, then accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 612 and RE 10109 arrive in Dortmund later than shown; the RE 57 connection is lost"
+   ],
+   "kpis": [
+    "estimate/partial: 118 of 118, first 137 min at ICE 612, Bochum Hbf",
+    "verified/source: 234 of 234, first 126 min at RE 10109, Bochum Hbf",
+    "decided Do nothing: undefined of 234, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     11,
+     223,
+     2,
+     8,
+     0,
+     0,
+     46
+    ],
+    [
+     "V2",
+     "B",
+     13,
+     221,
+     2,
+     8,
+     0,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     15,
+     219,
+     2,
+     null,
+     3,
+     0,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    234,
+    126
+   ],
+   "decided": [
+    "V1:rejected",
+    "V2:rejected",
+    "V3:rejected",
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: Fplo 1187 (ICE 612, RE 10109): risk accepted, no publication"
+   ],
+   "report": "## ICE 612 and RE 10109: construction order Bochum – Dortmund"
+  },
+  "SC-EUROPE recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42"
+   ],
+   "kpis": [
+    "estimate/partial: 39 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "verified/source: 230 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "decided option A: 3 of 230, right information 2 min, in sync 20 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     3,
+     227,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     227,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     37,
+     193,
+     2,
+     null,
+     2,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    230,
+    80
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable",
+    "republish_order: Merge ICE 318 again from both deliveries and re-publish it (OPS-06)",
+    "staff_brief: ICE 318: later arrival at Bruxelles-Midi, passengers for Oostende"
+   ],
+   "report": "## ICE 318: the European timetable behind the partner's change"
+  },
+  "SC-EUROPE recommended, drafts rejected": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42"
+   ],
+   "kpis": [
+    "estimate/partial: 39 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "verified/source: 230 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "decided option A: 3 of 230, right information 2 min, in sync 20 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     3,
+     227,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     227,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     37,
+     193,
+     2,
+     null,
+     2,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    230,
+    80
+   ],
+   "decided": [
+    "V1:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable",
+    "republish_order: Merge ICE 318 again from both deliveries and re-publish it (OPS-06)",
+    "staff_brief: ICE 318: later arrival at Bruxelles-Midi, passengers for Oostende"
+   ],
+   "report": "## ICE 318: the European timetable behind the partner's change"
+  },
+  "SC-EUROPE approve V2": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42"
+   ],
+   "kpis": [
+    "estimate/partial: 39 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "verified/source: 230 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "decided option B: 3 of 230, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     3,
+     227,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     227,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     37,
+     193,
+     2,
+     null,
+     2,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    230,
+    80
+   ],
+   "decided": [
+    "V2:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable",
+    "staff_brief: ICE 318: later arrival at Bruxelles-Midi, passengers for Oostende"
+   ],
+   "report": "## ICE 318: the European timetable behind the partner's change"
+  },
+  "SC-EUROPE approve V3": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42"
+   ],
+   "kpis": [
+    "estimate/partial: 39 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "verified/source: 230 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "decided option C: 37 of 230, right information 2 min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     3,
+     227,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     227,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     37,
+     193,
+     2,
+     null,
+     2,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    230,
+    80
+   ],
+   "decided": [
+    "V3:approved"
+   ],
+   "drafts": [
+    "override_request: Override for ICE 318: arrival at Bruxelles-Midi 09:42 in the announcements",
+    "passenger_message: ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable"
+   ],
+   "report": "## ICE 318: the European timetable behind the partner's change"
+  },
+  "SC-EUROPE reject V2, then the recommended": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42"
+   ],
+   "kpis": [
+    "estimate/partial: 39 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "verified/source: 230 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "decided option A: 3 of 230, right information 2 min, in sync 20 min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     3,
+     227,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     227,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     37,
+     193,
+     2,
+     null,
+     2,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    230,
+    80
+   ],
+   "decided": [
+    "V2:rejected",
+    "V1:approved"
+   ],
+   "drafts": [
+    "passenger_message: ICE 318 to Bruxelles-Midi: later arrival, connection to IC 2117 not reachable",
+    "republish_order: Merge ICE 318 again from both deliveries and re-publish it (OPS-06)",
+    "staff_brief: ICE 318: later arrival at Bruxelles-Midi, passengers for Oostende"
+   ],
+   "report": "## ICE 318: the European timetable behind the partner's change"
+  },
+  "SC-EUROPE accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42"
+   ],
+   "kpis": [
+    "estimate/partial: 39 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "verified/source: 230 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "decided Do nothing: undefined of 230, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     3,
+     227,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     227,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     37,
+     193,
+     2,
+     null,
+     2,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    230,
+    80
+   ],
+   "decided": [
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 318 (OPS-06): risk accepted, no publication"
+   ],
+   "report": "## ICE 318: the European timetable behind the partner's change"
+  },
+  "SC-EUROPE reject all, then accept the risk": {
+   "errors": [],
+   "end": [
+    "done"
+   ],
+   "alerts": [
+    "verified|ICE 318: app and announcements show 09:33 at Bruxelles-Midi, the source 09:42"
+   ],
+   "kpis": [
+    "estimate/partial: 39 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "verified/source: 230 of 252, first 80 min at ICE 318, Liège-Guillemins",
+    "decided Do nothing: undefined of 230, right information - min, in sync - min"
+   ],
+   "options": [
+    [
+     "V1",
+     "A",
+     3,
+     227,
+     2,
+     20,
+     0,
+     0,
+     0
+    ],
+    [
+     "V2",
+     "B",
+     3,
+     227,
+     2,
+     null,
+     2,
+     0,
+     0
+    ],
+    [
+     "V3",
+     "C",
+     37,
+     193,
+     2,
+     null,
+     2,
+     1,
+     0
+    ]
+   ],
+   "recommended": "V1",
+   "baseline": [
+    230,
+    80
+   ],
+   "decided": [
+    "V1:rejected",
+    "V2:rejected",
+    "V3:rejected",
+    "baseline:approved"
+   ],
+   "drafts": [
+    "memo: ICE 318 (OPS-06): risk accepted, no publication"
+   ],
+   "report": "## ICE 318: the European timetable behind the partner's change"
+  }
+ }
+}
