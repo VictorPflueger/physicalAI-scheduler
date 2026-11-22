@@ -201,7 +201,8 @@ html { font-size: clamp(100%, 0.48vw + 50%, 112.5%); }
 .draft-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 8px 6px 12px; }
 .draft-head .vc-icon { color: var(--vc-text-muted); }
 .draft-what { min-width: 0; }
-.draft-what p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A draft's subject is what the person approves: it wraps rather than hiding its end. */
+.draft-what p { margin: 0; text-wrap: pretty; overflow-wrap: anywhere; }
 .draft-to { color: var(--vc-text-muted); font-size: var(--vc-font-size-sm); }
 .draft-subject { font-weight: var(--vc-weight-semibold); }
 .draft-actions { display: flex; align-items: center; gap: 6px; }
